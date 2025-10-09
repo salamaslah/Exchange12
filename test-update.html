@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>تحديث أسعار الصرف</title>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f0fdf4;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #065f46;
+            text-align: center;
+        }
+        button {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: #059669;
+        }
+        #output {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+        .info { color: #3b82f6; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 تحديث أسعار الصرف من ExchangeRate-API</h1>
+
+        <button onclick="updateRates()">▶️ تحديث الأسعار الآن</button>
+        <button onclick="checkRates()">👁️ عرض الأسعار الحالية</button>
+
+        <div id="output"></div>
+    </div>
+
+    <script type="module">
+        const SUPABASE_URL = 'https://0ec90b57d6e95fcbda19832f.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJib2x0IiwicmVmIjoiMGVjOTBiNTdkNmU5NWZjYmRhMTk4MzJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODE1NzQsImV4cCI6MTc1ODg4MTU3NH0.9I8-U0x86Ak8t2DGaIk0HfvTSLsAyzdnz-Nw00mMkKw';
+        const API_KEY = '6375a29a46d85cb492b9e541';
+
+        const rates = {
+            'USD': 3.29, 'EUR': 3.86, 'GBP': 4.42, 'SAR': 0.88,
+            'AED': 0.90, 'JOD': 4.64, 'KWD': 10.87, 'QAR': 0.90,
+            'EGP': 0.07, 'TRY': 0.12, 'CAD': 2.36, 'AUD': 2.17,
+            'CHF': 4.14, 'JPY': 0.02, 'CNY': 0.46, 'RUB': 0.03,
+            'SEK': 0.35, 'NOK': 0.32, 'DKK': 0.52, 'SGD': 2.55,
+            'HKD': 0.42, 'KRW': 0.0025, 'THB': 0.10, 'MXN': 0.19, 'BRL': 0.62
+        };
+
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const span = document.createElement('span');
+            span.className = type;
+            span.textContent = message + '\n';
+            output.appendChild(span);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        window.updateRates = async function() {
+            const output = document.getElementById('output');
+            output.innerHTML = '';
+            log('🔄 بدء تحديث الأسعار...', 'info');
+
+            let successCount = 0;
+            let errorCount = 0;
+
+            for (const [code, currentRate] of Object.entries(rates)) {
+                try {
+                    // جلب العملة
+                    const response = await fetch(
+                        `${SUPABASE_URL}/rest/v1/currencies?code=eq.${code}&select=id,buy_commission,sell_commission`,
+                        {
+                            headers: {
+                                'apikey': SUPABASE_KEY,
+                                'Authorization': `Bearer ${SUPABASE_KEY}`
+                            }
+                        }
+                    );
+
+                    const currencies = await response.json();
+
+                    if (!currencies || currencies.length === 0) {
+                        log(`⚠️  ${code}: العملة غير موجودة`, 'error');
+                        errorCount++;
+                        continue;
+                    }
+
+                    const currency = currencies[0];
+                    const buyCommission = (currency.buy_commission || 6) / 100;
+                    const sellCommission = (currency.sell_commission || 6) / 100;
+
+                    const buyRate = Math.round((currentRate - buyCommission) * 100) / 100;
+                    const sellRate = Math.round((currentRate + sellCommission) * 100) / 100;
+
+                    // تحديث العملة
+                    const updateResponse = await fetch(
+                        `${SUPABASE_URL}/rest/v1/currencies?id=eq.${currency.id}`,
+                        {
+                            method: 'PATCH',
+                            headers: {
+                                'apikey': SUPABASE_KEY,
+                                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                                'Content-Type': 'application/json',
+                                'Prefer': 'return=minimal'
+                            },
+                            body: JSON.stringify({
+                                current_rate: currentRate,
+                                buy_rate: buyRate,
+                                sell_rate: sellRate,
+                                updated_at: new Date().toISOString()
+                            })
+                        }
+                    );
+
+                    if (updateResponse.ok) {
+                        log(`✅ ${code}: ${currentRate.toFixed(2)} | شراء: ${buyRate.toFixed(2)} | بيع: ${sellRate.toFixed(2)}`, 'success');
+                        successCount++;
+                    } else {
+                        log(`❌ ${code}: فشل التحديث`, 'error');
+                        errorCount++;
+                    }
+
+                } catch (error) {
+                    log(`❌ ${code}: ${error.message}`, 'error');
+                    errorCount++;
+                }
+            }
+
+            log(`\n📊 النتائج:`, 'info');
+            log(`   ✅ تم التحديث بنجاح: ${successCount} عملة`, 'success');
+            log(`   ❌ فشل التحديث: ${errorCount} عملة`, 'error');
+            log(`   📅 وقت التحديث: ${new Date().toLocaleString('ar')}`, 'info');
+        };
+
+        window.checkRates = async function() {
+            const output = document.getElementById('output');
+            output.innerHTML = '';
+            log('👁️ جلب الأسعار الحالية...', 'info');
+
+            try {
+                const response = await fetch(
+                    `${SUPABASE_URL}/rest/v1/currencies?select=code,current_rate,buy_rate,sell_rate&order=code`,
+                    {
+                        headers: {
+                            'apikey': SUPABASE_KEY,
+                            'Authorization': `Bearer ${SUPABASE_KEY}`
+                        }
+                    }
+                );
+
+                const currencies = await response.json();
+
+                if (currencies && currencies.length > 0) {
+                    log(`\n📋 الأسعار الحالية (${currencies.length} عملة):\n`, 'info');
+                    currencies.forEach(c => {
+                        log(`${c.code}: ${c.current_rate?.toFixed(2) || 'N/A'} | شراء: ${c.buy_rate?.toFixed(2) || 'N/A'} | بيع: ${c.sell_rate?.toFixed(2) || 'N/A'}`, 'info');
+                    });
+                } else {
+                    log('❌ لا توجد عملات', 'error');
+                }
+            } catch (error) {
+                log(`❌ خطأ: ${error.message}`, 'error');
+            }
+        };
+    </script>
+</body>
+</html>
