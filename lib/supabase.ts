@@ -502,7 +502,8 @@ export const transactionService = {
             amount_received: transaction.amount_received,
             currency_received: transaction.currency_received,
             customer_id: transaction.customer_id,
-            notes: transaction.notes
+            notes: transaction.notes,
+            is_completed: false
           })
           .select()
           .single();
