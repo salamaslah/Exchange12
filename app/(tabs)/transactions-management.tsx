@@ -240,76 +240,81 @@ export default function TransactionsManagement() {
             <Text style={styles.modalTitle}>تعديل المعاملة</Text>
 
             {selectedTransaction && (
-              <View style={styles.modalBody}>
-                <Text style={styles.infoText}>اسم الزبون: {selectedTransaction.customer_name || 'غير متوفر'}</Text>
-                <Text style={styles.infoText}>رقم الهوية: {selectedTransaction.customer_id || 'غير متوفر'}</Text>
-                <Text style={styles.infoText}>رقم الخدمة: {selectedTransaction.service_number}</Text>
+              <ScrollView
+                style={styles.modalScrollView}
+                showsVerticalScrollIndicator={false}
+              >
+                <View style={styles.modalBody}>
+                  <Text style={styles.infoText}>اسم الزبون: {selectedTransaction.customer_name || 'غير متوفر'}</Text>
+                  <Text style={styles.infoText}>رقم الهوية: {selectedTransaction.customer_id || 'غير متوفر'}</Text>
+                  <Text style={styles.infoText}>رقم الخدمة: {selectedTransaction.service_number}</Text>
 
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>المبلغ المدفوع</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={amountPaid}
-                    onChangeText={setAmountPaid}
-                    keyboardType="decimal-pad"
-                    placeholder="0.00"
-                  />
-                </View>
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>المبلغ المدفوع</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={amountPaid}
+                      onChangeText={setAmountPaid}
+                      keyboardType="decimal-pad"
+                      placeholder="0.00"
+                    />
+                  </View>
 
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>العملة المدفوعة</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={currencyPaid}
-                    onChangeText={setCurrencyPaid}
-                    placeholder="ILS"
-                    autoCapitalize="characters"
-                  />
-                </View>
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>العملة المدفوعة</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={currencyPaid}
+                      onChangeText={setCurrencyPaid}
+                      placeholder="ILS"
+                      autoCapitalize="characters"
+                    />
+                  </View>
 
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>المبلغ المستلم</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={amountReceived}
-                    onChangeText={setAmountReceived}
-                    keyboardType="decimal-pad"
-                    placeholder="0.00"
-                  />
-                </View>
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>المبلغ المستلم</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={amountReceived}
+                      onChangeText={setAmountReceived}
+                      keyboardType="decimal-pad"
+                      placeholder="0.00"
+                    />
+                  </View>
 
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>العملة المستلمة</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={currencyReceived}
-                    onChangeText={setCurrencyReceived}
-                    placeholder="ILS"
-                    autoCapitalize="characters"
-                  />
-                </View>
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>العملة المستلمة</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={currencyReceived}
+                      onChangeText={setCurrencyReceived}
+                      placeholder="ILS"
+                      autoCapitalize="characters"
+                    />
+                  </View>
 
-                <View style={styles.modalButtons}>
-                  <TouchableOpacity
-                    style={[styles.modalButton, styles.cancelButton]}
-                    onPress={() => setModalVisible(false)}
-                    disabled={saving}
-                  >
-                    <Text style={styles.cancelButtonText}>إلغاء</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.modalButton, styles.saveButton]}
-                    onPress={handleUpdate}
-                    disabled={saving}
-                  >
-                    {saving ? (
-                      <ActivityIndicator color="#FFF" size="small" />
-                    ) : (
-                      <Text style={styles.saveButtonText}>حفظ</Text>
-                    )}
-                  </TouchableOpacity>
+                  <View style={styles.modalButtons}>
+                    <TouchableOpacity
+                      style={[styles.modalButton, styles.cancelButton]}
+                      onPress={() => setModalVisible(false)}
+                      disabled={saving}
+                    >
+                      <Text style={styles.cancelButtonText}>إلغاء</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.modalButton, styles.saveButton]}
+                      onPress={handleUpdate}
+                      disabled={saving}
+                    >
+                      {saving ? (
+                        <ActivityIndicator color="#FFF" size="small" />
+                      ) : (
+                        <Text style={styles.saveButtonText}>حفظ</Text>
+                      )}
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
+              </ScrollView>
             )}
           </View>
         </View>
@@ -458,6 +463,9 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginBottom: 20,
     textAlign: 'center',
+  },
+  modalScrollView: {
+    maxHeight: '100%',
   },
   modalBody: {
     gap: 16,
