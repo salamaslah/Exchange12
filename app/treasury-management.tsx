@@ -15,35 +15,29 @@ import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-interface Transaction {
+interface TreasuryBalance {
   id: string;
-  service_number: number;
-  amount_paid: number;
-  currency_paid: string;
-  amount_received: number;
-  currency_received: string;
-  customer_id: string;
+  currency_code: string;
+  currency_name_ar: string;
+  currency_name_he: string;
+  currency_name_en: string;
+  balance_amount: number;
+  last_updated: string;
   notes: string;
-  created_at: string;
-  updated_at: string;
-  customer_name?: string;
 }
 
-export default function TransactionsManagement() {
+export default function TreasuryManagement() {
   const { width } = useWindowDimensions();
   const isLargeScreen = width >= 768;
 
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [balances, setBalances] = useState<TreasuryBalance[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [selectedBalance, setSelectedBalance] = useState<TreasuryBalance | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // حقول التعديل
-  const [amountPaid, setAmountPaid] = useState('');
-  const [currencyPaid, setCurrencyPaid] = useState('');
-  const [amountReceived, setAmountReceived] = useState('');
-  const [currencyReceived, setCurrencyReceived] = useState('');
+  const [balanceAmount, setBalanceAmount] = useState('');
+  const [notes, setNotes] = useState('');
 
   useEffect(() => {
     checkAuth();
@@ -56,91 +50,119 @@ export default function TransactionsManagement() {
         router.replace('/login');
         return;
       }
-      fetchTransactions();
+      fetchBalances();
     } catch (error) {
       console.error('Error checking auth:', error);
       router.replace('/login');
     }
   };
 
-  const fetchTransactions = async () => {
+  const fetchBalances = async () => {
     try {
       setLoading(true);
 
-      // جلب المعاملات
-      const { data: transactionsData, error: transactionsError } = await supabase
-        .from('transactions')
+      const { data: currenciesData, error: currenciesError } = await supabase
+        .from('currencies')
+        .select('code, name_ar');
+
+      if (currenciesError) throw currenciesError;
+
+      const { data: balancesData, error: balancesError } = await supabase
+        .from('treasury_balances')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('currency_code', { ascending: true });
 
-      if (transactionsError) throw transactionsError;
+      if (balancesError) throw balancesError;
 
-      // جلب أسماء العملاء
-      const customerIds = transactionsData?.map(t => t.customer_id).filter(Boolean) || [];
-      const { data: customersData, error: customersError } = await supabase
-        .from('customers')
-        .select('national_id, customer_name')
-        .in('national_id', customerIds);
+      const existingCodes = new Set(balancesData?.map(b => b.currency_code) || []);
+      const allCurrencies = currenciesData || [];
 
-      if (customersError) throw customersError;
+      if (!existingCodes.has('ILS')) {
+        const { error: insertError } = await supabase
+          .from('treasury_balances')
+          .insert({
+            currency_code: 'ILS',
+            currency_name_ar: 'شيقل إسرائيلي',
+            currency_name_he: 'שקל ישראלי',
+            currency_name_en: 'Israeli Shekel',
+            balance_amount: 0,
+            notes: ''
+          });
 
-      // دمج البيانات
-      const customersMap = new Map(
-        customersData?.map(c => [c.national_id, c.customer_name]) || []
-      );
+        if (insertError && !insertError.message.includes('duplicate')) {
+          console.error('Error inserting ILS:', insertError);
+        }
+      }
 
-      const enrichedTransactions = transactionsData?.map(transaction => ({
-        ...transaction,
-        customer_name: customersMap.get(transaction.customer_id) || 'غير متوفر'
-      })) || [];
+      for (const currency of allCurrencies) {
+        if (!existingCodes.has(currency.code)) {
+          const { error: insertError } = await supabase
+            .from('treasury_balances')
+            .insert({
+              currency_code: currency.code,
+              currency_name_ar: currency.name_ar,
+              currency_name_he: '',
+              currency_name_en: currency.code,
+              balance_amount: 0,
+              notes: ''
+            });
 
-      setTransactions(enrichedTransactions);
+          if (insertError && !insertError.message.includes('duplicate')) {
+            console.error(`Error inserting ${currency.code}:`, insertError);
+          }
+        }
+      }
+
+      const { data: finalBalances, error: finalError } = await supabase
+        .from('treasury_balances')
+        .select('*')
+        .order('currency_code', { ascending: true });
+
+      if (finalError) throw finalError;
+
+      setBalances(finalBalances || []);
     } catch (error) {
-      console.error('Error fetching transactions:', error);
-      Alert.alert('خطأ', 'فشل في تحميل المعاملات');
+      console.error('Error fetching balances:', error);
+      Alert.alert('خطأ', 'فشل في تحميل أرصدة الخزينة');
     } finally {
       setLoading(false);
     }
   };
 
-  const openEditModal = (transaction: Transaction) => {
-    setSelectedTransaction(transaction);
-    setAmountPaid(transaction.amount_paid.toString());
-    setCurrencyPaid(transaction.currency_paid);
-    setAmountReceived(transaction.amount_received.toString());
-    setCurrencyReceived(transaction.currency_received);
+  const openEditModal = (balance: TreasuryBalance) => {
+    setSelectedBalance(balance);
+    setBalanceAmount(balance.balance_amount.toString());
+    setNotes(balance.notes || '');
     setModalVisible(true);
   };
 
   const handleUpdate = async () => {
-    if (!selectedTransaction) return;
+    if (!selectedBalance) return;
 
-    // التحقق من البيانات
-    if (!amountPaid || !currencyPaid || !amountReceived || !currencyReceived) {
-      Alert.alert('تنبيه', 'يرجى ملء جميع الحقول');
+    if (!balanceAmount) {
+      Alert.alert('تنبيه', 'يرجى إدخال المبلغ');
       return;
     }
 
     try {
       setSaving(true);
       const { error } = await supabase
-        .from('transactions')
+        .from('treasury_balances')
         .update({
-          amount_paid: parseFloat(amountPaid),
-          currency_paid: currencyPaid,
-          amount_received: parseFloat(amountReceived),
-          currency_received: currencyReceived,
+          balance_amount: parseFloat(balanceAmount),
+          notes: notes,
+          last_updated: new Date().toISOString(),
         })
-        .eq('id', selectedTransaction.id);
+        .eq('id', selectedBalance.id);
 
       if (error) throw error;
 
-      Alert.alert('نجح', 'تم تحديث المعاملة بنجاح');
+      Alert.alert('نجح', 'تم تحديث الرصيد بنجاح');
       setModalVisible(false);
-      fetchTransactions();
+      fetchBalances();
     } catch (error) {
-      console.error('Error updating transaction:', error);
-      Alert.alert('خطأ', 'فشل في تحديث المعاملة');
+      console.error('Error updating balance:', error);
+      Alert.alert('خطأ', 'فشل في تحديث الرصيد');
     } finally {
       setSaving(false);
     }
@@ -174,69 +196,54 @@ export default function TransactionsManagement() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Text style={styles.backButtonText}>← رجوع</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>إدارة المعاملات</Text>
-        <View style={styles.headerButtons}>
-          <TouchableOpacity
-            style={styles.treasuryButton}
-            onPress={() => router.push('/treasury-management')}
-          >
-            <Text style={styles.treasuryButtonText}>إدارة الخزينة</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={styles.logoutButtonText}>تسجيل الخروج</Text>
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.headerTitle}>إدارة الخزينة</Text>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Text style={styles.logoutButtonText}>تسجيل الخروج</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Table */}
       <ScrollView style={styles.scrollView} horizontal={!isLargeScreen}>
         <View style={styles.tableContainer}>
-          {/* Table Header */}
           <View style={styles.tableHeader}>
-            <Text style={[styles.headerCell, styles.nameCell]}>اسم الزبون</Text>
-            <Text style={[styles.headerCell, styles.serviceCell]}>رقم الخدمة</Text>
-            <Text style={[styles.headerCell, styles.amountCell]}>المبلغ المدفوع</Text>
-            <Text style={[styles.headerCell, styles.currencyCell]}>العملة المدفوعة</Text>
-            <Text style={[styles.headerCell, styles.amountCell]}>المبلغ المستلم</Text>
-            <Text style={[styles.headerCell, styles.currencyCell]}>العملة المستلمة</Text>
-            <Text style={[styles.headerCell, styles.customerCell]}>رقم الهوية</Text>
-            <Text style={[styles.headerCell, styles.dateCell]}>التاريخ</Text>
+            <Text style={[styles.headerCell, styles.codeCell]}>رمز العملة</Text>
+            <Text style={[styles.headerCell, styles.nameCell]}>اسم العملة</Text>
+            <Text style={[styles.headerCell, styles.balanceCell]}>الرصيد</Text>
+            <Text style={[styles.headerCell, styles.dateCell]}>آخر تحديث</Text>
+            <Text style={[styles.headerCell, styles.notesCell]}>ملاحظات</Text>
           </View>
 
-          {/* Table Rows */}
-          {transactions.map((transaction, index) => (
+          {balances.map((balance, index) => (
             <TouchableOpacity
-              key={transaction.id}
+              key={balance.id}
               style={[styles.tableRow, index % 2 === 0 ? styles.evenRow : styles.oddRow]}
-              onPress={() => openEditModal(transaction)}
+              onPress={() => openEditModal(balance)}
             >
-              <Text style={[styles.cell, styles.nameCell]} numberOfLines={1}>
-                {transaction.customer_name || 'غير متوفر'}
+              <Text style={[styles.cell, styles.codeCell]}>{balance.currency_code}</Text>
+              <Text style={[styles.cell, styles.nameCell]}>{balance.currency_name_ar}</Text>
+              <Text style={[styles.cell, styles.balanceCell]}>
+                {balance.balance_amount.toFixed(2)}
               </Text>
-              <Text style={[styles.cell, styles.serviceCell]}>{transaction.service_number}</Text>
-              <Text style={[styles.cell, styles.amountCell]}>{transaction.amount_paid.toFixed(2)}</Text>
-              <Text style={[styles.cell, styles.currencyCell]}>{transaction.currency_paid}</Text>
-              <Text style={[styles.cell, styles.amountCell]}>{transaction.amount_received.toFixed(2)}</Text>
-              <Text style={[styles.cell, styles.currencyCell]}>{transaction.currency_received}</Text>
-              <Text style={[styles.cell, styles.customerCell]}>{transaction.customer_id || 'غير متوفر'}</Text>
-              <Text style={[styles.cell, styles.dateCell]}>{formatDate(transaction.created_at)}</Text>
+              <Text style={[styles.cell, styles.dateCell]}>
+                {formatDate(balance.last_updated)}
+              </Text>
+              <Text style={[styles.cell, styles.notesCell]} numberOfLines={2}>
+                {balance.notes || '-'}
+              </Text>
             </TouchableOpacity>
           ))}
 
-          {transactions.length === 0 && (
+          {balances.length === 0 && (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>لا توجد معاملات</Text>
+              <Text style={styles.emptyText}>لا توجد أرصدة</Text>
             </View>
           )}
         </View>
       </ScrollView>
 
-      {/* Edit Modal */}
       <Modal
         visible={modalVisible}
         transparent
@@ -245,59 +252,39 @@ export default function TransactionsManagement() {
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, isLargeScreen && styles.modalContentLarge]}>
-            <Text style={styles.modalTitle}>تعديل المعاملة</Text>
+            <Text style={styles.modalTitle}>تعديل الرصيد</Text>
 
-            {selectedTransaction && (
+            {selectedBalance && (
               <ScrollView
                 style={styles.modalScrollView}
                 showsVerticalScrollIndicator={false}
               >
                 <View style={styles.modalBody}>
-                  <Text style={styles.infoText}>اسم الزبون: {selectedTransaction.customer_name || 'غير متوفر'}</Text>
-                  <Text style={styles.infoText}>رقم الهوية: {selectedTransaction.customer_id || 'غير متوفر'}</Text>
-                  <Text style={styles.infoText}>رقم الخدمة: {selectedTransaction.service_number}</Text>
+                  <Text style={styles.infoText}>
+                    العملة: {selectedBalance.currency_name_ar} ({selectedBalance.currency_code})
+                  </Text>
 
                   <View style={styles.formGroup}>
-                    <Text style={styles.label}>المبلغ المدفوع</Text>
+                    <Text style={styles.label}>الرصيد الحالي</Text>
                     <TextInput
                       style={styles.input}
-                      value={amountPaid}
-                      onChangeText={setAmountPaid}
+                      value={balanceAmount}
+                      onChangeText={setBalanceAmount}
                       keyboardType="decimal-pad"
                       placeholder="0.00"
                     />
                   </View>
 
                   <View style={styles.formGroup}>
-                    <Text style={styles.label}>العملة المدفوعة</Text>
+                    <Text style={styles.label}>ملاحظات</Text>
                     <TextInput
-                      style={styles.input}
-                      value={currencyPaid}
-                      onChangeText={setCurrencyPaid}
-                      placeholder="ILS"
-                      autoCapitalize="characters"
-                    />
-                  </View>
-
-                  <View style={styles.formGroup}>
-                    <Text style={styles.label}>المبلغ المستلم</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={amountReceived}
-                      onChangeText={setAmountReceived}
-                      keyboardType="decimal-pad"
-                      placeholder="0.00"
-                    />
-                  </View>
-
-                  <View style={styles.formGroup}>
-                    <Text style={styles.label}>العملة المستلمة</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={currencyReceived}
-                      onChangeText={setCurrencyReceived}
-                      placeholder="ILS"
-                      autoCapitalize="characters"
+                      style={[styles.input, styles.textArea]}
+                      value={notes}
+                      onChangeText={setNotes}
+                      placeholder="أدخل الملاحظات..."
+                      multiline
+                      numberOfLines={4}
+                      textAlignVertical="top"
                     />
                   </View>
 
@@ -370,22 +357,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#111827',
   },
-  headerButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    alignItems: 'center',
-  },
-  treasuryButton: {
-    backgroundColor: '#059669',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  treasuryButtonText: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
   logoutButton: {
     padding: 8,
   },
@@ -435,26 +406,20 @@ const styles = StyleSheet.create({
     color: '#374151',
     textAlign: 'center',
   },
+  codeCell: {
+    width: 120,
+  },
   nameCell: {
     width: 150,
   },
-  idCell: {
-    width: 120,
-  },
-  serviceCell: {
-    width: 100,
-  },
-  amountCell: {
-    width: 120,
-  },
-  currencyCell: {
-    width: 100,
-  },
-  customerCell: {
+  balanceCell: {
     width: 120,
   },
   dateCell: {
-    width: 150,
+    width: 180,
+  },
+  notesCell: {
+    width: 200,
   },
   emptyContainer: {
     padding: 40,
@@ -516,6 +481,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#F9FAFB',
     textAlign: 'right',
+  },
+  textArea: {
+    minHeight: 100,
   },
   modalButtons: {
     flexDirection: 'row',
