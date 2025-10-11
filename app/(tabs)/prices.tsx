@@ -1198,8 +1198,8 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 20,
+    paddingTop: 12,
+    paddingBottom: 12,
     borderBottomWidth: 2,
     borderBottomColor: '#059669',
     shadowColor: '#000',
@@ -1215,7 +1215,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 8,
   },
   settingsButton: {
     width: 40,
@@ -1254,21 +1254,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   companyName: {
-    fontSize: 28,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#059669',
-    marginBottom: 8,
+    marginBottom: 4,
     textAlign: 'center',
     letterSpacing: 0.5,
   },
   companyAddress: {
-    fontSize: 16,
+    fontSize: 12,
     color: '#6B7280',
-    marginBottom: 5,
+    marginBottom: 2,
     textAlign: 'center',
   },
   companyPhone: {
-    fontSize: 16,
+    fontSize: 11,
     color: '#059669',
     fontWeight: '600',
     textAlign: 'center',
@@ -1295,7 +1295,7 @@ const styles = StyleSheet.create({
   },
   // Advertisement Carousel Styles
   advertisementContainer: {
-    marginVertical: 15,
+    marginVertical: 8,
     paddingHorizontal: 20,
     alignItems: 'center',
   },
@@ -1318,22 +1318,22 @@ const styles = StyleSheet.create({
   },
   adImage: {
     width: '100%',
-    height: 140,
+    height: 100,
   },
   adContent: {
-    padding: 15,
+    padding: 10,
   },
   adTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#1F2937',
-    marginBottom: 5,
+    marginBottom: 3,
     textAlign: 'center',
   },
   adDescription: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6B7280',
-    lineHeight: 18,
+    lineHeight: 16,
     textAlign: 'center',
   },
   adIndicators: {
