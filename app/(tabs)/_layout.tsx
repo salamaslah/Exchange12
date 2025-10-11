@@ -75,6 +75,12 @@ export default function TabLayout() {
           href: null, // إخفاء من التبويب
         }}
       />
+      <Tabs.Screen
+        name="transactions-management"
+        options={{
+          href: null, // إخفاء من التبويب
+        }}
+      />
     </Tabs>
   );
 }

@@ -38,6 +38,10 @@ export default function AccountingScreen() {
     router.push('/(tabs)/ads-management');
   };
 
+  const navigateToTransactionsManagement = () => {
+    router.push('/(tabs)/transactions-management');
+  };
+
   return (
     <SafeAreaView style={styles.container}>
     <ScrollView 
@@ -83,7 +87,7 @@ export default function AccountingScreen() {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.settingButton}
             onPress={() => router.push('/(tabs)/company-settings')}
           >
@@ -92,6 +96,20 @@ export default function AccountingScreen() {
               <View style={styles.buttonTextContainer}>
                 <Text style={styles.buttonTitle}>إعدادات الشركة</Text>
                 <Text style={styles.buttonDescription}>تحديد معلومات الشركة وساعات العمل</Text>
+              </View>
+              <Text style={styles.buttonArrow}>←</Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.settingButton}
+            onPress={navigateToTransactionsManagement}
+          >
+            <View style={styles.buttonContent}>
+              <Text style={styles.buttonIcon}>💳</Text>
+              <View style={styles.buttonTextContainer}>
+                <Text style={styles.buttonTitle}>إدارة المعاملات</Text>
+                <Text style={styles.buttonDescription}>عرض وتعديل جميع المعاملات</Text>
               </View>
               <Text style={styles.buttonArrow}>←</Text>
             </View>
