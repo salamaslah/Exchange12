@@ -16,6 +16,7 @@ interface Currency {
   buy_rate: number;
   sell_rate: number;
   is_active: boolean;
+  sort_num?: number;
 }
 
 interface CompanyInfo {
@@ -132,7 +133,12 @@ export default function PricesScreen() {
         currency.id === updatedCurrency.id
           ? { ...currency, ...updatedCurrency }
           : currency
-      )
+      ).sort((a, b) => {
+        // ترتيب حسب sort_num تصاعدياً
+        const sortA = a.sort_num ?? 999;
+        const sortB = b.sort_num ?? 999;
+        return sortA - sortB;
+      })
     );
     console.log('💡 تم تحديث العملة في الجدول تلقائياً');
   };
@@ -240,14 +246,12 @@ export default function PricesScreen() {
       
       // تحميل جميع العملات من قاعدة البيانات (المتوفرة وغير المتوفرة)
       const currenciesData = await currencyService.getAll();
-      
-      // ترتيب العملات: المتوفرة أولاً ثم غير المتوفرة
+
+      // ترتيب العملات حسب sort_num تصاعدياً
       const sortedCurrencies = currenciesData.sort((a, b) => {
-        // المتوفرة (is_active = true) أولاً
-        if (a.is_active && !b.is_active) return -1;
-        if (!a.is_active && b.is_active) return 1;
-        // ثم ترتيب أبجدي حسب الكود
-        return a.code.localeCompare(b.code);
+        const sortA = a.sort_num ?? 999;
+        const sortB = b.sort_num ?? 999;
+        return sortA - sortB;
       });
       
       setAllCurrencies(sortedCurrencies);
