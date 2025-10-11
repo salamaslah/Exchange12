@@ -168,26 +168,7 @@ export default function TransactionsManagement() {
 
       if (transactionError) throw transactionError;
 
-      // تحديث الخزينة: إضافة المبلغ المستلم
-      const { data: receivedCurrency, error: receivedFetchError } = await supabase
-        .from('treasury_balances')
-        .select('balance_amount')
-        .eq('currency_code', currencyReceived)
-        .maybeSingle();
-
-      if (receivedFetchError) throw receivedFetchError;
-
-      if (receivedCurrency) {
-        const newReceivedBalance = parseFloat(receivedCurrency.balance_amount) + receivedAmount;
-        const { error: receivedUpdateError } = await supabase
-          .from('treasury_balances')
-          .update({ balance_amount: newReceivedBalance })
-          .eq('currency_code', currencyReceived);
-
-        if (receivedUpdateError) throw receivedUpdateError;
-      }
-
-      // تحديث الخزينة: طرح المبلغ المدفوع
+      // تحديث الخزينة: إضافة المبلغ المدفوع
       const { data: paidCurrency, error: paidFetchError } = await supabase
         .from('treasury_balances')
         .select('balance_amount')
@@ -197,13 +178,32 @@ export default function TransactionsManagement() {
       if (paidFetchError) throw paidFetchError;
 
       if (paidCurrency) {
-        const newPaidBalance = parseFloat(paidCurrency.balance_amount) - paidAmount;
+        const newPaidBalance = parseFloat(paidCurrency.balance_amount) + paidAmount;
         const { error: paidUpdateError } = await supabase
           .from('treasury_balances')
           .update({ balance_amount: newPaidBalance })
           .eq('currency_code', currencyPaid);
 
         if (paidUpdateError) throw paidUpdateError;
+      }
+
+      // تحديث الخزينة: طرح المبلغ المستلم
+      const { data: receivedCurrency, error: receivedFetchError } = await supabase
+        .from('treasury_balances')
+        .select('balance_amount')
+        .eq('currency_code', currencyReceived)
+        .maybeSingle();
+
+      if (receivedFetchError) throw receivedFetchError;
+
+      if (receivedCurrency) {
+        const newReceivedBalance = parseFloat(receivedCurrency.balance_amount) - receivedAmount;
+        const { error: receivedUpdateError } = await supabase
+          .from('treasury_balances')
+          .update({ balance_amount: newReceivedBalance })
+          .eq('currency_code', currencyReceived);
+
+        if (receivedUpdateError) throw receivedUpdateError;
       }
 
       Alert.alert('نجح', 'تم تحديث المعاملة والخزينة بنجاح');
