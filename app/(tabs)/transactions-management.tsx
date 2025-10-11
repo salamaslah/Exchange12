@@ -29,6 +29,11 @@ interface Transaction {
   customer_name?: string;
 }
 
+interface Currency {
+  code: string;
+  name_ar: string;
+}
+
 export default function TransactionsManagement() {
   const { width } = useWindowDimensions();
   const isLargeScreen = width >= 768;
@@ -38,6 +43,7 @@ export default function TransactionsManagement() {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
 
   // حقول التعديل
   const [amountPaid, setAmountPaid] = useState('');
@@ -47,6 +53,7 @@ export default function TransactionsManagement() {
 
   useEffect(() => {
     checkAuth();
+    fetchCurrencies();
   }, []);
 
   const checkAuth = async () => {
@@ -60,6 +67,20 @@ export default function TransactionsManagement() {
     } catch (error) {
       console.error('Error checking auth:', error);
       router.replace('/login');
+    }
+  };
+
+  const fetchCurrencies = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('currencies')
+        .select('code, name_ar')
+        .order('code');
+
+      if (error) throw error;
+      setCurrencies(data || []);
+    } catch (error) {
+      console.error('Error fetching currencies:', error);
     }
   };
 
@@ -262,13 +283,33 @@ export default function TransactionsManagement() {
 
                   <View style={styles.formGroup}>
                     <Text style={styles.label}>العملة المدفوعة</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={currencyPaid}
-                      onChangeText={setCurrencyPaid}
-                      placeholder="ILS"
-                      autoCapitalize="characters"
-                    />
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.currencyScroll}>
+                      <View style={styles.currencyButtons}>
+                        {currencies.map((currency) => (
+                          <TouchableOpacity
+                            key={currency.code}
+                            style={[
+                              styles.currencyButton,
+                              currencyPaid === currency.code && styles.currencyButtonActive
+                            ]}
+                            onPress={() => setCurrencyPaid(currency.code)}
+                          >
+                            <Text style={[
+                              styles.currencyButtonText,
+                              currencyPaid === currency.code && styles.currencyButtonTextActive
+                            ]}>
+                              {currency.code}
+                            </Text>
+                            <Text style={[
+                              styles.currencyButtonSubtext,
+                              currencyPaid === currency.code && styles.currencyButtonSubtextActive
+                            ]}>
+                              {currency.name_ar}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </ScrollView>
                   </View>
 
                   <View style={styles.formGroup}>
@@ -284,13 +325,33 @@ export default function TransactionsManagement() {
 
                   <View style={styles.formGroup}>
                     <Text style={styles.label}>العملة المستلمة</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={currencyReceived}
-                      onChangeText={setCurrencyReceived}
-                      placeholder="ILS"
-                      autoCapitalize="characters"
-                    />
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.currencyScroll}>
+                      <View style={styles.currencyButtons}>
+                        {currencies.map((currency) => (
+                          <TouchableOpacity
+                            key={currency.code}
+                            style={[
+                              styles.currencyButton,
+                              currencyReceived === currency.code && styles.currencyButtonActive
+                            ]}
+                            onPress={() => setCurrencyReceived(currency.code)}
+                          >
+                            <Text style={[
+                              styles.currencyButtonText,
+                              currencyReceived === currency.code && styles.currencyButtonTextActive
+                            ]}>
+                              {currency.code}
+                            </Text>
+                            <Text style={[
+                              styles.currencyButtonSubtext,
+                              currencyReceived === currency.code && styles.currencyButtonSubtextActive
+                            ]}>
+                              {currency.name_ar}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </ScrollView>
                   </View>
 
                   <View style={styles.modalButtons}>
@@ -309,7 +370,7 @@ export default function TransactionsManagement() {
                       {saving ? (
                         <ActivityIndicator color="#FFF" size="small" />
                       ) : (
-                        <Text style={styles.saveButtonText}>حفظ</Text>
+                        <Text style={styles.saveButtonText}>✅ تمت المعاملة</Text>
                       )}
                     </TouchableOpacity>
                   </View>
@@ -522,5 +583,43 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  currencyScroll: {
+    maxHeight: 120,
+  },
+  currencyButtons: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingVertical: 4,
+  },
+  currencyButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
+    backgroundColor: '#F9FAFB',
+    alignItems: 'center',
+    minWidth: 100,
+  },
+  currencyButtonActive: {
+    borderColor: '#059669',
+    backgroundColor: '#ECFDF5',
+  },
+  currencyButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#374151',
+    marginBottom: 2,
+  },
+  currencyButtonTextActive: {
+    color: '#059669',
+  },
+  currencyButtonSubtext: {
+    fontSize: 11,
+    color: '#6B7280',
+  },
+  currencyButtonSubtextActive: {
+    color: '#047857',
   },
 });
