@@ -27,6 +27,7 @@ interface Transaction {
   created_at: string;
   updated_at: string;
   customer_name?: string;
+  service_name?: string;
 }
 
 interface Currency {
@@ -112,14 +113,28 @@ export default function TransactionsManagement() {
 
       if (customersError) throw customersError;
 
+      // جلب أسماء الخدمات
+      const serviceNumbers = transactionsData?.map(t => t.service_number).filter(Boolean) || [];
+      const { data: servicesData, error: servicesError } = await supabase
+        .from('services')
+        .select('service_number, service_name')
+        .in('service_number', serviceNumbers);
+
+      if (servicesError) throw servicesError;
+
       // دمج البيانات
       const customersMap = new Map(
         customersData?.map(c => [c.national_id, c.customer_name]) || []
       );
 
+      const servicesMap = new Map(
+        servicesData?.map(s => [s.service_number, s.service_name]) || []
+      );
+
       const enrichedTransactions = transactionsData?.map(transaction => ({
         ...transaction,
-        customer_name: customersMap.get(transaction.customer_id) || 'غير متوفر'
+        customer_name: customersMap.get(transaction.customer_id) || 'غير متوفر',
+        service_name: servicesMap.get(transaction.service_number) || 'غير متوفر'
       })) || [];
 
       setTransactions(enrichedTransactions);
@@ -263,7 +278,7 @@ export default function TransactionsManagement() {
           {/* Table Header */}
           <View style={styles.tableHeader}>
             <Text style={[styles.headerCell, styles.nameCell]}>اسم الزبون</Text>
-            <Text style={[styles.headerCell, styles.serviceCell]}>رقم الخدمة</Text>
+            <Text style={[styles.headerCell, styles.serviceCell]}>اسم الخدمة</Text>
             <Text style={[styles.headerCell, styles.amountCell]}>المبلغ المدفوع</Text>
             <Text style={[styles.headerCell, styles.currencyCell]}>العملة المدفوعة</Text>
             <Text style={[styles.headerCell, styles.amountCell]}>المبلغ المستلم</Text>
@@ -282,7 +297,7 @@ export default function TransactionsManagement() {
               <Text style={[styles.cell, styles.nameCell]} numberOfLines={1}>
                 {transaction.customer_name || 'غير متوفر'}
               </Text>
-              <Text style={[styles.cell, styles.serviceCell]}>{transaction.service_number}</Text>
+              <Text style={[styles.cell, styles.serviceCell]}>{transaction.service_name || 'غير متوفر'}</Text>
               <Text style={[styles.cell, styles.amountCell]}>{transaction.amount_paid.toFixed(2)}</Text>
               <Text style={[styles.cell, styles.currencyCell]}>{transaction.currency_paid}</Text>
               <Text style={[styles.cell, styles.amountCell]}>{transaction.amount_received.toFixed(2)}</Text>
