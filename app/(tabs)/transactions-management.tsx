@@ -94,10 +94,11 @@ export default function TransactionsManagement() {
     try {
       setLoading(true);
 
-      // جلب المعاملات
+      // جلب المعاملات غير المكتملة فقط
       const { data: transactionsData, error: transactionsError } = await supabase
         .from('transactions')
         .select('*')
+        .eq('is_completed', false)
         .order('created_at', { ascending: false });
 
       if (transactionsError) throw transactionsError;
@@ -247,7 +248,7 @@ export default function TransactionsManagement() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.push('/(tabs)/prices')}>
           <Text style={styles.backButtonText}>← رجوع</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>إدارة المعاملات</Text>
