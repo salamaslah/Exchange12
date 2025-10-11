@@ -820,14 +820,16 @@ export default function PricesScreen() {
             {/* Exchange Rates Table */}
             <View style={styles.tableContainer}>
               <View style={styles.tableHeader}>
-                <Text style={styles.tableTitle}>
-                  {language === 'ar' && 'أسعار الصرف اليوم'}
-                  {language === 'he' && 'שערי החליפין היום'}
-                  {language === 'en' && "Today's Exchange Rates"}
-                </Text>
-                <TouchableOpacity style={styles.calculatorButton} onPress={() => openCalculator()}>
-                  <Text style={styles.calculatorButtonText}>🧮</Text>
-                </TouchableOpacity>
+                <View style={styles.tableHeaderContent}>
+                  <Text style={styles.tableTitle}>
+                    {language === 'ar' && 'أسعار الصرف اليوم'}
+                    {language === 'he' && 'שערי החליפין היום'}
+                    {language === 'en' && "Today's Exchange Rates"}
+                  </Text>
+                  <TouchableOpacity style={styles.calculatorButton} onPress={() => openCalculator()}>
+                    <Text style={styles.calculatorButtonText}>🧮</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
 
               {/* Instruction Message */}
@@ -1477,14 +1479,17 @@ const styles = StyleSheet.create({
     borderColor: '#D1FAE5',
   },
   tableHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     backgroundColor: '#059669',
     paddingHorizontal: 20,
     paddingVertical: 18,
     borderTopLeftRadius: 15,
     borderTopRightRadius: 15,
+  },
+  tableHeaderContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
   },
   tableTitle: {
     fontSize: 20,
