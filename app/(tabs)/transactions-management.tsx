@@ -40,6 +40,7 @@ export default function TransactionsManagement() {
   const isLargeScreen = width >= 768;
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [completedTransactions, setCompletedTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -95,17 +96,27 @@ export default function TransactionsManagement() {
     try {
       setLoading(true);
 
-      // جلب المعاملات غير المكتملة فقط
-      const { data: transactionsData, error: transactionsError } = await supabase
+      // جلب المعاملات غير المكتملة
+      const { data: incompleteData, error: incompleteError } = await supabase
         .from('transactions')
         .select('*')
         .eq('is_completed', false)
         .order('created_at', { ascending: false });
 
-      if (transactionsError) throw transactionsError;
+      if (incompleteError) throw incompleteError;
+
+      // جلب المعاملات المكتملة
+      const { data: completedData, error: completedError } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('is_completed', true)
+        .order('created_at', { ascending: false });
+
+      if (completedError) throw completedError;
 
       // جلب أسماء العملاء
-      const customerIds = transactionsData?.map(t => t.customer_id).filter(Boolean) || [];
+      const allTransactions = [...(incompleteData || []), ...(completedData || [])];
+      const customerIds = allTransactions.map(t => t.customer_id).filter(Boolean) || [];
       const { data: customersData, error: customersError } = await supabase
         .from('customers')
         .select('national_id, customer_name')
@@ -114,7 +125,7 @@ export default function TransactionsManagement() {
       if (customersError) throw customersError;
 
       // جلب أسماء الخدمات
-      const serviceNumbers = transactionsData?.map(t => t.service_number).filter(Boolean) || [];
+      const serviceNumbers = allTransactions.map(t => t.service_number).filter(Boolean) || [];
       const { data: servicesData, error: servicesError } = await supabase
         .from('services')
         .select('service_number, service_name')
@@ -131,13 +142,20 @@ export default function TransactionsManagement() {
         servicesData?.map(s => [s.service_number, s.service_name]) || []
       );
 
-      const enrichedTransactions = transactionsData?.map(transaction => ({
+      const enrichIncomplete = incompleteData?.map(transaction => ({
         ...transaction,
         customer_name: customersMap.get(transaction.customer_id) || 'غير متوفر',
         service_name: servicesMap.get(transaction.service_number) || 'غير متوفر'
       })) || [];
 
-      setTransactions(enrichedTransactions);
+      const enrichCompleted = completedData?.map(transaction => ({
+        ...transaction,
+        customer_name: customersMap.get(transaction.customer_id) || 'غير متوفر',
+        service_name: servicesMap.get(transaction.service_number) || 'غير متوفر'
+      })) || [];
+
+      setTransactions(enrichIncomplete);
+      setCompletedTransactions(enrichCompleted);
     } catch (error) {
       console.error('Error fetching transactions:', error);
       Alert.alert('خطأ', 'فشل في تحميل المعاملات');
@@ -272,46 +290,97 @@ export default function TransactionsManagement() {
         </TouchableOpacity>
       </View>
 
-      {/* Table */}
-      <ScrollView style={styles.scrollView} horizontal={!isLargeScreen}>
-        <View style={styles.tableContainer}>
-          {/* Table Header */}
-          <View style={styles.tableHeader}>
-            <Text style={[styles.headerCell, styles.nameCell]}>اسم الزبون</Text>
-            <Text style={[styles.headerCell, styles.serviceCell]}>اسم الخدمة</Text>
-            <Text style={[styles.headerCell, styles.amountCell]}>المبلغ المدفوع</Text>
-            <Text style={[styles.headerCell, styles.currencyCell]}>العملة المدفوعة</Text>
-            <Text style={[styles.headerCell, styles.amountCell]}>المبلغ المستلم</Text>
-            <Text style={[styles.headerCell, styles.currencyCell]}>العملة المستلمة</Text>
-            <Text style={[styles.headerCell, styles.customerCell]}>رقم الهوية</Text>
-            <Text style={[styles.headerCell, styles.dateCell]}>التاريخ</Text>
-          </View>
+      {/* Main ScrollView */}
+      <ScrollView style={styles.mainScrollView}>
+        {/* المعاملات غير المكتملة */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>المعاملات غير المكتملة</Text>
+          <ScrollView horizontal={!isLargeScreen} style={styles.tableScrollView}>
+            <View style={styles.tableContainer}>
+              {/* Table Header */}
+              <View style={styles.tableHeader}>
+                <Text style={[styles.headerCell, styles.nameCell]}>اسم الزبون</Text>
+                <Text style={[styles.headerCell, styles.serviceCell]}>اسم الخدمة</Text>
+                <Text style={[styles.headerCell, styles.amountCell]}>المبلغ المدفوع</Text>
+                <Text style={[styles.headerCell, styles.currencyCell]}>العملة المدفوعة</Text>
+                <Text style={[styles.headerCell, styles.amountCell]}>المبلغ المستلم</Text>
+                <Text style={[styles.headerCell, styles.currencyCell]}>العملة المستلمة</Text>
+                <Text style={[styles.headerCell, styles.customerCell]}>رقم الهوية</Text>
+                <Text style={[styles.headerCell, styles.dateCell]}>التاريخ</Text>
+              </View>
 
-          {/* Table Rows */}
-          {transactions.map((transaction, index) => (
-            <TouchableOpacity
-              key={transaction.id}
-              style={[styles.tableRow, index % 2 === 0 ? styles.evenRow : styles.oddRow]}
-              onPress={() => openEditModal(transaction)}
-            >
-              <Text style={[styles.cell, styles.nameCell]} numberOfLines={1}>
-                {transaction.customer_name || 'غير متوفر'}
-              </Text>
-              <Text style={[styles.cell, styles.serviceCell]}>{transaction.service_name || 'غير متوفر'}</Text>
-              <Text style={[styles.cell, styles.amountCell]}>{transaction.amount_paid.toFixed(2)}</Text>
-              <Text style={[styles.cell, styles.currencyCell]}>{transaction.currency_paid}</Text>
-              <Text style={[styles.cell, styles.amountCell]}>{transaction.amount_received.toFixed(2)}</Text>
-              <Text style={[styles.cell, styles.currencyCell]}>{transaction.currency_received}</Text>
-              <Text style={[styles.cell, styles.customerCell]}>{transaction.customer_id || 'غير متوفر'}</Text>
-              <Text style={[styles.cell, styles.dateCell]}>{formatDate(transaction.created_at)}</Text>
-            </TouchableOpacity>
-          ))}
+              {/* Table Rows */}
+              {transactions.map((transaction, index) => (
+                <TouchableOpacity
+                  key={transaction.id}
+                  style={[styles.tableRow, index % 2 === 0 ? styles.evenRow : styles.oddRow]}
+                  onPress={() => openEditModal(transaction)}
+                >
+                  <Text style={[styles.cell, styles.nameCell]} numberOfLines={1}>
+                    {transaction.customer_name || 'غير متوفر'}
+                  </Text>
+                  <Text style={[styles.cell, styles.serviceCell]}>{transaction.service_name || 'غير متوفر'}</Text>
+                  <Text style={[styles.cell, styles.amountCell]}>{transaction.amount_paid.toFixed(2)}</Text>
+                  <Text style={[styles.cell, styles.currencyCell]}>{transaction.currency_paid}</Text>
+                  <Text style={[styles.cell, styles.amountCell]}>{transaction.amount_received.toFixed(2)}</Text>
+                  <Text style={[styles.cell, styles.currencyCell]}>{transaction.currency_received}</Text>
+                  <Text style={[styles.cell, styles.customerCell]}>{transaction.customer_id || 'غير متوفر'}</Text>
+                  <Text style={[styles.cell, styles.dateCell]}>{formatDate(transaction.created_at)}</Text>
+                </TouchableOpacity>
+              ))}
 
-          {transactions.length === 0 && (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>لا توجد معاملات</Text>
+              {transactions.length === 0 && (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>لا توجد معاملات غير مكتملة</Text>
+                </View>
+              )}
             </View>
-          )}
+          </ScrollView>
+        </View>
+
+        {/* المعاملات المكتملة */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>المعاملات المكتملة</Text>
+          <ScrollView horizontal={!isLargeScreen} style={styles.tableScrollView}>
+            <View style={styles.tableContainer}>
+              {/* Table Header */}
+              <View style={styles.tableHeader}>
+                <Text style={[styles.headerCell, styles.nameCell]}>اسم الزبون</Text>
+                <Text style={[styles.headerCell, styles.serviceCell]}>اسم الخدمة</Text>
+                <Text style={[styles.headerCell, styles.amountCell]}>المبلغ المدفوع</Text>
+                <Text style={[styles.headerCell, styles.currencyCell]}>العملة المدفوعة</Text>
+                <Text style={[styles.headerCell, styles.amountCell]}>المبلغ المستلم</Text>
+                <Text style={[styles.headerCell, styles.currencyCell]}>العملة المستلمة</Text>
+                <Text style={[styles.headerCell, styles.customerCell]}>رقم الهوية</Text>
+                <Text style={[styles.headerCell, styles.dateCell]}>التاريخ</Text>
+              </View>
+
+              {/* Table Rows */}
+              {completedTransactions.map((transaction, index) => (
+                <View
+                  key={transaction.id}
+                  style={[styles.tableRow, index % 2 === 0 ? styles.evenRow : styles.oddRow]}
+                >
+                  <Text style={[styles.cell, styles.nameCell]} numberOfLines={1}>
+                    {transaction.customer_name || 'غير متوفر'}
+                  </Text>
+                  <Text style={[styles.cell, styles.serviceCell]}>{transaction.service_name || 'غير متوفر'}</Text>
+                  <Text style={[styles.cell, styles.amountCell]}>{transaction.amount_paid.toFixed(2)}</Text>
+                  <Text style={[styles.cell, styles.currencyCell]}>{transaction.currency_paid}</Text>
+                  <Text style={[styles.cell, styles.amountCell]}>{transaction.amount_received.toFixed(2)}</Text>
+                  <Text style={[styles.cell, styles.currencyCell]}>{transaction.currency_received}</Text>
+                  <Text style={[styles.cell, styles.customerCell]}>{transaction.customer_id || 'غير متوفر'}</Text>
+                  <Text style={[styles.cell, styles.dateCell]}>{formatDate(transaction.created_at)}</Text>
+                </View>
+              ))}
+
+              {completedTransactions.length === 0 && (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>لا توجد معاملات مكتملة</Text>
+                </View>
+              )}
+            </View>
+          </ScrollView>
         </View>
       </ScrollView>
 
@@ -497,11 +566,25 @@ const styles = StyleSheet.create({
     color: '#DC2626',
     fontWeight: '600',
   },
-  scrollView: {
+  mainScrollView: {
     flex: 1,
   },
+  section: {
+    marginTop: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginHorizontal: 20,
+    marginBottom: 12,
+  },
+  tableScrollView: {
+    flexGrow: 0,
+  },
   tableContainer: {
-    margin: 20,
+    marginHorizontal: 20,
+    marginBottom: 20,
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     overflow: 'hidden',
