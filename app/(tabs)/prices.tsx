@@ -675,11 +675,11 @@ export default function PricesScreen() {
 
   // أحجام خطوط ديناميكية حسب حجم الشاشة
   const fontSize = {
-    headerText: isLargeScreen ? 18 : 13,
-    currencyCode: isLargeScreen ? 24 : 17,
-    currencyName: isLargeScreen ? 16 : 12,
-    rateValue: isLargeScreen ? 22 : 15,
-    tooltipText: isLargeScreen ? 11 : 8,
+    headerText: isLargeScreen ? 22 : 13,
+    currencyCode: isLargeScreen ? 28 : 17,
+    currencyName: isLargeScreen ? 18 : 12,
+    rateValue: isLargeScreen ? 26 : 15,
+    tooltipText: isLargeScreen ? 13 : 8,
   };
 
   // الحصول على الإعلان الحالي
@@ -920,7 +920,7 @@ export default function PricesScreen() {
                         style={[
                           styles.availabilityIcon,
                           currency.is_active ? styles.availableIcon : styles.unavailableIcon,
-                          { fontSize: isLargeScreen ? 22 : 16 }
+                          { fontSize: isLargeScreen ? 26 : 16 }
                         ]}
                         onPress={(e) => {
                           e.stopPropagation();
