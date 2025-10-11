@@ -26,6 +26,7 @@ interface Transaction {
   notes: string;
   created_at: string;
   updated_at: string;
+  customer_name?: string;
 }
 
 export default function TransactionsManagement() {
@@ -65,13 +66,35 @@ export default function TransactionsManagement() {
   const fetchTransactions = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+
+      // جلب المعاملات
+      const { data: transactionsData, error: transactionsError } = await supabase
         .from('transactions')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setTransactions(data || []);
+      if (transactionsError) throw transactionsError;
+
+      // جلب أسماء العملاء
+      const customerIds = transactionsData?.map(t => t.customer_id).filter(Boolean) || [];
+      const { data: customersData, error: customersError } = await supabase
+        .from('customers')
+        .select('national_id, customer_name')
+        .in('national_id', customerIds);
+
+      if (customersError) throw customersError;
+
+      // دمج البيانات
+      const customersMap = new Map(
+        customersData?.map(c => [c.national_id, c.customer_name]) || []
+      );
+
+      const enrichedTransactions = transactionsData?.map(transaction => ({
+        ...transaction,
+        customer_name: customersMap.get(transaction.customer_id) || 'غير متوفر'
+      })) || [];
+
+      setTransactions(enrichedTransactions);
     } catch (error) {
       console.error('Error fetching transactions:', error);
       Alert.alert('خطأ', 'فشل في تحميل المعاملات');
@@ -167,7 +190,7 @@ export default function TransactionsManagement() {
         <View style={styles.tableContainer}>
           {/* Table Header */}
           <View style={styles.tableHeader}>
-            <Text style={[styles.headerCell, styles.idCell]}>رقم المعاملة</Text>
+            <Text style={[styles.headerCell, styles.nameCell]}>اسم الزبون</Text>
             <Text style={[styles.headerCell, styles.serviceCell]}>رقم الخدمة</Text>
             <Text style={[styles.headerCell, styles.amountCell]}>المبلغ المدفوع</Text>
             <Text style={[styles.headerCell, styles.currencyCell]}>العملة المدفوعة</Text>
@@ -184,8 +207,8 @@ export default function TransactionsManagement() {
               style={[styles.tableRow, index % 2 === 0 ? styles.evenRow : styles.oddRow]}
               onPress={() => openEditModal(transaction)}
             >
-              <Text style={[styles.cell, styles.idCell]} numberOfLines={1}>
-                {transaction.id.substring(0, 8)}...
+              <Text style={[styles.cell, styles.nameCell]} numberOfLines={1}>
+                {transaction.customer_name || 'غير متوفر'}
               </Text>
               <Text style={[styles.cell, styles.serviceCell]}>{transaction.service_number}</Text>
               <Text style={[styles.cell, styles.amountCell]}>{transaction.amount_paid.toFixed(2)}</Text>
@@ -218,7 +241,8 @@ export default function TransactionsManagement() {
 
             {selectedTransaction && (
               <View style={styles.modalBody}>
-                <Text style={styles.infoText}>رقم المعاملة: {selectedTransaction.id.substring(0, 8)}...</Text>
+                <Text style={styles.infoText}>اسم الزبون: {selectedTransaction.customer_name || 'غير متوفر'}</Text>
+                <Text style={styles.infoText}>رقم الهوية: {selectedTransaction.customer_id || 'غير متوفر'}</Text>
                 <Text style={styles.infoText}>رقم الخدمة: {selectedTransaction.service_number}</Text>
 
                 <View style={styles.formGroup}>
@@ -381,6 +405,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#374151',
     textAlign: 'center',
+  },
+  nameCell: {
+    width: 150,
   },
   idCell: {
     width: 120,
