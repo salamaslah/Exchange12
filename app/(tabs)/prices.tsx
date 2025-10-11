@@ -826,13 +826,20 @@ export default function PricesScreen() {
                     {language === 'he' && 'שערי החליפין היום'}
                     {language === 'en' && "Today's Exchange Rates"}
                   </Text>
+                  {!isLargeScreen && (
+                    <TouchableOpacity style={styles.calculatorButton} onPress={() => openCalculator()}>
+                      <Text style={styles.calculatorButtonText}>🧮</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
-                <TouchableOpacity
-                  style={[styles.calculatorButton, isLargeScreen && styles.calculatorButtonLarge]}
-                  onPress={() => openCalculator()}
-                >
-                  <Text style={styles.calculatorButtonText}>🧮</Text>
-                </TouchableOpacity>
+                {isLargeScreen && (
+                  <TouchableOpacity
+                    style={styles.calculatorButtonLarge}
+                    onPress={() => openCalculator()}
+                  >
+                    <Text style={styles.calculatorButtonText}>🧮</Text>
+                  </TouchableOpacity>
+                )}
               </View>
 
               {/* Instruction Message */}
