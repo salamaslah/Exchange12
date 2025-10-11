@@ -944,12 +944,25 @@ export default function PricesScreen() {
                   {language === 'en' && 'Working Hours'}
                 </Text>
                 <View style={styles.workingHoursContent}>
-                  <Text style={styles.workingHoursText}>🕐 {workingHoursData.morning}</Text>
-                  <Text style={styles.workingHoursText}>🕐 {workingHoursData.evening}</Text>
+                  <Text style={styles.workingHoursText}>
+                    {language === 'ar' && '🌅 صباحاً: '}
+                    {language === 'he' && '🌅 בוקר: '}
+                    {language === 'en' && '🌅 Morning: '}
+                    {workingHoursData.morning}
+                  </Text>
+                  <Text style={styles.workingHoursText}>
+                    {language === 'ar' && '🌆 مساءً: '}
+                    {language === 'he' && '🌆 ערב: '}
+                    {language === 'en' && '🌆 Evening: '}
+                    {workingHoursData.evening}
+                  </Text>
+                  <Text style={styles.workingDaysText}>
+                    {language === 'ar' && '📅 أيام العمل: '}
+                    {language === 'he' && '📅 ימי עבודה: '}
+                    {language === 'en' && '📅 Working Days: '}
+                    {getWorkingDaysText()}
+                  </Text>
                 </View>
-                <Text style={styles.workingDaysText}>
-                  📅 {getWorkingDaysText()}
-                </Text>
               </View>
             )}
           </View>
@@ -963,12 +976,25 @@ export default function PricesScreen() {
                 {language === 'en' && 'Working Hours'}
               </Text>
               <View style={styles.workingHoursContent}>
-                <Text style={styles.workingHoursText}>🕐 {workingHoursData.morning}</Text>
-                <Text style={styles.workingHoursText}>🕐 {workingHoursData.evening}</Text>
+                <Text style={styles.workingHoursText}>
+                  {language === 'ar' && '🌅 صباحاً: '}
+                  {language === 'he' && '🌅 בוקר: '}
+                  {language === 'en' && '🌅 Morning: '}
+                  {workingHoursData.morning}
+                </Text>
+                <Text style={styles.workingHoursText}>
+                  {language === 'ar' && '🌆 مساءً: '}
+                  {language === 'he' && '🌆 ערב: '}
+                  {language === 'en' && '🌆 Evening: '}
+                  {workingHoursData.evening}
+                </Text>
+                <Text style={styles.workingDaysText}>
+                  {language === 'ar' && '📅 أيام العمل: '}
+                  {language === 'he' && '📅 ימי עבודה: '}
+                  {language === 'en' && '📅 Working Days: '}
+                  {getWorkingDaysText()}
+                </Text>
               </View>
-              <Text style={styles.workingDaysText}>
-                📅 {getWorkingDaysText()}
-              </Text>
             </View>
           )}
         </View>
@@ -1356,20 +1382,21 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   workingHoursContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
     width: '100%',
-    marginBottom: 10,
+    alignItems: 'center',
   },
   workingHoursText: {
     fontSize: 16,
     color: '#FFFFFF',
     fontWeight: '600',
+    marginBottom: 8,
+    textAlign: 'center',
   },
   workingDaysText: {
     fontSize: 14,
     color: '#D1D5DB',
     textAlign: 'center',
+    marginTop: 4,
   },
   tableContainer: {
     backgroundColor: '#FFFFFF',
