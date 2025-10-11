@@ -911,27 +911,27 @@ export default function PricesScreen() {
                     activeOpacity={0.7}
                   >
                     <View style={styles.currencyCell}>
-                      <Text style={[styles.currencyCode, !currency.is_active && styles.unavailableText, { fontSize: fontSize.currencyCode }]}>
+                      <Text style={[styles.currencyCode, !currency.is_active && styles.unavailableCurrencyCode, { fontSize: fontSize.currencyCode }]}>
                         {currency.code}
                       </Text>
-                      <Text style={[styles.currencyName, !currency.is_active && styles.unavailableText, { fontSize: fontSize.currencyName }]}>
+                      <Text style={[styles.currencyName, !currency.is_active && styles.unavailableCurrencyName, { fontSize: fontSize.currencyName }]}>
                         {language === 'ar' && currency.name_ar}
                         {language === 'he' && (currency.name_he || currency.name_ar)}
                         {language === 'en' && currency.name_en}
                       </Text>
                     </View>
                     <View style={styles.rateCell}>
-                      <Text style={[styles.currentRate, !currency.is_active && styles.unavailableText, { fontSize: fontSize.rateValue }]}>
+                      <Text style={[styles.currentRate, !currency.is_active && styles.unavailableCurrentRate, { fontSize: fontSize.rateValue }]}>
                         {currency.current_rate?.toFixed(2) || 'N/A'}
                       </Text>
                     </View>
                     <View style={styles.rateCell}>
-                      <Text style={[styles.buyRate, !currency.is_active && styles.unavailableText, { fontSize: fontSize.rateValue }]}>
+                      <Text style={[styles.buyRate, !currency.is_active && styles.unavailableBuyRate, { fontSize: fontSize.rateValue }]}>
                         {currency.buy_rate?.toFixed(2) || 'N/A'}
                       </Text>
                     </View>
                     <View style={styles.rateCell}>
-                      <Text style={[styles.sellRate, !currency.is_active && styles.unavailableText, { fontSize: fontSize.rateValue }]}>
+                      <Text style={[styles.sellRate, !currency.is_active && styles.unavailableSellRate, { fontSize: fontSize.rateValue }]}>
                         {currency.sell_rate?.toFixed(2) || 'N/A'}
                       </Text>
                     </View>
@@ -1609,6 +1609,26 @@ const styles = StyleSheet.create({
   },
   unavailableText: {
     color: '#6B7280',
+    opacity: 0.8,
+  },
+  unavailableCurrencyCode: {
+    color: '#059669',
+    opacity: 0.8,
+  },
+  unavailableCurrencyName: {
+    color: '#059669',
+    opacity: 0.8,
+  },
+  unavailableCurrentRate: {
+    color: '#0891B2',
+    opacity: 0.8,
+  },
+  unavailableBuyRate: {
+    color: '#DC2626',
+    opacity: 0.8,
+  },
+  unavailableSellRate: {
+    color: '#059669',
     opacity: 0.8,
   },
   rateCell: {
