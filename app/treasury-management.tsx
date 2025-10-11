@@ -186,6 +186,42 @@ export default function TreasuryManagement() {
     router.replace('/login');
   };
 
+  const handleCloseTreasury = async () => {
+    Alert.alert(
+      '⚠️ أقفال الخزينة',
+      'هل أنت متأكد من إتمام اليوم وإقفال مبلغ الخزينة؟\n\nسيتم حذف جميع المعاملات من النظام.',
+      [
+        {
+          text: 'إلغاء',
+          style: 'cancel'
+        },
+        {
+          text: 'نعم، أقفل الخزينة',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // حذف جميع المعاملات
+              const { error } = await supabase
+                .from('transactions')
+                .delete()
+                .neq('id', '00000000-0000-0000-0000-000000000000'); // حذف الكل
+
+              if (error) throw error;
+
+              Alert.alert(
+                '✅ تم الإقفال',
+                'تم إقفال الخزينة وحذف جميع المعاملات بنجاح'
+              );
+            } catch (error) {
+              console.error('❌ خطأ في إقفال الخزينة:', error);
+              Alert.alert('❌ خطأ', 'حدث خطأ في إقفال الخزينة');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -206,6 +242,10 @@ export default function TreasuryManagement() {
           <Text style={styles.logoutButtonText}>تسجيل الخروج</Text>
         </TouchableOpacity>
       </View>
+
+      <TouchableOpacity style={styles.closeTreasuryButton} onPress={handleCloseTreasury}>
+        <Text style={styles.closeTreasuryButtonText}>🔒 إقفال الخزينة</Text>
+      </TouchableOpacity>
 
       <ScrollView style={styles.scrollView} horizontal={!isLargeScreen}>
         <View style={styles.tableContainer}>
@@ -365,6 +405,28 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#DC2626',
     fontWeight: '600',
+  },
+  closeTreasuryButton: {
+    backgroundColor: '#DC2626',
+    marginHorizontal: 20,
+    marginVertical: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#DC2626',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  closeTreasuryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   scrollView: {
     flex: 1,
