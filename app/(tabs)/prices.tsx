@@ -945,22 +945,13 @@ export default function PricesScreen() {
                 </Text>
                 <View style={styles.workingHoursContent}>
                   <Text style={styles.workingHoursText}>
-                    {language === 'ar' && '🌅 صباحاً: '}
-                    {language === 'he' && '🌅 בוקר: '}
-                    {language === 'en' && '🌅 Morning: '}
-                    {workingHoursData.morning}
+                    🌅 {workingHoursData.morning}
                   </Text>
                   <Text style={styles.workingHoursText}>
-                    {language === 'ar' && '🌆 مساءً: '}
-                    {language === 'he' && '🌆 ערב: '}
-                    {language === 'en' && '🌆 Evening: '}
-                    {workingHoursData.evening}
+                    🌆 {workingHoursData.evening}
                   </Text>
                   <Text style={styles.workingDaysText}>
-                    {language === 'ar' && '📅 أيام العمل: '}
-                    {language === 'he' && '📅 ימי עבודה: '}
-                    {language === 'en' && '📅 Working Days: '}
-                    {getWorkingDaysText()}
+                    📅 {getWorkingDaysText()}
                   </Text>
                 </View>
               </View>
@@ -977,22 +968,13 @@ export default function PricesScreen() {
               </Text>
               <View style={styles.workingHoursContent}>
                 <Text style={styles.workingHoursText}>
-                  {language === 'ar' && '🌅 صباحاً: '}
-                  {language === 'he' && '🌅 בוקר: '}
-                  {language === 'en' && '🌅 Morning: '}
-                  {workingHoursData.morning}
+                  🌅 {workingHoursData.morning}
                 </Text>
                 <Text style={styles.workingHoursText}>
-                  {language === 'ar' && '🌆 مساءً: '}
-                  {language === 'he' && '🌆 ערב: '}
-                  {language === 'en' && '🌆 Evening: '}
-                  {workingHoursData.evening}
+                  🌆 {workingHoursData.evening}
                 </Text>
                 <Text style={styles.workingDaysText}>
-                  {language === 'ar' && '📅 أيام العمل: '}
-                  {language === 'he' && '📅 ימי עבודה: '}
-                  {language === 'en' && '📅 Working Days: '}
-                  {getWorkingDaysText()}
+                  📅 {getWorkingDaysText()}
                 </Text>
               </View>
             </View>
