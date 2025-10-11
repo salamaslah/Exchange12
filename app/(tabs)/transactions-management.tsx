@@ -157,6 +157,7 @@ export default function TransactionsManagement() {
           currency_paid: currencyPaid,
           amount_received: parseFloat(amountReceived),
           currency_received: currencyReceived,
+          is_completed: true,
         })
         .eq('id', selectedTransaction.id);
 
