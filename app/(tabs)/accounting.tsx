@@ -42,6 +42,10 @@ export default function AccountingScreen() {
     router.push('/(tabs)/transactions-management');
   };
 
+  const navigateToTreasuryManagement = () => {
+    router.push('/treasury-management');
+  };
+
   return (
     <SafeAreaView style={styles.container}>
     <ScrollView 
@@ -110,6 +114,20 @@ export default function AccountingScreen() {
               <View style={styles.buttonTextContainer}>
                 <Text style={styles.buttonTitle}>إدارة المعاملات</Text>
                 <Text style={styles.buttonDescription}>عرض وتعديل جميع المعاملات</Text>
+              </View>
+              <Text style={styles.buttonArrow}>←</Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.settingButton}
+            onPress={navigateToTreasuryManagement}
+          >
+            <View style={styles.buttonContent}>
+              <Text style={styles.buttonIcon}>💰</Text>
+              <View style={styles.buttonTextContainer}>
+                <Text style={styles.buttonTitle}>إدارة الخزينة</Text>
+                <Text style={styles.buttonDescription}>إدارة أرصدة العملات في الخزينة</Text>
               </View>
               <Text style={styles.buttonArrow}>←</Text>
             </View>

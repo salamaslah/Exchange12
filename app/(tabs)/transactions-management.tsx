@@ -180,17 +180,9 @@ export default function TransactionsManagement() {
           <Text style={styles.backButtonText}>← رجوع</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>إدارة المعاملات</Text>
-        <View style={styles.headerButtons}>
-          <TouchableOpacity
-            style={styles.treasuryButton}
-            onPress={() => router.push('/treasury-management')}
-          >
-            <Text style={styles.treasuryButtonText}>إدارة الخزينة</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={styles.logoutButtonText}>تسجيل الخروج</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Text style={styles.logoutButtonText}>تسجيل الخروج</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Table */}
@@ -369,22 +361,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#111827',
-  },
-  headerButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    alignItems: 'center',
-  },
-  treasuryButton: {
-    backgroundColor: '#059669',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  treasuryButtonText: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontWeight: '600',
   },
   logoutButton: {
     padding: 8,

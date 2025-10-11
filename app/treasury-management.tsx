@@ -24,6 +24,7 @@ interface TreasuryBalance {
   balance_amount: number;
   last_updated: string;
   notes: string;
+  sort_num?: number;
 }
 
 export default function TreasuryManagement() {
@@ -70,7 +71,7 @@ export default function TreasuryManagement() {
       const { data: balancesData, error: balancesError } = await supabase
         .from('treasury_balances')
         .select('*')
-        .order('currency_code', { ascending: true });
+        .order('sort_num', { ascending: true, nullsFirst: false });
 
       if (balancesError) throw balancesError;
 
@@ -116,7 +117,7 @@ export default function TreasuryManagement() {
       const { data: finalBalances, error: finalError } = await supabase
         .from('treasury_balances')
         .select('*')
-        .order('currency_code', { ascending: true });
+        .order('sort_num', { ascending: true, nullsFirst: false });
 
       if (finalError) throw finalError;
 
