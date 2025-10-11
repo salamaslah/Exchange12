@@ -673,6 +673,15 @@ export default function PricesScreen() {
   // تحديد ما إذا كانت الشاشة كبيرة أم صغيرة
   const isLargeScreen = screenData.width >= 768;
 
+  // أحجام خطوط ديناميكية حسب حجم الشاشة
+  const fontSize = {
+    headerText: isLargeScreen ? 18 : 13,
+    currencyCode: isLargeScreen ? 24 : 17,
+    currencyName: isLargeScreen ? 16 : 12,
+    rateValue: isLargeScreen ? 22 : 15,
+    tooltipText: isLargeScreen ? 11 : 8,
+  };
+
   // الحصول على الإعلان الحالي
   const currentAd = advertisements.length > 0 ? advertisements[currentAdIndex] : null;
 
@@ -825,35 +834,35 @@ export default function PricesScreen() {
               <View style={styles.table}>
                 <View style={styles.tableHeaderRow}>
                   <View style={styles.currencyHeaderCell}>
-                    <Text style={styles.headerText}>
+                    <Text style={[styles.headerText, { fontSize: fontSize.headerText }]}>
                       {language === 'ar' && 'العملة'}
                       {language === 'he' && 'מטבע'}
                       {language === 'en' && 'Currency'}
                     </Text>
                   </View>
                   <View style={styles.rateHeaderCell}>
-                    <Text style={styles.headerText}>
+                    <Text style={[styles.headerText, { fontSize: fontSize.headerText }]}>
                       {language === 'ar' && 'السعر الحالي'}
                       {language === 'he' && 'שער נוכחי'}
                       {language === 'en' && 'Current Rate'}
                     </Text>
                   </View>
                   <View style={styles.rateHeaderCell}>
-                    <Text style={styles.headerText}>
+                    <Text style={[styles.headerText, { fontSize: fontSize.headerText }]}>
                       {language === 'ar' && 'نشتري'}
                       {language === 'he' && 'קונים'}
                       {language === 'en' && 'We Buy'}
                     </Text>
                   </View>
                   <View style={styles.rateHeaderCell}>
-                    <Text style={styles.headerText}>
+                    <Text style={[styles.headerText, { fontSize: fontSize.headerText }]}>
                       {language === 'ar' && 'نبيع'}
                       {language === 'he' && 'מוכרים'}
                       {language === 'en' && 'We Sell'}
                     </Text>
                   </View>
                   <View style={styles.availabilityHeaderCell}>
-                    <Text style={styles.headerText}>
+                    <Text style={[styles.headerText, { fontSize: fontSize.headerText }]}>
                       {language === 'ar' && 'الحالة'}
                       {language === 'he' && 'מצב'}
                       {language === 'en' && 'Status'}
@@ -882,35 +891,36 @@ export default function PricesScreen() {
                     activeOpacity={0.7}
                   >
                     <View style={styles.currencyCell}>
-                      <Text style={[styles.currencyCode, !currency.is_active && styles.unavailableText]}>
+                      <Text style={[styles.currencyCode, !currency.is_active && styles.unavailableText, { fontSize: fontSize.currencyCode }]}>
                         {currency.code}
                       </Text>
-                      <Text style={[styles.currencyName, !currency.is_active && styles.unavailableText]}>
+                      <Text style={[styles.currencyName, !currency.is_active && styles.unavailableText, { fontSize: fontSize.currencyName }]}>
                         {language === 'ar' && currency.name_ar}
                         {language === 'he' && (currency.name_he || currency.name_ar)}
                         {language === 'en' && currency.name_en}
                       </Text>
                     </View>
                     <View style={styles.rateCell}>
-                      <Text style={[styles.currentRate, !currency.is_active && styles.unavailableText]}>
+                      <Text style={[styles.currentRate, !currency.is_active && styles.unavailableText, { fontSize: fontSize.rateValue }]}>
                         {currency.current_rate?.toFixed(2) || 'N/A'}
                       </Text>
                     </View>
                     <View style={styles.rateCell}>
-                      <Text style={[styles.buyRate, !currency.is_active && styles.unavailableText]}>
+                      <Text style={[styles.buyRate, !currency.is_active && styles.unavailableText, { fontSize: fontSize.rateValue }]}>
                         {currency.buy_rate?.toFixed(2) || 'N/A'}
                       </Text>
                     </View>
                     <View style={styles.rateCell}>
-                      <Text style={[styles.sellRate, !currency.is_active && styles.unavailableText]}>
+                      <Text style={[styles.sellRate, !currency.is_active && styles.unavailableText, { fontSize: fontSize.rateValue }]}>
                         {currency.sell_rate?.toFixed(2) || 'N/A'}
                       </Text>
                     </View>
                     <View style={styles.availabilityCell}>
-                      <Text 
+                      <Text
                         style={[
                           styles.availabilityIcon,
-                          currency.is_active ? styles.availableIcon : styles.unavailableIcon
+                          currency.is_active ? styles.availableIcon : styles.unavailableIcon,
+                          { fontSize: isLargeScreen ? 22 : 16 }
                         ]}
                         onPress={(e) => {
                           e.stopPropagation();
@@ -918,7 +928,7 @@ export default function PricesScreen() {
                       >
                         {currency.is_active ? '✅' : '⚠️'}
                       </Text>
-                      <Text style={styles.tooltipText}>
+                      <Text style={[styles.tooltipText, { fontSize: fontSize.tooltipText }]}>
                         {currency.is_active ? (
                           language === 'ar' ? 'متوفر' :
                           language === 'he' ? 'זמין' :
