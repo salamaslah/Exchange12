@@ -39,6 +39,7 @@ export default function TreasuryManagement() {
 
   const [balanceAmount, setBalanceAmount] = useState('');
   const [notes, setNotes] = useState('');
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -186,43 +187,36 @@ export default function TreasuryManagement() {
     router.replace('/login');
   };
 
-  const handleCloseTreasury = async () => {
-    Alert.alert(
-      '⚠️ أقفال الخزينة',
-      'هل أنت متأكد من إتمام اليوم وإقفال مبلغ الخزينة؟\n\nسيتم حذف جميع المعاملات من النظام.',
-      [
-        {
-          text: 'إلغاء',
-          style: 'cancel'
-        },
-        {
-          text: 'نعم، أقفل الخزينة',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              // حذف جميع المعاملات
-              const { error } = await supabase
-                .from('transactions')
-                .delete()
-                .gte('id', '00000000-0000-0000-0000-000000000000'); // حذف جميع الصفوف
+  const handleCloseTreasury = () => {
+    setConfirmModalVisible(true);
+  };
 
-              if (error) throw error;
+  const confirmCloseTreasury = async () => {
+    try {
+      setConfirmModalVisible(false);
+      setLoading(true);
 
-              Alert.alert(
-                '✅ تم الإقفال',
-                'تم إقفال الخزينة وحذف جميع المعاملات بنجاح'
-              );
+      // حذف جميع المعاملات
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .gte('id', '00000000-0000-0000-0000-000000000000'); // حذف جميع الصفوف
 
-              // إعادة تحميل الصفحة لتحديث البيانات
-              fetchBalances();
-            } catch (error) {
-              console.error('❌ خطأ في إقفال الخزينة:', error);
-              Alert.alert('❌ خطأ', 'حدث خطأ في إقفال الخزينة');
-            }
-          }
-        }
-      ]
-    );
+      if (error) throw error;
+
+      Alert.alert(
+        '✅ تم الإقفال',
+        'تم إقفال الخزينة وحذف جميع المعاملات بنجاح'
+      );
+
+      // إعادة تحميل الصفحة لتحديث البيانات
+      await fetchBalances();
+      setLoading(false);
+    } catch (error) {
+      console.error('❌ خطأ في إقفال الخزينة:', error);
+      setLoading(false);
+      Alert.alert('❌ خطأ', 'حدث خطأ في إقفال الخزينة');
+    }
   };
 
   if (loading) {
@@ -355,6 +349,41 @@ export default function TreasuryManagement() {
                 </View>
               </ScrollView>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Confirmation Modal */}
+      <Modal
+        visible={confirmModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setConfirmModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.confirmModalContent, isLargeScreen && styles.confirmModalContentLarge]}>
+            <Text style={styles.confirmModalTitle}>⚠️ إقفال الخزينة</Text>
+            <Text style={styles.confirmModalMessage}>
+              هل أنت متأكد من إتمام اليوم وإقفال مبلغ الخزينة؟
+            </Text>
+            <Text style={styles.confirmModalWarning}>
+              سيتم حذف جميع المعاملات من النظام.
+            </Text>
+
+            <View style={styles.confirmModalButtons}>
+              <TouchableOpacity
+                style={[styles.confirmButton, styles.confirmCancelButton]}
+                onPress={() => setConfirmModalVisible(false)}
+              >
+                <Text style={styles.confirmCancelButtonText}>إلغاء</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.confirmButton, styles.confirmDeleteButton]}
+                onPress={confirmCloseTreasury}
+              >
+                <Text style={styles.confirmDeleteButtonText}>نعم، أقفل الخزينة</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -577,6 +606,78 @@ const styles = StyleSheet.create({
     backgroundColor: '#059669',
   },
   saveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  confirmModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    width: '90%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  confirmModalContentLarge: {
+    width: '80%',
+    maxWidth: 500,
+  },
+  confirmModalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#DC2626',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  confirmModalMessage: {
+    fontSize: 17,
+    color: '#374151',
+    textAlign: 'center',
+    marginBottom: 12,
+    lineHeight: 24,
+  },
+  confirmModalWarning: {
+    fontSize: 15,
+    color: '#DC2626',
+    textAlign: 'center',
+    marginBottom: 24,
+    fontWeight: '600',
+    backgroundColor: '#FEE2E2',
+    padding: 12,
+    borderRadius: 8,
+  },
+  confirmModalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  confirmButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmCancelButton: {
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+  },
+  confirmCancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  confirmDeleteButton: {
+    backgroundColor: '#DC2626',
+  },
+  confirmDeleteButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
