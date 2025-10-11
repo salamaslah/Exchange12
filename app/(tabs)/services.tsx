@@ -89,25 +89,26 @@ export default function ServicesScreen() {
   const loadServices = async () => {
     try {
       console.log('🔄 جلب جميع الخدمات من جدول services في قاعدة البيانات...');
-      
+
       const { data, error } = await supabase
         .from('services')
         .select('*')
+        .neq('service_number', 8) // إخفاء خدمة صرافة أموال (رقم 8)
         .order('service_number');
-      
+
       if (error) {
         console.error('❌ خطأ في جلب الخدمات من قاعدة البيانات:', error);
         throw error;
       }
-      
-      console.log(`✅ تم جلب ${data?.length || 0} خدمة من جدول services`);
+
+      console.log(`✅ تم جلب ${data?.length || 0} خدمة من جدول services (بدون صرافة أموال)`);
       console.log('📊 الخدمات المُحملة:', data);
-      
+
       setServices(data || []);
     } catch (error) {
       console.error('❌ خطأ في تحميل الخدمات:', error);
       
-      // في حالة الخطأ، استخدم الخدمات الافتراضية
+      // في حالة الخطأ، استخدم الخدمات الافتراضية (بدون صرافة الأموال)
       const defaultServices = [
         { id: '1', service_number: 1, service_name: 'إنشاء فيزا', service_name_he: 'יצירת כרטיס', service_name_en: 'Create Card' },
         { id: '2', service_number: 2, service_name: 'تحويل للخارج', service_name_he: 'העברה לחו"ל', service_name_en: 'International Transfer' },
@@ -115,8 +116,7 @@ export default function ServicesScreen() {
         { id: '4', service_number: 4, service_name: 'صرافة شيكات', service_name_he: 'פדיון צ\'קים', service_name_en: 'Check Cashing' },
         { id: '5', service_number: 5, service_name: 'تحويل لحساب بنك صاحب المحل', service_name_he: 'העברה לחשבון הבנק', service_name_en: 'Bank Account Transfer' },
         { id: '6', service_number: 6, service_name: 'سحب من الفيزا', service_name_he: 'משיכה מכרטיס', service_name_en: 'Card Withdrawal' },
-        { id: '7', service_number: 7, service_name: 'إيداع في الفيزا', service_name_he: 'הפקדה בכרטיס', service_name_en: 'Card Deposit' },
-        { id: '8', service_number: 8, service_name: 'صرافة أموال', service_name_he: 'החלפת כספים', service_name_en: 'Money Exchange' }
+        { id: '7', service_number: 7, service_name: 'إيداع في الفيزا', service_name_he: 'הפקדה בכרטיס', service_name_en: 'Card Deposit' }
       ];
       
       console.log('📱 استخدام الخدمات الافتراضية كبديل');
