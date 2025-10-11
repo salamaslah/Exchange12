@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert,
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { treasuryService, TreasuryBalance } from '@/lib/treasuryService';
+import { supabase } from '@/lib/supabase';
 
 export default function TreasuryScreen() {
   const [balances, setBalances] = useState<TreasuryBalance[]>([]);
@@ -206,6 +207,48 @@ export default function TreasuryScreen() {
     }, 0);
   };
 
+  const handleCloseTreasury = async () => {
+    Alert.alert(
+      '⚠️ إقفال الخزينة',
+      'هل أنت متأكد من إتمام اليوم وإقفال مبلغ الخزينة؟\n\nسيتم حذف جميع المعاملات من النظام.',
+      [
+        {
+          text: 'إلغاء',
+          style: 'cancel'
+        },
+        {
+          text: 'نعم، أقفل الخزينة',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // حذف جميع المعاملات
+              const { error } = await supabase
+                .from('transactions')
+                .delete()
+                .neq('id', '00000000-0000-0000-0000-000000000000'); // حذف الكل
+
+              if (error) throw error;
+
+              Alert.alert(
+                '✅ تم الإقفال',
+                'تم إقفال الخزينة وحذف جميع المعاملات بنجاح',
+                [
+                  {
+                    text: 'حسناً',
+                    onPress: () => loadBalances()
+                  }
+                ]
+              );
+            } catch (error) {
+              console.error('❌ خطأ في إقفال الخزينة:', error);
+              Alert.alert('❌ خطأ', 'حدث خطأ في إقفال الخزينة');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -239,10 +282,16 @@ export default function TreasuryScreen() {
             </Text>
           </View>
 
-          {/* زر إضافة رصيد جديد */}
-          <TouchableOpacity style={styles.addButton} onPress={openAddModal}>
-            <Text style={styles.addButtonText}>➕ إضافة عملة جديدة</Text>
-          </TouchableOpacity>
+          {/* أزرار الإجراءات */}
+          <View style={styles.actionsContainer}>
+            <TouchableOpacity style={styles.addButton} onPress={openAddModal}>
+              <Text style={styles.addButtonText}>➕ إضافة عملة جديدة</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.closeTreasuryButton} onPress={handleCloseTreasury}>
+              <Text style={styles.closeTreasuryButtonText}>🔒 إقفال الخزينة</Text>
+            </TouchableOpacity>
+          </View>
 
           {/* جدول الأرصدة */}
           <View style={styles.tableContainer}>
@@ -605,7 +654,13 @@ const styles = StyleSheet.create({
     color: '#1E40AF',
     fontWeight: 'bold',
   },
+  actionsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+  },
   addButton: {
+    flex: 1,
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 20,
@@ -614,7 +669,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#059669',
     borderStyle: 'dashed',
-    marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -625,9 +679,30 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   addButtonText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#059669',
+  },
+  closeTreasuryButton: {
+    flex: 1,
+    backgroundColor: '#DC2626',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  closeTreasuryButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
   },
   tableContainer: {
     backgroundColor: '#FFFFFF',
