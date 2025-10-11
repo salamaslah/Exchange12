@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, SafeAreaView, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { companySettingsService, workingHoursService } from '@/lib/supabase';
+import { companySettingsService, workingHoursService, supabase } from '@/lib/supabase';
 
 interface CompanyInfo {
   name_ar: string;
@@ -221,6 +221,42 @@ export default function CompanySettingsScreen() {
 
   const handleLogout = async () => {
     router.replace('/(tabs)/accounting');
+  };
+
+  const handleCloseTreasury = async () => {
+    Alert.alert(
+      '⚠️ إقفال الخزينة',
+      'هل أنت متأكد من إتمام اليوم وإقفال مبلغ الخزينة؟\n\nسيتم حذف جميع المعاملات من النظام.',
+      [
+        {
+          text: 'إلغاء',
+          style: 'cancel'
+        },
+        {
+          text: 'نعم، أقفل الخزينة',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // حذف جميع المعاملات
+              const { error } = await supabase
+                .from('transactions')
+                .delete()
+                .neq('id', '00000000-0000-0000-0000-000000000000'); // حذف الكل
+
+              if (error) throw error;
+
+              Alert.alert(
+                '✅ تم الإقفال',
+                'تم إقفال الخزينة وحذف جميع المعاملات بنجاح'
+              );
+            } catch (error) {
+              console.error('❌ خطأ في إقفال الخزينة:', error);
+              Alert.alert('❌ خطأ', 'حدث خطأ في إقفال الخزينة');
+            }
+          }
+        }
+      ]
+    );
   };
 
   const isTablet = screenData.width >= 768;
@@ -471,10 +507,16 @@ export default function CompanySettingsScreen() {
             </View>
           </View>
 
-          {/* Save Button */}
-          <TouchableOpacity style={styles.saveButton} onPress={saveCompanyInfo}>
-            <Text style={styles.saveButtonText}>💾 حفظ معلومات الشركة</Text>
-          </TouchableOpacity>
+          {/* Action Buttons */}
+          <View style={styles.actionsContainer}>
+            <TouchableOpacity style={styles.saveButton} onPress={saveCompanyInfo}>
+              <Text style={styles.saveButtonText}>💾 حفظ معلومات الشركة</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.closeTreasuryButton} onPress={handleCloseTreasury}>
+              <Text style={styles.closeTreasuryButtonText}>🔒 إقفال الخزينة</Text>
+            </TouchableOpacity>
+          </View>
 
           {/* Preview Section */}
           <View style={styles.previewSection}>
@@ -619,12 +661,17 @@ const styles = StyleSheet.create({
   selectedDayText: {
     color: '#FFFFFF',
   },
+  actionsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+  },
   saveButton: {
+    flex: 1,
     backgroundColor: '#065F46',
     padding: 20,
     borderRadius: 12,
     alignItems: 'center',
-    marginTop: 20,
     shadowColor: '#065F46',
     shadowOffset: {
       width: 0,
@@ -636,7 +683,27 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  closeTreasuryButton: {
+    flex: 1,
+    backgroundColor: '#DC2626',
+    padding: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#DC2626',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  closeTreasuryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
     fontWeight: 'bold',
   },
   previewSection: {
