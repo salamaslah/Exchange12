@@ -15,6 +15,7 @@ interface Currency {
   current_rate?: number;
   buy_rate?: number;
   sell_rate?: number;
+  sort_num?: number;
   created_at: string;
   updated_at: string;
 }
@@ -121,9 +122,10 @@ export default function CurrencyManagementScreen() {
           if (exists) return prevCurrencies;
 
           return [...prevCurrencies, newRecord as Currency].sort((a, b) => {
-            if (a.is_active && !b.is_active) return -1;
-            if (!a.is_active && b.is_active) return 1;
-            return a.code.localeCompare(b.code);
+            // ترتيب حسب sort_num تصاعدياً
+            const sortA = a.sort_num ?? 999;
+            const sortB = b.sort_num ?? 999;
+            return sortA - sortB;
           });
 
         case 'UPDATE':
@@ -132,9 +134,10 @@ export default function CurrencyManagementScreen() {
           return prevCurrencies.map((currency) =>
             currency.id === newRecord.id ? (newRecord as Currency) : currency
           ).sort((a, b) => {
-            if (a.is_active && !b.is_active) return -1;
-            if (!a.is_active && b.is_active) return 1;
-            return a.code.localeCompare(b.code);
+            // ترتيب حسب sort_num تصاعدياً
+            const sortA = a.sort_num ?? 999;
+            const sortB = b.sort_num ?? 999;
+            return sortA - sortB;
           });
 
         case 'DELETE':
@@ -162,11 +165,11 @@ export default function CurrencyManagementScreen() {
       const currenciesData = await currencyService.getAll();
       console.log(`✅ تم تحميل ${currenciesData.length} عملة من قاعدة البيانات Supabase`);
       
-      // ترتيب العملات: المتوفرة أولاً ثم غير المتوفرة
+      // ترتيب العملات حسب sort_num تصاعدياً
       const sortedCurrencies = currenciesData.sort((a: Currency, b: Currency) => {
-        if (a.is_active && !b.is_active) return -1;
-        if (!a.is_active && b.is_active) return 1;
-        return a.code.localeCompare(b.code);
+        const sortA = a.sort_num ?? 999;
+        const sortB = b.sort_num ?? 999;
+        return sortA - sortB;
       });
       
       setCurrencies(sortedCurrencies);
