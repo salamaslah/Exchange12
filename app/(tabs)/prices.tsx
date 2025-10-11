@@ -1466,8 +1466,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
   },
   unavailableRow: {
-    backgroundColor: '#FEF3C7',
-    opacity: 0.8,
+    backgroundColor: '#E5E7EB',
+    opacity: 0.9,
   },
   currencyCell: {
     flex: 1.5,
@@ -1486,8 +1486,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   unavailableText: {
-    color: '#92400E',
-    opacity: 0.7,
+    color: '#6B7280',
+    opacity: 0.8,
   },
   rateCell: {
     flex: 1,
