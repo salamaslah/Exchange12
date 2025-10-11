@@ -73,12 +73,18 @@ export default function TransactionsManagement() {
   const fetchCurrencies = async () => {
     try {
       const { data, error } = await supabase
-        .from('currencies')
-        .select('code, name_ar')
-        .order('code');
+        .from('treasury_balances')
+        .select('currency_code, currency_name_ar')
+        .order('currency_code');
 
       if (error) throw error;
-      setCurrencies(data || []);
+
+      const formattedCurrencies = data?.map(item => ({
+        code: item.currency_code,
+        name_ar: item.currency_name_ar
+      })) || [];
+
+      setCurrencies(formattedCurrencies);
     } catch (error) {
       console.error('Error fetching currencies:', error);
     }
