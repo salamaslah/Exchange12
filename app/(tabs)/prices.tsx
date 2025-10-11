@@ -819,17 +819,20 @@ export default function PricesScreen() {
           <View style={styles.centerContent}>
             {/* Exchange Rates Table */}
             <View style={styles.tableContainer}>
-              <View style={styles.tableHeader}>
-                <View style={styles.tableHeaderContent}>
+              <View style={[styles.tableHeader, isLargeScreen && styles.tableHeaderLarge]}>
+                <View style={[styles.tableHeaderContent, isLargeScreen && styles.tableHeaderContentLarge]}>
                   <Text style={styles.tableTitle}>
                     {language === 'ar' && 'أسعار الصرف اليوم'}
                     {language === 'he' && 'שערי החליפין היום'}
                     {language === 'en' && "Today's Exchange Rates"}
                   </Text>
-                  <TouchableOpacity style={styles.calculatorButton} onPress={() => openCalculator()}>
-                    <Text style={styles.calculatorButtonText}>🧮</Text>
-                  </TouchableOpacity>
                 </View>
+                <TouchableOpacity
+                  style={[styles.calculatorButton, isLargeScreen && styles.calculatorButtonLarge]}
+                  onPress={() => openCalculator()}
+                >
+                  <Text style={styles.calculatorButtonText}>🧮</Text>
+                </TouchableOpacity>
               </View>
 
               {/* Instruction Message */}
@@ -1485,11 +1488,17 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 15,
     borderTopRightRadius: 15,
   },
+  tableHeaderLarge: {
+    position: 'relative',
+  },
   tableHeaderContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     width: '100%',
+  },
+  tableHeaderContentLarge: {
+    justifyContent: 'center',
   },
   tableTitle: {
     fontSize: 20,
@@ -1504,6 +1513,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  calculatorButtonLarge: {
+    position: 'absolute',
+    left: 20,
+    top: '50%',
+    transform: [{ translateY: -20 }],
   },
   calculatorButtonText: {
     fontSize: 20,
