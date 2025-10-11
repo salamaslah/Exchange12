@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Modal, Image, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '@/lib/supabase';
 
 interface Advertisement {
   id: string;
@@ -31,49 +31,14 @@ export default function AdsManagementScreen() {
   const loadAdvertisements = async () => {
     try {
       setLoading(true);
-      // تحميل الإعلانات من التخزين المحلي
-      const savedAds = await AsyncStorage.getItem('advertisements');
-      if (savedAds) {
-        setAdvertisements(JSON.parse(savedAds));
-      } else {
-        // إنشاء إعلانات افتراضية
-        const defaultAds: Advertisement[] = [
-          {
-            id: '1',
-            position: 'top',
-            title: 'Western Union - تحويل للخارج',
-            description: 'خدمات تحويل الأموال السريعة والآمنة لجميع أنحاء العالم',
-            image_url: 'https://images.pexels.com/photos/259027/pexels-photo-259027.jpeg?auto=compress&cs=tinysrgb&w=400',
-            is_active: true
-          },
-          {
-            id: '2',
-            position: 'bottom',
-            title: 'صرافة العملات المتميزة',
-            description: 'أفضل أسعار الصرف في المدينة مع خدمة عملاء ممتازة',
-            image_url: 'https://images.pexels.com/photos/259132/pexels-photo-259132.jpeg?auto=compress&cs=tinysrgb&w=300',
-            is_active: true
-          },
-          {
-            id: '3',
-            position: 'left',
-            title: 'MoneyGram',
-            description: 'حوالات سريعة',
-            image_url: 'https://images.pexels.com/photos/259200/pexels-photo-259200.jpeg?auto=compress&cs=tinysrgb&w=300',
-            is_active: true
-          },
-          {
-            id: '4',
-            position: 'right',
-            title: 'WorldCom',
-            description: 'خدمات الفيزا',
-            image_url: 'https://images.pexels.com/photos/164527/pexels-photo-164527.jpeg?auto=compress&cs=tinysrgb&w=400',
-            is_active: true
-          }
-        ];
-        await AsyncStorage.setItem('advertisements', JSON.stringify(defaultAds));
-        setAdvertisements(defaultAds);
-      }
+      const { data, error } = await supabase
+        .from('advertisements')
+        .select('*')
+        .order('position');
+
+      if (error) throw error;
+
+      setAdvertisements(data || []);
     } catch (error) {
       console.log('Error loading advertisements:', error);
       Alert.alert('خطأ', 'حدث خطأ في تحميل الإعلانات');
@@ -110,37 +75,76 @@ export default function AdsManagementScreen() {
 
     try {
       if (editingAd) {
-        const updatedAds = advertisements.map(ad => 
-          ad.id === editingAd.id 
-            ? { ...ad, ...formData }
-            : ad
-        );
-        setAdvertisements(updatedAds);
-        await AsyncStorage.setItem('advertisements', JSON.stringify(updatedAds));
+        const { error } = await supabase
+          .from('advertisements')
+          .update({
+            title: formData.title,
+            description: formData.description,
+            image_url: formData.image_url
+          })
+          .eq('id', editingAd.id);
+
+        if (error) throw error;
+
+        await loadAdvertisements();
         Alert.alert('تم', 'تم تحديث الإعلان بنجاح');
       }
-      
+
       closeEditModal();
     } catch (error) {
+      console.log('Error saving advertisement:', error);
       Alert.alert('خطأ', 'حدث خطأ في حفظ الإعلان');
     }
   };
 
   const toggleAdStatus = async (adId: string) => {
     try {
-      const updatedAds = advertisements.map(ad => 
-        ad.id === adId 
-          ? { ...ad, is_active: !ad.is_active }
-          : ad
-      );
-      setAdvertisements(updatedAds);
-      await AsyncStorage.setItem('advertisements', JSON.stringify(updatedAds));
-      
       const ad = advertisements.find(a => a.id === adId);
-      Alert.alert('تم', `تم ${ad && !ad.is_active ? 'تفعيل' : 'تعطيل'} الإعلان`);
+      if (!ad) return;
+
+      const { error } = await supabase
+        .from('advertisements')
+        .update({ is_active: !ad.is_active })
+        .eq('id', adId);
+
+      if (error) throw error;
+
+      await loadAdvertisements();
+      Alert.alert('تم', `تم ${!ad.is_active ? 'تفعيل' : 'تعطيل'} الإعلان`);
     } catch (error) {
+      console.log('Error toggling ad status:', error);
       Alert.alert('خطأ', 'حدث خطأ في تحديث حالة الإعلان');
     }
+  };
+
+  const deleteAdvertisement = async (adId: string) => {
+    Alert.alert(
+      'تأكيد الحذف',
+      'هل أنت متأكد من حذف هذا الإعلان؟',
+      [
+        { text: 'إلغاء', style: 'cancel' },
+        {
+          text: 'حذف',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { error } = await supabase
+                .from('advertisements')
+                .delete()
+                .eq('id', adId);
+
+              if (error) throw error;
+
+              await loadAdvertisements();
+              Alert.alert('تم', 'تم حذف الإعلان بنجاح');
+            } catch (error) {
+              console.log('Error deleting advertisement:', error);
+              Alert.alert('خطأ', 'حدث خطأ في حذف الإعلان');
+            }
+          }
+        }
+      ]
+    );
   };
 
   const getPositionName = (position: string) => {
@@ -216,6 +220,12 @@ export default function AdsManagementScreen() {
                   onPress={() => openEditModal(ad)}
                 >
                   <Text style={styles.editButtonText}>تعديل</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => deleteAdvertisement(ad.id)}
+                >
+                  <Text style={styles.deleteButtonText}>حذف</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -416,6 +426,17 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   editButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  deleteButton: {
+    backgroundColor: '#DC2626',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  deleteButtonText: {
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: 'bold',
