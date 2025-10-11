@@ -204,7 +204,7 @@ export default function TreasuryManagement() {
               const { error } = await supabase
                 .from('transactions')
                 .delete()
-                .neq('id', '00000000-0000-0000-0000-000000000000'); // حذف الكل
+                .gte('id', '00000000-0000-0000-0000-000000000000'); // حذف جميع الصفوف
 
               if (error) throw error;
 
@@ -212,6 +212,9 @@ export default function TreasuryManagement() {
                 '✅ تم الإقفال',
                 'تم إقفال الخزينة وحذف جميع المعاملات بنجاح'
               );
+
+              // إعادة تحميل الصفحة لتحديث البيانات
+              fetchBalances();
             } catch (error) {
               console.error('❌ خطأ في إقفال الخزينة:', error);
               Alert.alert('❌ خطأ', 'حدث خطأ في إقفال الخزينة');
