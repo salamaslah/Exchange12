@@ -706,7 +706,7 @@ export default function PricesScreen() {
         showsHorizontalScrollIndicator={false}
       >
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, isLargeScreen && styles.headerLarge]}>
           <View style={styles.headerTop}>
             <TouchableOpacity style={styles.settingsButton} onPress={navigateToSettings}>
               <Text style={styles.settingsButtonText}>⚙️</Text>
@@ -727,34 +727,42 @@ export default function PricesScreen() {
             </View>
           </View>
 
-          <View style={styles.companyInfo}>
-            <Text style={styles.companyName}>
-              {companyInfo ? (
-                language === 'ar' ? companyInfo.name_ar :
-                language === 'he' ? companyInfo.name_he :
-                companyInfo.name_en
-              ) : (
-                language === 'ar' ? 'نعامنة للصرافة' :
-                language === 'he' ? 'נעאמנה להמרות' :
-                'Naamneh Exchange'
-              )}
-            </Text>
-            <Text style={styles.companyAddress}>
-              {companyInfo ? (
-                language === 'ar' ? companyInfo.address_ar :
-                language === 'he' ? companyInfo.address_he :
-                companyInfo.address_en
-              ) : (
-                language === 'ar' ? 'عرابة الشارع الرئيسي' :
-                language === 'he' ? 'ערבה הרחוב הראשי' :
-                'Arraba Main Street'
-              )}
-            </Text>
-            <Text style={styles.companyPhone}>
-              {companyInfo?.phone1 || '05260000841'}
-              {companyInfo?.phone2 && ` | ${companyInfo.phone2}`}
-              {companyInfo?.phone3 && ` | ${companyInfo.phone3}`}
-            </Text>
+          <View style={[styles.companyInfo, isLargeScreen && styles.companyInfoLarge]}>
+            {isLargeScreen && (
+              <Text style={styles.currencyIconLeft}>💵</Text>
+            )}
+            <View style={styles.companyInfoText}>
+              <Text style={[styles.companyName, isLargeScreen && styles.companyNameLarge]}>
+                {companyInfo ? (
+                  language === 'ar' ? companyInfo.name_ar :
+                  language === 'he' ? companyInfo.name_he :
+                  companyInfo.name_en
+                ) : (
+                  language === 'ar' ? 'نعامنة للصرافة' :
+                  language === 'he' ? 'נעאמנה להמרות' :
+                  'Naamneh Exchange'
+                )}
+              </Text>
+              <Text style={[styles.companyAddress, isLargeScreen && styles.companyAddressLarge]}>
+                {companyInfo ? (
+                  language === 'ar' ? companyInfo.address_ar :
+                  language === 'he' ? companyInfo.address_he :
+                  companyInfo.address_en
+                ) : (
+                  language === 'ar' ? 'عرابة الشارع الرئيسي' :
+                  language === 'he' ? 'ערבה הרחוב הראשי' :
+                  'Arraba Main Street'
+                )}
+              </Text>
+              <Text style={[styles.companyPhone, isLargeScreen && styles.companyPhoneLarge]}>
+                {companyInfo?.phone1 || '05260000841'}
+                {companyInfo?.phone2 && ` | ${companyInfo.phone2}`}
+                {companyInfo?.phone3 && ` | ${companyInfo.phone3}`}
+              </Text>
+            </View>
+            {isLargeScreen && (
+              <Text style={styles.currencyIconRight}>💶</Text>
+            )}
           </View>
         </View>
 
@@ -1211,6 +1219,10 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  headerLarge: {
+    paddingTop: 30,
+    paddingBottom: 30,
+  },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1253,6 +1265,21 @@ const styles = StyleSheet.create({
   companyInfo: {
     alignItems: 'center',
   },
+  companyInfoLarge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 30,
+  },
+  companyInfoText: {
+    alignItems: 'center',
+  },
+  currencyIconLeft: {
+    fontSize: 60,
+  },
+  currencyIconRight: {
+    fontSize: 60,
+  },
   companyName: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -1261,17 +1288,28 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: 0.5,
   },
+  companyNameLarge: {
+    fontSize: 36,
+    marginBottom: 8,
+  },
   companyAddress: {
     fontSize: 12,
     color: '#6B7280',
     marginBottom: 2,
     textAlign: 'center',
   },
+  companyAddressLarge: {
+    fontSize: 20,
+    marginBottom: 5,
+  },
   companyPhone: {
     fontSize: 11,
     color: '#059669',
     fontWeight: '600',
     textAlign: 'center',
+  },
+  companyPhoneLarge: {
+    fontSize: 18,
   },
   updateTimeContainer: {
     backgroundColor: '#ECFDF5',
