@@ -776,8 +776,8 @@ export default function PricesScreen() {
           </View>
         )}
 
-        {/* Advertisement Carousel - Above Table */}
-        {currentAd && (
+        {/* Advertisement Carousel - Above Table (Only on small screens) */}
+        {currentAd && !isLargeScreen && (
           <View style={styles.advertisementContainer}>
             <View style={styles.advertisementCard}>
               <Image source={{ uri: currentAd.image_url }} style={styles.adImage} resizeMode="cover" />
@@ -786,7 +786,7 @@ export default function PricesScreen() {
                 <Text style={styles.adDescription}>{currentAd.description}</Text>
               </View>
             </View>
-            
+
             {/* Advertisement Indicators */}
             {advertisements.length > 1 && (
               <View style={styles.adIndicators}>
