@@ -920,11 +920,11 @@ export default function PricesScreen() {
                       </Text>
                       <Text style={styles.tooltipText}>
                         {currency.is_active ? (
-                          language === 'ar' ? 'متاحة' :
+                          language === 'ar' ? 'متوفر' :
                           language === 'he' ? 'זמין' :
                           'Available'
                         ) : (
-                          language === 'ar' ? 'تحتاج لتوصية' :
+                          language === 'ar' ? 'تواصل معنا' :
                           language === 'he' ? 'דרוש הזמנה' :
                           'Needs Booking'
                         )}
