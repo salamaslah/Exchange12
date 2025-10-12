@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, TextInput, Alert, SafeAreaView, Image, Dimensions, Linking } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, TextInput, Alert, SafeAreaView, Image, Dimensions, Linking, AppState, AppStateStatus } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { currencyService, companySettingsService, workingHoursService } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
@@ -79,6 +80,9 @@ export default function PricesScreen() {
   const [lastUpdateTime, setLastUpdateTime] = useState<string>('');
   const [isUpdatingRates, setIsUpdatingRates] = useState(false);
   const router = useRouter();
+  const updateIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isScreenFocused = useRef<boolean>(false);
+  const appState = useRef(AppState.currentState);
 
   useEffect(() => {
     const onChange = (result: any) => {
@@ -88,14 +92,43 @@ export default function PricesScreen() {
     const subscription = Dimensions.addEventListener('change', onChange);
     loadData();
     loadLanguage();
-    startAutoRateUpdates();
-    setupRealtimeSubscription();
+
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === 'active' &&
+        isScreenFocused.current
+      ) {
+        console.log('📱 التطبيق عاد للنشاط وصفحة الأسعار مفتوحة - التحقق من التحديث');
+        checkAndUpdateRates();
+      }
+      appState.current = nextAppState;
+    };
+
+    const appStateSubscription = AppState.addEventListener('change', handleAppStateChange);
 
     return () => {
       subscription?.remove();
-      exchangeRateAPI.stopAutoUpdate();
+      appStateSubscription?.remove();
+      stopAutoUpdate();
     };
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('✅ صفحة الأسعار أصبحت نشطة');
+      isScreenFocused.current = true;
+
+      setupRealtimeSubscription();
+      startAutoRateUpdates();
+
+      return () => {
+        console.log('❌ صفحة الأسعار لم تعد نشطة - إيقاف التحديثات');
+        isScreenFocused.current = false;
+        stopAutoUpdate();
+      };
+    }, [])
+  );
 
   // إعداد الاشتراك في التحديثات الفورية من Supabase
   const setupRealtimeSubscription = () => {
@@ -221,22 +254,49 @@ export default function PricesScreen() {
     }
   };
 
+  const stopAutoUpdate = () => {
+    if (updateIntervalRef.current) {
+      clearInterval(updateIntervalRef.current);
+      updateIntervalRef.current = null;
+      console.log('⏹️ تم إيقاف التحديث التلقائي للأسعار');
+    }
+  };
+
+  const checkAndUpdateRates = async () => {
+    if (!isScreenFocused.current) {
+      console.log('⏭️ الصفحة غير نشطة - تجاهل التحديث');
+      return;
+    }
+
+    const shouldUpdate = await exchangeRateAPI.shouldUpdateRates();
+    if (shouldUpdate) {
+      console.log('✅ مر أكثر من 5 دقائق - سيتم التحديث');
+      await updateExchangeRates();
+    } else {
+      console.log('⏭️ لم يمر 5 دقائق بعد - تجاهل التحديث');
+    }
+  };
+
   const startAutoRateUpdates = async () => {
-    console.log('🚀 بدء التحديث التلقائي للأسعار...');
+    stopAutoUpdate();
+
+    console.log('🚀 بدء التحديث التلقائي للأسعار (فقط في صفحة الأسعار)...');
 
     const updateInfo = await exchangeRateAPI.getLastUpdateInfo();
     if (updateInfo.lastUpdate) {
       setLastUpdateTime(updateInfo.lastUpdate);
     }
 
-    await updateExchangeRates();
+    await checkAndUpdateRates();
 
-    const intervalId = setInterval(async () => {
-      console.log('⏰ تحديث تلقائي للأسعار (كل 5 دقائق)...');
-      await updateExchangeRates();
+    updateIntervalRef.current = setInterval(async () => {
+      if (isScreenFocused.current) {
+        console.log('⏰ فحص دوري للتحديث (كل 5 دقائق)...');
+        await checkAndUpdateRates();
+      } else {
+        console.log('⏭️ الصفحة غير نشطة - تجاهل الفحص الدوري');
+      }
     }, 5 * 60 * 1000);
-
-    return () => clearInterval(intervalId);
   };
 
   const loadData = async () => {
