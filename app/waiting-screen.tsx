@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function WaitingScreen() {
@@ -8,6 +9,17 @@ export default function WaitingScreen() {
   const [countdown, setCountdown] = useState(10);
   const router = useRouter();
   const hasNavigated = useRef(false);
+
+  // منع الشاشة من السكون
+  useEffect(() => {
+    console.log('🔒 منع الشاشة من السكون');
+    activateKeepAwakeAsync();
+
+    return () => {
+      console.log('🔓 السماح للشاشة بالسكون');
+      deactivateKeepAwake();
+    };
+  }, []);
 
   // تحميل اللغة مرة واحدة فقط
   useEffect(() => {
