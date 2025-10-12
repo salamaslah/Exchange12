@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { currencyService } from './supabase';
+import { currencyService, supabase } from './supabase';
 
 // ExchangeRate-API service
 export class ExchangeRateAPIService {
@@ -112,10 +112,109 @@ export class ExchangeRateAPIService {
     }
   }
 
+  // التحقق من الحاجة لتحديث الأسعار (كل 5 دقائق)
+  async shouldUpdateRates(): Promise<boolean> {
+    try {
+      if (!supabase) {
+        console.log('⚠️ Supabase غير متوفر، استخدام التحديث الفوري');
+        return true;
+      }
+
+      const { data, error } = await supabase
+        .from('currency_update_log')
+        .select('last_update')
+        .maybeSingle();
+
+      if (error) {
+        console.error('❌ خطأ في جلب آخر تحديث:', error);
+        return true;
+      }
+
+      if (!data) {
+        console.log('⚠️ لا يوجد سجل تحديث، سيتم التحديث الآن');
+        return true;
+      }
+
+      const lastUpdate = new Date(data.last_update);
+      const now = new Date();
+      const diffMinutes = (now.getTime() - lastUpdate.getTime()) / 60000;
+
+      console.log(`⏱️ آخر تحديث كان قبل ${diffMinutes.toFixed(1)} دقيقة`);
+
+      return diffMinutes >= 5;
+    } catch (error) {
+      console.error('❌ خطأ في التحقق من وقت التحديث:', error);
+      return true;
+    }
+  }
+
+  // تحديث وقت آخر تحديث في قاعدة البيانات
+  async updateLastUpdateTime(): Promise<void> {
+    try {
+      if (!supabase) {
+        console.log('⚠️ Supabase غير متوفر، لن يتم تحديث وقت التحديث');
+        return;
+      }
+
+      const now = new Date().toISOString();
+
+      // محاولة الحصول على السجل الموجود
+      const { data: existingLog } = await supabase
+        .from('currency_update_log')
+        .select('id')
+        .maybeSingle();
+
+      if (existingLog) {
+        // تحديث السجل الموجود
+        const { error } = await supabase
+          .from('currency_update_log')
+          .update({
+            last_update: now,
+            updated_at: now
+          })
+          .eq('id', existingLog.id);
+
+        if (error) {
+          console.error('❌ خطأ في تحديث وقت التحديث:', error);
+        } else {
+          console.log(`✅ تم تحديث وقت آخر تحديث: ${now}`);
+        }
+      } else {
+        // إنشاء سجل جديد
+        const { error } = await supabase
+          .from('currency_update_log')
+          .insert({
+            last_update: now,
+            created_at: now,
+            updated_at: now
+          });
+
+        if (error) {
+          console.error('❌ خطأ في إنشاء سجل التحديث:', error);
+        } else {
+          console.log(`✅ تم إنشاء سجل تحديث جديد: ${now}`);
+        }
+      }
+
+      // حفظ في التخزين المحلي أيضاً
+      await AsyncStorage.setItem('lastRatesUpdate', new Date().toLocaleString('ar'));
+      await AsyncStorage.setItem('lastApiUpdate', now);
+    } catch (error) {
+      console.error('❌ خطأ في تحديث وقت التحديث:', error);
+    }
+  }
+
   // تحديث أسعار العملات في قاعدة البيانات
   async updateCurrencyRatesInDatabase(): Promise<{ success: boolean; updatedCount?: number; error?: string }> {
     try {
       console.log('🔄 بدء تحديث أسعار العملات في قاعدة البيانات...');
+
+      // التحقق من الحاجة للتحديث
+      const shouldUpdate = await this.shouldUpdateRates();
+      if (!shouldUpdate) {
+        console.log('⏭️ لم يمر 5 دقائق بعد، لا حاجة للتحديث');
+        return { success: true, updatedCount: 0 };
+      }
 
       // جلب الأسعار من API
       const ratesResult = await this.fetchExchangeRates();
@@ -134,7 +233,7 @@ export class ExchangeRateAPIService {
       // تحديث كل عملة
       for (const currency of currencies) {
         const apiRate = ratesResult.rates[currency.code];
-        
+
         if (apiRate && apiRate > 0) {
           // حساب أسعار الشراء والبيع بناءً على العمولات
           const buyCommissionShekel = (currency.buy_commission || 6) / 100;
@@ -162,12 +261,11 @@ export class ExchangeRateAPIService {
         }
       }
 
-      // حفظ وقت آخر تحديث
-      await AsyncStorage.setItem('lastRatesUpdate', new Date().toLocaleString('ar'));
-      await AsyncStorage.setItem('lastApiUpdate', new Date().toISOString());
+      // تحديث وقت آخر تحديث في قاعدة البيانات
+      await this.updateLastUpdateTime();
 
       console.log(`✅ تم تحديث ${updatedCount} عملة في قاعدة البيانات`);
-      
+
       return { success: true, updatedCount };
 
     } catch (error) {
@@ -210,9 +308,26 @@ export class ExchangeRateAPIService {
   // جلب معلومات آخر تحديث
   async getLastUpdateInfo(): Promise<{ lastUpdate?: string; lastApiUpdate?: string }> {
     try {
+      // محاولة الحصول على البيانات من قاعدة البيانات أولاً
+      if (supabase) {
+        const { data } = await supabase
+          .from('currency_update_log')
+          .select('last_update')
+          .maybeSingle();
+
+        if (data) {
+          const lastUpdate = new Date(data.last_update);
+          return {
+            lastUpdate: lastUpdate.toLocaleString('ar'),
+            lastApiUpdate: data.last_update
+          };
+        }
+      }
+
+      // الرجوع للتخزين المحلي إذا لم يكن هناك بيانات
       const lastUpdate = await AsyncStorage.getItem('lastRatesUpdate');
       const lastApiUpdate = await AsyncStorage.getItem('lastApiUpdate');
-      
+
       return {
         lastUpdate: lastUpdate || undefined,
         lastApiUpdate: lastApiUpdate || undefined
