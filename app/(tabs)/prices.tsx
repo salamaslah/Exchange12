@@ -99,8 +99,9 @@ export default function PricesScreen() {
         nextAppState === 'active' &&
         isScreenFocused.current
       ) {
-        console.log('📱 التطبيق عاد للنشاط وصفحة الأسعار مفتوحة - التحقق من التحديث');
-        checkAndUpdateRates();
+        console.log('📱 التطبيق عاد للنشاط - التحديث التلقائي معطل');
+        // تم تعطيل التحديث التلقائي
+        // checkAndUpdateRates();
       }
       appState.current = nextAppState;
     };
@@ -120,12 +121,13 @@ export default function PricesScreen() {
       isScreenFocused.current = true;
 
       setupRealtimeSubscription();
-      startAutoRateUpdates();
+      // تم تعطيل التحديث التلقائي - سيتم التحديث يدوياً فقط من صفحة إدارة العملات
+      // startAutoRateUpdates();
 
       return () => {
-        console.log('❌ صفحة الأسعار لم تعد نشطة - إيقاف التحديثات');
+        console.log('❌ صفحة الأسعار لم تعد نشطة');
         isScreenFocused.current = false;
-        stopAutoUpdate();
+        // stopAutoUpdate();
       };
     }, [])
   );
