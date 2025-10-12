@@ -8,31 +8,35 @@ export default function WaitingScreen() {
   const [countdown, setCountdown] = useState(10);
   const router = useRouter();
 
+  // تحميل اللغة مرة واحدة فقط
   useEffect(() => {
     loadLanguage();
+  }, []);
 
-    // بدء العد التنازلي
+  // العد التنازلي والانتقال - منفصل تماماً
+  useEffect(() => {
     console.log('🚀 بدء العد التنازلي من 10 ثواني');
+
     const interval = setInterval(() => {
       setCountdown((prevCount) => {
-        console.log(`⏱️ العد التنازلي: ${prevCount}`);
-        if (prevCount <= 1) {
-          console.log('✅ انتهى العد التنازلي - العودة لصفحة الأسعار');
-          clearInterval(interval);
-          setTimeout(() => {
-            router.replace('/(tabs)/prices');
-          }, 100);
-          return 0;
-        }
-        return prevCount - 1;
+        const newCount = prevCount - 1;
+        console.log(`⏱️ العد التنازلي: ${newCount}`);
+        return newCount;
       });
     }, 1000);
 
+    // مؤقت منفصل للانتقال بعد 10 ثواني
+    const navigationTimer = setTimeout(() => {
+      console.log('✅ انتهى العد التنازلي - العودة لصفحة الأسعار');
+      router.replace('/(tabs)/prices');
+    }, 10000);
+
     return () => {
-      console.log('🧹 تنظيف العد التنازلي');
+      console.log('🧹 تنظيف المؤقتات');
       clearInterval(interval);
+      clearTimeout(navigationTimer);
     };
-  }, [router]);
+  }, []);
 
   const loadLanguage = async () => {
     try {
