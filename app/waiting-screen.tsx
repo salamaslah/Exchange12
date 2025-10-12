@@ -10,20 +10,29 @@ export default function WaitingScreen() {
 
   useEffect(() => {
     loadLanguage();
-  }, []);
 
-  useEffect(() => {
-    // العد التنازلي
-    if (countdown > 0) {
-      const timer = setTimeout(() => {
-        setCountdown(countdown - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else {
-      // بعد 10 ثواني، الانتقال لصفحة أسعار الصرف
-      router.replace('/prices');
-    }
-  }, [countdown, router]);
+    // بدء العد التنازلي
+    console.log('🚀 بدء العد التنازلي من 10 ثواني');
+    const interval = setInterval(() => {
+      setCountdown((prevCount) => {
+        console.log(`⏱️ العد التنازلي: ${prevCount}`);
+        if (prevCount <= 1) {
+          console.log('✅ انتهى العد التنازلي - العودة لصفحة الأسعار');
+          clearInterval(interval);
+          setTimeout(() => {
+            router.replace('/(tabs)/prices');
+          }, 100);
+          return 0;
+        }
+        return prevCount - 1;
+      });
+    }, 1000);
+
+    return () => {
+      console.log('🧹 تنظيف العد التنازلي');
+      clearInterval(interval);
+    };
+  }, [router]);
 
   const loadLanguage = async () => {
     try {
