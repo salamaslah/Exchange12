@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -7,6 +7,7 @@ export default function WaitingScreen() {
   const [language, setLanguage] = useState<'ar' | 'he' | 'en'>('ar');
   const [countdown, setCountdown] = useState(10);
   const router = useRouter();
+  const hasNavigated = useRef(false);
 
   // تحميل اللغة مرة واحدة فقط
   useEffect(() => {
@@ -27,8 +28,11 @@ export default function WaitingScreen() {
 
     // مؤقت منفصل للانتقال بعد 10 ثواني
     const navigationTimer = setTimeout(() => {
-      console.log('✅ انتهى العد التنازلي - العودة لصفحة الأسعار');
-      router.replace('/(tabs)/prices');
+      if (!hasNavigated.current) {
+        hasNavigated.current = true;
+        console.log('✅ انتهى العد التنازلي - العودة لصفحة الأسعار');
+        router.replace('/(tabs)/prices');
+      }
     }, 10000);
 
     return () => {

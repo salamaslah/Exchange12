@@ -24,13 +24,20 @@ export default function CustomerInfoScreen() {
   const [serviceDetails, setServiceDetails] = useState<string>('');
   const [fromCalculator, setFromCalculator] = useState(false);
   const [calculatorData, setCalculatorData] = useState<any>(null);
+  const [hasCompleted, setHasCompleted] = useState(false);
   const router = useRouter();
 
   useFocusEffect(
     React.useCallback(() => {
+      // منع إعادة التحميل إذا تم إتمام العملية
+      if (hasCompleted) {
+        console.log('⏭️ تم إتمام العملية - تجاهل إعادة التحميل');
+        setHasCompleted(false);
+        return;
+      }
       console.log('🔄 تم تفعيل صفحة معلومات الزبائن - إعادة تحميل البيانات...');
       loadInitialData();
-    }, [])
+    }, [hasCompleted])
   );
 
   useEffect(() => {
@@ -446,8 +453,9 @@ export default function CustomerInfoScreen() {
         await AsyncStorage.removeItem('fromCalculator');
         await AsyncStorage.removeItem('calculatorData');
 
-        // الانتقال إلى صفحة الانتظار
-        router.push('/waiting-screen');
+        // الانتقال إلى صفحة الانتظار (استخدام replace لعدم العودة)
+        setHasCompleted(true);
+        router.replace('/waiting-screen');
       } else if (selectedService && selectedService.service_number === 1) {
         // معالجة خدمة إنشاء الفيزا - إتمام العملية مباشرة
         try {
@@ -523,8 +531,9 @@ export default function CustomerInfoScreen() {
         await AsyncStorage.removeItem('selectedServiceNameHe');
         await AsyncStorage.removeItem('selectedServiceNameEn');
 
-        // الانتقال إلى صفحة الانتظار
-        router.push('/waiting-screen');
+        // الانتقال إلى صفحة الانتظار (استخدام replace لعدم العودة)
+        setHasCompleted(true);
+        router.replace('/waiting-screen');
       } else {
         // معالجة جميع الخدمات الأخرى
         try {
@@ -595,8 +604,9 @@ export default function CustomerInfoScreen() {
 
           console.log('✅ تم حفظ المعاملة في جدول transactions بنجاح');
 
-          // الانتقال إلى صفحة الانتظار
-          router.push('/waiting-screen');
+          // الانتقال إلى صفحة الانتظار (استخدام replace لعدم العودة)
+          setHasCompleted(true);
+          router.replace('/waiting-screen');
 
         } catch (serviceError) {
           console.error('❌ خطأ في معالجة الخدمة:', serviceError);
