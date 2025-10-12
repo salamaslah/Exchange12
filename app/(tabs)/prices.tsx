@@ -125,8 +125,9 @@ export default function PricesScreen() {
       // startAutoRateUpdates();
 
       return () => {
-        console.log('❌ صفحة الأسعار لم تعد نشطة');
+        console.log('❌ صفحة الأسعار لم تعد نشطة - تنظيف المؤقتات');
         isScreenFocused.current = false;
+        clearInactivityTimer();
         // stopAutoUpdate();
       };
     }, [])
@@ -602,7 +603,10 @@ export default function PricesScreen() {
     try {
       console.log('🔄 بدء عملية المتابعة للمعاملة...');
       console.log('📊 بيانات الآلة الحاسبة:', { fromCurrency, toCurrency, fromAmount, toAmount });
-      
+
+      // إلغاء مؤقت الخمول
+      clearInactivityTimer();
+
       // حفظ بيانات الآلة الحاسبة بشكل مفصل
       const calculatorTransactionData = {
         fromCurrency,
@@ -613,16 +617,16 @@ export default function PricesScreen() {
         timestamp: new Date().toISOString(),
         isFromCalculator: true
       };
-      
+
       await AsyncStorage.setItem('fromCalculator', 'true');
       await AsyncStorage.setItem('calculatorData', JSON.stringify(calculatorTransactionData));
       await AsyncStorage.setItem('calculatorTransactionReady', 'true');
-      
+
       console.log('✅ تم حفظ بيانات الآلة الحاسبة:', calculatorTransactionData);
-      
+
       // إغلاق الآلة الحاسبة
       closeCalculator();
-      
+
       // الانتقال لصفحة معلومات الزبائن
       router.push('/(tabs)/customer-info');
       
