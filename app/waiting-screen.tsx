@@ -34,25 +34,35 @@ export default function WaitingScreen() {
       setCountdown((prevCount) => {
         const newCount = prevCount - 1;
         console.log(`⏱️ العد التنازلي: ${newCount}`);
+
+        // عند الوصول لـ 0، الانتقال لصفحة الأسعار
+        if (newCount <= 0 && !hasNavigated.current) {
+          hasNavigated.current = true;
+          console.log('✅ انتهى العد التنازلي - العودة لصفحة الأسعار');
+          clearInterval(interval);
+
+          // مسح جميع بيانات الآلة الحاسبة والمعاملات
+          AsyncStorage.multiRemove([
+            'fromCalculator',
+            'calculatorData',
+            'calculatorTransactionReady',
+            'calculatorFromCurrency',
+            'calculatorToCurrency'
+          ]).then(() => {
+            console.log('🧹 تم مسح جميع بيانات الآلة الحاسبة');
+            router.replace('/(tabs)/prices');
+          });
+        }
+
         return newCount;
       });
     }, 1000);
 
-    // مؤقت منفصل للانتقال بعد 10 ثواني
-    const navigationTimer = setTimeout(() => {
-      if (!hasNavigated.current) {
-        hasNavigated.current = true;
-        console.log('✅ انتهى العد التنازلي - العودة لصفحة الأسعار');
-        router.replace('/(tabs)/prices');
-      }
-    }, 10000);
-
     return () => {
       console.log('🧹 تنظيف المؤقتات');
       clearInterval(interval);
-      clearTimeout(navigationTimer);
     };
-  }, []);
+  }, [router]);
 
   const loadLanguage = async () => {
     try {
