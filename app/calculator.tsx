@@ -221,6 +221,9 @@ export default function CalculatorScreen() {
       console.log('🔄 بدء عملية المتابعة للمعاملة...');
       console.log('📊 بيانات الآلة الحاسبة:', { fromCurrency, toCurrency, fromAmount, toAmount });
 
+      // إلغاء مؤقت الخمول قبل الانتقال
+      clearInactivityTimer();
+
       const calculatorTransactionData = {
         fromCurrency,
         toCurrency,
@@ -237,7 +240,8 @@ export default function CalculatorScreen() {
 
       console.log('✅ تم حفظ بيانات الآلة الحاسبة:', calculatorTransactionData);
 
-      router.push('/(tabs)/customer-info');
+      // استخدام replace بدلاً من push لإزالة الآلة الحاسبة من الـ stack
+      router.replace('/(tabs)/customer-info');
     } catch (error) {
       console.error('❌ خطأ في حفظ بيانات الآلة الحاسبة:', error);
     }
