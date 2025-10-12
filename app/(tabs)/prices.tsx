@@ -280,7 +280,7 @@ export default function PricesScreen() {
   const startAutoRateUpdates = async () => {
     stopAutoUpdate();
 
-    console.log('🚀 بدء التحديث التلقائي للأسعار (فقط في صفحة الأسعار)...');
+    console.log('🚀 تحميل معلومات آخر تحديث...');
 
     const updateInfo = await exchangeRateAPI.getLastUpdateInfo();
     if (updateInfo.lastUpdate) {
@@ -289,14 +289,7 @@ export default function PricesScreen() {
 
     await checkAndUpdateRates();
 
-    updateIntervalRef.current = setInterval(async () => {
-      if (isScreenFocused.current) {
-        console.log('⏰ فحص دوري للتحديث (كل 5 دقائق)...');
-        await checkAndUpdateRates();
-      } else {
-        console.log('⏭️ الصفحة غير نشطة - تجاهل الفحص الدوري');
-      }
-    }, 5 * 60 * 1000);
+    console.log('✅ تم إيقاف التحديث التلقائي - التحديث يدوي فقط');
   };
 
   const loadData = async () => {
@@ -829,18 +822,33 @@ export default function PricesScreen() {
         {/* Last Update Time */}
         {lastUpdateTime && (
           <View style={styles.updateTimeContainer}>
-            <Text style={styles.updateTimeText}>
-              {language === 'ar' && `⏰ آخر تحديث: ${lastUpdateTime}`}
-              {language === 'he' && `⏰ עדכון אחרון: ${lastUpdateTime}`}
-              {language === 'en' && `⏰ Last Update: ${lastUpdateTime}`}
-            </Text>
-            {isUpdatingRates && (
-              <Text style={styles.updatingText}>
-                {language === 'ar' && '🔄 جاري التحديث...'}
-                {language === 'he' && '🔄 מעדכן...'}
-                {language === 'en' && '🔄 Updating...'}
+            <View style={styles.updateTimeLeft}>
+              <Text style={styles.updateTimeText}>
+                {language === 'ar' && `⏰ آخر تحديث: ${lastUpdateTime}`}
+                {language === 'he' && `⏰ עדכון אחרון: ${lastUpdateTime}`}
+                {language === 'en' && `⏰ Last Update: ${lastUpdateTime}`}
               </Text>
-            )}
+              {isUpdatingRates && (
+                <Text style={styles.updatingText}>
+                  {language === 'ar' && '🔄 جاري التحديث...'}
+                  {language === 'he' && '🔄 מעדכן...'}
+                  {language === 'en' && '🔄 Updating...'}
+                </Text>
+              )}
+            </View>
+            <TouchableOpacity
+              style={styles.manualUpdateButton}
+              onPress={async () => {
+                await checkAndUpdateRates();
+              }}
+              disabled={isUpdatingRates}
+            >
+              <Text style={styles.manualUpdateButtonText}>
+                {language === 'ar' && '🔄 تحديث'}
+                {language === 'he' && '🔄 עדכן'}
+                {language === 'en' && '🔄 Update'}
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -1393,6 +1401,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  updateTimeLeft: {
+    flex: 1,
+  },
   updateTimeText: {
     fontSize: 13,
     color: '#047857',
@@ -1402,6 +1413,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#059669',
     fontWeight: '600',
+    marginTop: 2,
+  },
+  manualUpdateButton: {
+    backgroundColor: '#059669',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginLeft: 10,
+  },
+  manualUpdateButtonText: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
   // Advertisement Carousel Styles
   advertisementContainer: {
