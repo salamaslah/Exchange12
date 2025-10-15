@@ -232,6 +232,12 @@ export default function PricesScreen() {
       return;
     }
 
+    const autoUpdateEnabled = await AsyncStorage.getItem('auto_update_enabled');
+    if (autoUpdateEnabled !== 'true') {
+      console.log('⏭️ القراءة التلقائية للأسعار معطلة - لن يتم التحديث');
+      return;
+    }
+
     try {
       setIsUpdatingRates(true);
       console.log('🔄 بدء تحديث أسعار الصرف...');

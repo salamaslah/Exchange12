@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Platform, Dimensions } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { exchangeRateAPI } from '@/lib/exchangeRateAPI';
 
 export function useAutoUpdateRates() {
@@ -22,6 +23,12 @@ export function useAutoUpdateRates() {
 
       if (!isLargeScreen) {
         console.log('⏭️ الشاشة صغيرة، لن يتم التحديث التلقائي');
+        return;
+      }
+
+      const autoUpdateEnabled = await AsyncStorage.getItem('auto_update_enabled');
+      if (autoUpdateEnabled !== 'true') {
+        console.log('⏭️ القراءة التلقائية للأسعار معطلة');
         return;
       }
 

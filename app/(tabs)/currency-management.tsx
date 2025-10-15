@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Modal, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { currencyService, supabase } from '@/lib/supabase';
 import { exchangeRateAPI } from '@/lib/exchangeRateAPI';
 
@@ -39,6 +40,9 @@ export default function CurrencyManagementScreen() {
     sell_commission: '6'
   });
   const [isAutoUpdateRunning, setIsAutoUpdateRunning] = useState(false);
+  const [showEditRateModal, setShowEditRateModal] = useState(false);
+  const [editingRateCurrency, setEditingRateCurrency] = useState<Currency | null>(null);
+  const [newRateValue, setNewRateValue] = useState('');
   const router = useRouter();
 
   // قائمة العملات المتاحة للإضافة
@@ -73,12 +77,22 @@ export default function CurrencyManagementScreen() {
   useEffect(() => {
     loadCurrencies();
     setupRealtimeSubscription();
-    setIsAutoUpdateRunning(exchangeRateAPI.isAutoUpdateRunning());
+    loadAutoUpdateStatus();
 
     return () => {
       console.log('🔌 تنظيف الاشتراكات عند الخروج');
     };
   }, []);
+
+  const loadAutoUpdateStatus = async () => {
+    try {
+      const status = await AsyncStorage.getItem('auto_update_enabled');
+      setIsAutoUpdateRunning(status === 'true');
+      console.log('📊 حالة القراءة التلقائية:', status === 'true' ? 'مفعلة' : 'معطلة');
+    } catch (error) {
+      console.error('❌ خطأ في قراءة حالة التحديث التلقائي:', error);
+    }
+  };
 
   // إعداد الاشتراك في التحديثات الفورية من Supabase
   const setupRealtimeSubscription = () => {
@@ -260,15 +274,17 @@ export default function CurrencyManagementScreen() {
       if (isAutoUpdateRunning) {
         console.log('⏹️ إيقاف قراءة الأسعار التلقائية...');
         exchangeRateAPI.stopAutoUpdate();
+        await AsyncStorage.setItem('auto_update_enabled', 'false');
         setIsAutoUpdateRunning(false);
         Alert.alert(
           '⏹️ تم الإيقاف',
-          'تم إيقاف قراءة الأسعار التلقائية من API',
+          'تم إيقاف قراءة الأسعار التلقائية من API\nيمكنك الآن تعديل الأسعار يدوياً بالضغط على السعر الحالي',
           [{ text: 'حسناً' }]
         );
       } else {
         console.log('▶️ تشغيل قراءة الأسعار التلقائية...');
         exchangeRateAPI.startAutoUpdate();
+        await AsyncStorage.setItem('auto_update_enabled', 'true');
         setIsAutoUpdateRunning(true);
         Alert.alert(
           '▶️ تم التشغيل',
@@ -288,6 +304,56 @@ export default function CurrencyManagementScreen() {
     setEditType(type);
     setCommissionValue((type === 'buy' ? currency.buy_commission : currency.sell_commission).toString());
     setShowCommissionModal(true);
+  };
+
+  const openEditRateModal = (currency: Currency) => {
+    setEditingRateCurrency(currency);
+    setNewRateValue(currency.current_rate?.toString() || '');
+    setShowEditRateModal(true);
+  };
+
+  const saveNewRate = async () => {
+    if (!editingRateCurrency || !newRateValue) {
+      Alert.alert('خطأ', 'يرجى إدخال السعر الجديد');
+      return;
+    }
+
+    const newRate = parseFloat(newRateValue);
+    if (isNaN(newRate) || newRate <= 0) {
+      Alert.alert('خطأ', 'يرجى إدخال سعر صحيح');
+      return;
+    }
+
+    try {
+      console.log(`🔄 تحديث السعر اليدوي للعملة ${editingRateCurrency.name_ar} إلى ${newRate}`);
+
+      const buyCommission = (editingRateCurrency.buy_commission || 6) / 100;
+      const sellCommission = (editingRateCurrency.sell_commission || 6) / 100;
+
+      const buyRate = Math.round((newRate - buyCommission) * 100) / 100;
+      const sellRate = Math.round((newRate + sellCommission) * 100) / 100;
+
+      await currencyService.update(editingRateCurrency.id, {
+        current_rate: newRate,
+        buy_rate: buyRate,
+        sell_rate: sellRate,
+        updated_at: new Date().toISOString()
+      });
+
+      await loadCurrencies();
+      setShowEditRateModal(false);
+      setEditingRateCurrency(null);
+      setNewRateValue('');
+
+      console.log(`✅ تم تحديث السعر بنجاح`);
+      Alert.alert(
+        '✅ تم التحديث',
+        `تم تحديث سعر ${editingRateCurrency.name_ar} إلى ${newRate.toFixed(2)} ₪`
+      );
+    } catch (error) {
+      console.error('❌ خطأ في حفظ السعر الجديد:', error);
+      Alert.alert('❌ خطأ', 'حدث خطأ في حفظ السعر الجديد');
+    }
   };
 
   const saveCommission = async () => {
@@ -507,11 +573,17 @@ export default function CurrencyManagementScreen() {
                   </Text>
                 </View>
                 
-                <View style={styles.rateCell}>
+                <TouchableOpacity
+                  style={styles.rateCell}
+                  onPress={() => openEditRateModal(currency)}
+                >
                   <Text style={[styles.currentRate, !currency.is_active && styles.inactiveText]}>
                     {currency.current_rate ? currency.current_rate.toFixed(2) : 'N/A'}
                   </Text>
-                </View>
+                  <Text style={[styles.editHint, !currency.is_active && styles.inactiveText]}>
+                    اضغط للتعديل
+                  </Text>
+                </TouchableOpacity>
                 
                 <TouchableOpacity 
                   style={styles.rateCell}
@@ -758,6 +830,63 @@ export default function CurrencyManagementScreen() {
                   <Text style={styles.saveButtonText}>💾 حفظ العملة الجديدة</Text>
                 </TouchableOpacity>
               </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Edit Rate Modal */}
+        <Modal
+          visible={showEditRateModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowEditRateModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>تعديل السعر الحالي</Text>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setShowEditRateModal(false)}
+                >
+                  <Text style={styles.closeButtonText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.modalContent}>
+                {editingRateCurrency && (
+                  <>
+                    <Text style={styles.currencyInfo}>
+                      العملة: {editingRateCurrency.name_ar} ({editingRateCurrency.code})
+                    </Text>
+
+                    <Text style={styles.inputLabel}>
+                      السعر الحالي الجديد (مقابل الشيقل):
+                    </Text>
+
+                    <TextInput
+                      style={styles.input}
+                      value={newRateValue}
+                      onChangeText={setNewRateValue}
+                      placeholder="3.65"
+                      keyboardType="decimal-pad"
+                      autoFocus={true}
+                      selectTextOnFocus={true}
+                    />
+
+                    <Text style={styles.commissionNote}>
+                      * سيتم تحديث أسعار الشراء والبيع تلقائياً حسب العمولات
+                    </Text>
+
+                    <TouchableOpacity
+                      style={styles.saveButton}
+                      onPress={saveNewRate}
+                    >
+                      <Text style={styles.saveButtonText}>حفظ السعر الجديد</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
             </View>
           </View>
         </Modal>
@@ -1066,6 +1195,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: 'bold',
     color: '#1E40AF',
+  },
+  editHint: {
+    fontSize: 8,
+    color: '#9CA3AF',
+    marginTop: 2,
+    textAlign: 'center',
   },
   buyRate: {
     fontSize: 13,
