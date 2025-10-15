@@ -868,7 +868,7 @@ export default function PricesScreen() {
               </View>
 
               <View style={styles.table}>
-                <View style={[styles.tableHeaderRow, (language === 'ar' || language === 'he') && { flexDirection: 'row-reverse' }]}>
+                <View style={[styles.tableHeaderRow, (language === 'ar' || language === 'he') && styles.tableHeaderRowRTL]}>
                   <View style={styles.currencyHeaderCell}>
                     <Text style={[styles.headerText, { fontSize: fontSize.headerText }]}>
                       {language === 'ar' && 'العملة'}
@@ -913,7 +913,7 @@ export default function PricesScreen() {
                       styles.tableRow,
                       index % 2 === 0 ? styles.evenRow : styles.oddRow,
                       !currency.is_active && styles.unavailableRow,
-                      (language === 'ar' || language === 'he') && { flexDirection: 'row-reverse' }
+                      (language === 'ar' || language === 'he') && styles.tableRowRTL
                     ]}
                     onPress={() => {
                       if (currency.is_active) {
@@ -1565,6 +1565,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: '#A7F3D0',
   },
+  tableHeaderRowRTL: {
+    flexDirection: 'row-reverse',
+  },
   currencyHeaderCell: {
     flex: 1.5,
     alignItems: 'center',
@@ -1591,6 +1594,9 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
+  },
+  tableRowRTL: {
+    flexDirection: 'row-reverse',
   },
   evenRow: {
     backgroundColor: '#FFFFFF',
