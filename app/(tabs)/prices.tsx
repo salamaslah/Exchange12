@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { currencyService, companySettingsService, workingHoursService, currencyUpdateLogService } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
 import { exchangeRateAPI } from '@/lib/exchangeRateAPI';
+import { useAutoUpdateRates } from '@/hooks/useAutoUpdateRates';
 
 interface Currency {
   id: string;
@@ -81,6 +82,8 @@ export default function PricesScreen() {
   const router = useRouter();
   const isScreenFocused = useRef<boolean>(false);
   const appState = useRef(AppState.currentState);
+
+  useAutoUpdateRates();
 
   useEffect(() => {
     const onChange = (result: any) => {
@@ -721,9 +724,11 @@ export default function PricesScreen() {
     ...allCurrencies.filter(c => c.is_active) // فقط العملات المتوفرة
   ];
 
+  const isRTL = language === 'ar' || language === 'he';
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
+      <ScrollView
         style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
         showsHorizontalScrollIndicator={false}
@@ -867,8 +872,8 @@ export default function PricesScreen() {
                 </Text>
               </View>
 
-              <View style={styles.table}>
-                <View style={[styles.tableHeaderRow, (language === 'ar' || language === 'he') && styles.tableHeaderRowRTL]}>
+              <View style={styles.table} {...(Platform.OS === 'web' && isRTL ? { dir: 'rtl' } : {})}>
+                <View style={[styles.tableHeaderRow, isRTL && styles.tableHeaderRowRTL]}>
                   <View style={styles.currencyHeaderCell}>
                     <Text style={[styles.headerText, { fontSize: fontSize.headerText }]}>
                       {language === 'ar' && 'العملة'}
@@ -913,7 +918,7 @@ export default function PricesScreen() {
                       styles.tableRow,
                       index % 2 === 0 ? styles.evenRow : styles.oddRow,
                       !currency.is_active && styles.unavailableRow,
-                      (language === 'ar' || language === 'he') && styles.tableRowRTL
+                      isRTL && styles.tableRowRTL
                     ]}
                     onPress={() => {
                       if (currency.is_active) {
