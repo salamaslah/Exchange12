@@ -857,3 +857,87 @@ export const customerService = {
     }
   }
 };
+// Currency Update Log service
+export const currencyUpdateLogService = {
+  async getAutoUpdateStatus() {
+    try {
+      console.log('🔄 جلب حالة التحديث التلقائي من جدول currency_update_log...');
+
+      if (isSupabaseConfigured()) {
+        const { data, error } = await supabase!
+          .from('currency_update_log')
+          .select('auto_update_enabled')
+          .limit(1)
+          .maybeSingle();
+
+        if (error) {
+          console.error('❌ خطأ في جلب حالة التحديث التلقائي:', error);
+          return false;
+        }
+
+        const status = data?.auto_update_enabled || false;
+        console.log(`✅ حالة التحديث التلقائي: ${status ? 'مفعّل' : 'معطّل'}`);
+        return status;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('❌ خطأ في جلب حالة التحديث التلقائي:', error);
+      return false;
+    }
+  },
+
+  async setAutoUpdateStatus(enabled: boolean) {
+    try {
+      console.log(`🔄 تحديث حالة التحديث التلقائي إلى: ${enabled ? 'مفعّل' : 'معطّل'}`);
+
+      if (isSupabaseConfigured()) {
+        // جلب السجل الأول أو إنشاء واحد جديد
+        const { data: existingLog, error: fetchError } = await supabase!
+          .from('currency_update_log')
+          .select('id')
+          .limit(1)
+          .maybeSingle();
+
+        if (existingLog) {
+          // تحديث السجل الموجود
+          const { error: updateError } = await supabase!
+            .from('currency_update_log')
+            .update({
+              auto_update_enabled: enabled,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingLog.id);
+
+          if (updateError) {
+            console.error('❌ خطأ في تحديث حالة التحديث التلقائي:', updateError);
+            throw updateError;
+          }
+        } else {
+          // إنشاء سجل جديد
+          const { error: insertError } = await supabase!
+            .from('currency_update_log')
+            .insert({
+              auto_update_enabled: enabled,
+              last_update: new Date().toISOString(),
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+
+          if (insertError) {
+            console.error('❌ خطأ في إنشاء سجل التحديث التلقائي:', insertError);
+            throw insertError;
+          }
+        }
+
+        console.log(`✅ تم تحديث حالة التحديث التلقائي إلى: ${enabled ? 'مفعّل' : 'معطّل'}`);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('❌ خطأ في تحديث حالة التحديث التلقائي:', error);
+      throw error;
+    }
+  }
+};

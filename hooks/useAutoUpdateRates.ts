@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Platform, Dimensions } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { exchangeRateAPI } from '@/lib/exchangeRateAPI';
+import { currencyUpdateLogService } from '@/lib/supabase';
 
 export function useAutoUpdateRates() {
   const hasRunUpdate = useRef(false);
@@ -26,9 +26,9 @@ export function useAutoUpdateRates() {
         return;
       }
 
-      const autoUpdateEnabled = await AsyncStorage.getItem('auto_update_enabled');
-      if (autoUpdateEnabled !== 'true') {
-        console.log('⏭️ القراءة التلقائية للأسعار معطلة');
+      const autoUpdateEnabled = await currencyUpdateLogService.getAutoUpdateStatus();
+      if (!autoUpdateEnabled) {
+        console.log('⏭️ القراءة التلقائية للأسعار معطلة من قاعدة البيانات');
         return;
       }
 

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Modal, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { currencyService, supabase } from '@/lib/supabase';
+import { currencyService, currencyUpdateLogService, supabase } from '@/lib/supabase';
 import { exchangeRateAPI } from '@/lib/exchangeRateAPI';
 
 interface Currency {
@@ -86,9 +85,9 @@ export default function CurrencyManagementScreen() {
 
   const loadAutoUpdateStatus = async () => {
     try {
-      const status = await AsyncStorage.getItem('auto_update_enabled');
-      setIsAutoUpdateRunning(status === 'true');
-      console.log('📊 حالة القراءة التلقائية:', status === 'true' ? 'مفعلة' : 'معطلة');
+      const status = await currencyUpdateLogService.getAutoUpdateStatus();
+      setIsAutoUpdateRunning(status);
+      console.log('📊 حالة القراءة التلقائية من قاعدة البيانات:', status ? 'مفعلة' : 'معطلة');
     } catch (error) {
       console.error('❌ خطأ في قراءة حالة التحديث التلقائي:', error);
     }
@@ -274,7 +273,7 @@ export default function CurrencyManagementScreen() {
       if (isAutoUpdateRunning) {
         console.log('⏹️ إيقاف قراءة الأسعار التلقائية...');
         exchangeRateAPI.stopAutoUpdate();
-        await AsyncStorage.setItem('auto_update_enabled', 'false');
+        await currencyUpdateLogService.setAutoUpdateStatus(false);
         setIsAutoUpdateRunning(false);
         Alert.alert(
           '⏹️ تم الإيقاف',
@@ -284,7 +283,7 @@ export default function CurrencyManagementScreen() {
       } else {
         console.log('▶️ تشغيل قراءة الأسعار التلقائية...');
         exchangeRateAPI.startAutoUpdate();
-        await AsyncStorage.setItem('auto_update_enabled', 'true');
+        await currencyUpdateLogService.setAutoUpdateStatus(true);
         setIsAutoUpdateRunning(true);
         Alert.alert(
           '▶️ تم التشغيل',

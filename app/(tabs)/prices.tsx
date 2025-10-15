@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, TextInput,
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { currencyService, companySettingsService, workingHoursService } from '@/lib/supabase';
+import { currencyService, companySettingsService, workingHoursService, currencyUpdateLogService } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
 import { exchangeRateAPI } from '@/lib/exchangeRateAPI';
 
@@ -232,9 +232,9 @@ export default function PricesScreen() {
       return;
     }
 
-    const autoUpdateEnabled = await AsyncStorage.getItem('auto_update_enabled');
-    if (autoUpdateEnabled !== 'true') {
-      console.log('⏭️ القراءة التلقائية للأسعار معطلة - لن يتم التحديث');
+    const autoUpdateEnabled = await currencyUpdateLogService.getAutoUpdateStatus();
+    if (!autoUpdateEnabled) {
+      console.log('⏭️ القراءة التلقائية للأسعار معطلة من قاعدة البيانات - لن يتم التحديث');
       return;
     }
 
