@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, TextInput, Alert, SafeAreaView, Image, Dimensions, Linking, AppState, AppStateStatus } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, TextInput, Alert, SafeAreaView, Image, Dimensions, Linking, AppState, AppStateStatus, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -78,9 +78,7 @@ export default function PricesScreen() {
   const [inactivityTimer, setInactivityTimer] = useState<NodeJS.Timeout | null>(null);
   const [screenData, setScreenData] = useState(Dimensions.get('window'));
   const [lastUpdateTime, setLastUpdateTime] = useState<string>('');
-  const [isUpdatingRates, setIsUpdatingRates] = useState(false);
   const router = useRouter();
-  const updateIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isScreenFocused = useRef<boolean>(false);
   const appState = useRef(AppState.currentState);
 
@@ -111,18 +109,18 @@ export default function PricesScreen() {
     return () => {
       subscription?.remove();
       appStateSubscription?.remove();
-      stopAutoUpdate();
     };
   }, []);
 
   useFocusEffect(
     React.useCallback(() => {
       console.log('✅ صفحة الأسعار أصبحت نشطة');
+      console.log(`📱 المنصة: ${Platform.OS}`);
       isScreenFocused.current = true;
 
       setupRealtimeSubscription();
 
-      // التحقق من حالة التحديث التلقائي وتحديث الأسعار إذا كانت مفعلة
+      // التحديث يحدث فقط مرة واحدة عند فتح الصفحة على Web فقط
       checkAndUpdateRates();
 
       return () => {
@@ -228,15 +226,21 @@ export default function PricesScreen() {
 
   const checkAndUpdateRates = async () => {
     try {
+      // التحديث يحدث فقط على Web وليس على الهاتف
+      if (Platform.OS !== 'web') {
+        console.log('📱 التطبيق يعمل على الهاتف - لن يتم تحديث الأسعار');
+        return;
+      }
+
       const autoUpdateEnabled = await currencyUpdateLogService.getAutoUpdateStatus();
 
       if (autoUpdateEnabled) {
-        console.log('🔄 القراءة التلقائية مفعّلة - سيتم تحديث الأسعار فوراً...');
+        console.log('🌐 Web - القراءة التلقائية مفعّلة - سيتم تحديث الأسعار مرة واحدة...');
 
         const result = await exchangeRateAPI.forceUpdateCurrencyRates();
 
         if (result.success && result.updatedCount && result.updatedCount > 0) {
-          console.log(`✅ تم تحديث ${result.updatedCount} عملة من API فوراً`);
+          console.log(`✅ تم تحديث ${result.updatedCount} عملة من API`);
           await loadData();
 
           const updateInfo = await exchangeRateAPI.getLastUpdateInfo();
@@ -254,65 +258,6 @@ export default function PricesScreen() {
     }
   };
 
-  const updateExchangeRates = async () => {
-    if (isUpdatingRates) {
-      console.log('⏳ التحديث قيد التنفيذ بالفعل...');
-      return;
-    }
-
-    const autoUpdateEnabled = await currencyUpdateLogService.getAutoUpdateStatus();
-    if (!autoUpdateEnabled) {
-      console.log('⏭️ القراءة التلقائية للأسعار معطلة من قاعدة البيانات - لن يتم التحديث');
-      return;
-    }
-
-    try {
-      setIsUpdatingRates(true);
-      console.log('🔄 بدء تحديث أسعار الصرف...');
-
-      const result = await exchangeRateAPI.updateCurrencyRatesInDatabase();
-
-      if (result.success) {
-        console.log(`✅ تم تحديث ${result.updatedCount} عملة بنجاح`);
-
-        await loadData();
-
-        const updateInfo = await exchangeRateAPI.getLastUpdateInfo();
-        if (updateInfo.lastUpdate) {
-          setLastUpdateTime(updateInfo.lastUpdate);
-        }
-      } else {
-        console.error('❌ فشل تحديث الأسعار:', result.error);
-      }
-    } catch (error) {
-      console.error('❌ خطأ في تحديث أسعار الصرف:', error);
-    } finally {
-      setIsUpdatingRates(false);
-    }
-  };
-
-  const stopAutoUpdate = () => {
-    if (updateIntervalRef.current) {
-      clearInterval(updateIntervalRef.current);
-      updateIntervalRef.current = null;
-      console.log('⏹️ تم إيقاف التحديث التلقائي للأسعار');
-    }
-  };
-
-  const startAutoRateUpdates = async () => {
-    stopAutoUpdate();
-
-    console.log('🚀 تحميل معلومات آخر تحديث...');
-
-    const updateInfo = await exchangeRateAPI.getLastUpdateInfo();
-    if (updateInfo.lastUpdate) {
-      setLastUpdateTime(updateInfo.lastUpdate);
-    }
-
-    await checkAndUpdateRates();
-
-    console.log('✅ تم إيقاف التحديث التلقائي - التحديث يدوي فقط');
-  };
 
   const loadData = async () => {
     try {
