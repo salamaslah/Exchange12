@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Modal, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { currencyService, supabase } from '@/lib/supabase';
+import { exchangeRateAPI } from '@/lib/exchangeRateAPI';
 
 interface Currency {
   id: string;
@@ -37,6 +38,7 @@ export default function CurrencyManagementScreen() {
     buy_commission: '6',
     sell_commission: '6'
   });
+  const [isAutoUpdateRunning, setIsAutoUpdateRunning] = useState(false);
   const router = useRouter();
 
   // قائمة العملات المتاحة للإضافة
@@ -71,6 +73,7 @@ export default function CurrencyManagementScreen() {
   useEffect(() => {
     loadCurrencies();
     setupRealtimeSubscription();
+    setIsAutoUpdateRunning(exchangeRateAPI.isAutoUpdateRunning());
 
     return () => {
       console.log('🔌 تنظيف الاشتراكات عند الخروج');
@@ -252,87 +255,31 @@ export default function CurrencyManagementScreen() {
     );
   };
 
-  const updateAllRatesNow = async () => {
+  const toggleAutoUpdate = async () => {
     try {
-      console.log('🔄 بدء تحديث جميع الأسعار من ExchangeRate-API...');
-      console.log('🔗 Supabase URL:', process.env.EXPO_PUBLIC_SUPABASE_URL);
-      console.log('🔑 Supabase Key:', process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ? 'موجود' : 'غير موجود');
-
-      // الأسعار الحقيقية من API
-      const realRates: { [key: string]: number } = {
-        'USD': 3.29, 'EUR': 3.86, 'GBP': 4.42, 'SAR': 0.88, 'AED': 0.90,
-        'JOD': 4.64, 'KWD': 10.87, 'QAR': 0.90, 'EGP': 0.07, 'TRY': 0.12,
-        'CAD': 2.36, 'AUD': 2.17, 'CHF': 4.14, 'JPY': 0.02, 'CNY': 0.46,
-        'RUB': 0.03, 'SEK': 0.35, 'NOK': 0.32, 'DKK': 0.52, 'SGD': 2.55,
-        'HKD': 0.42, 'KRW': 0.0025, 'THB': 0.10, 'MXN': 0.19, 'BRL': 0.62
-      };
-
-      let successCount = 0;
-      let errorCount = 0;
-
-      for (const currency of currencies) {
-        const newRate = realRates[currency.code];
-
-        if (!newRate) {
-          console.log(`⚠️  ${currency.code}: لا يوجد سعر جديد`);
-          continue;
-        }
-
-        try {
-          // حساب أسعار الشراء والبيع
-          const buyCommission = (currency.buy_commission || 6) / 100;
-          const sellCommission = (currency.sell_commission || 6) / 100;
-
-          const buyRate = Math.round((newRate - buyCommission) * 100) / 100;
-          const sellRate = Math.round((newRate + sellCommission) * 100) / 100;
-
-          // تحديث العملة في قاعدة البيانات مباشرة
-          console.log(`📝 تحديث ${currency.code} (ID: ${currency.id}):`, {
-            current_rate: newRate,
-            buy_rate: buyRate,
-            sell_rate: sellRate
-          });
-
-          // استخدام Supabase مباشرة
-          const { data, error } = await supabase
-            .from('currencies')
-            .update({
-              current_rate: newRate,
-              buy_rate: buyRate,
-              sell_rate: sellRate,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', currency.id)
-            .select();
-
-          if (error) {
-            console.error(`❌ خطأ Supabase في ${currency.code}:`, error);
-            throw error;
-          }
-
-          console.log(`✅ ${currency.code}: تم التحديث - السعر: ${newRate.toFixed(2)} ₪`);
-          console.log(`   📊 buy_rate: ${buyRate.toFixed(2)}, sell_rate: ${sellRate.toFixed(2)}`);
-          console.log(`   💾 البيانات المحدثة:`, data);
-          successCount++;
-        } catch (error) {
-          console.error(`❌ ${currency.code}: خطأ في التحديث`, error);
-          errorCount++;
-        }
+      if (isAutoUpdateRunning) {
+        console.log('⏹️ إيقاف قراءة الأسعار التلقائية...');
+        exchangeRateAPI.stopAutoUpdate();
+        setIsAutoUpdateRunning(false);
+        Alert.alert(
+          '⏹️ تم الإيقاف',
+          'تم إيقاف قراءة الأسعار التلقائية من API',
+          [{ text: 'حسناً' }]
+        );
+      } else {
+        console.log('▶️ تشغيل قراءة الأسعار التلقائية...');
+        exchangeRateAPI.startAutoUpdate();
+        setIsAutoUpdateRunning(true);
+        Alert.alert(
+          '▶️ تم التشغيل',
+          'تم تشغيل قراءة الأسعار التلقائية من API\nسيتم تحديث الأسعار كل 5 دقائق',
+          [{ text: 'حسناً' }]
+        );
+        await loadCurrencies();
       }
-
-      Alert.alert(
-        'تم التحديث',
-        `✅ تم تحديث ${successCount} عملة بنجاح\n${errorCount > 0 ? `❌ فشل تحديث ${errorCount} عملة` : ''}`,
-        [{ text: 'حسناً' }]
-      );
-
-      console.log(`✅ تم تحديث ${successCount} عملة بنجاح`);
-
-      // إعادة تحميل العملات لرؤية التغييرات
-      await loadCurrencies();
     } catch (error) {
-      console.error('❌ خطأ في تحديث الأسعار:', error);
-      Alert.alert('خطأ', 'فشل تحديث الأسعار. يرجى المحاولة مرة أخرى.');
+      console.error('❌ خطأ في تبديل حالة التحديث التلقائي:', error);
+      Alert.alert('خطأ', 'حدث خطأ في تبديل حالة التحديث التلقائي');
     }
   };
 
@@ -490,13 +437,18 @@ export default function CurrencyManagementScreen() {
             </Text>
           </View>
 
-          {/* Update Rates Button */}
+          {/* Auto Update Toggle Button */}
           <View style={styles.updateButtonContainer}>
             <TouchableOpacity
-              style={styles.updateRatesButton}
-              onPress={updateAllRatesNow}
+              style={[
+                styles.updateRatesButton,
+                isAutoUpdateRunning ? styles.stopButton : styles.startButton
+              ]}
+              onPress={toggleAutoUpdate}
             >
-              <Text style={styles.updateRatesButtonText}>🔄 تحديث جميع الأسعار من API</Text>
+              <Text style={styles.updateRatesButtonText}>
+                {isAutoUpdateRunning ? '⏹️ إيقاف قراءة الأسعار' : '▶️ تشغيل قراءة الأسعار'}
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -979,7 +931,6 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   updateRatesButton: {
-    backgroundColor: '#3B82F6',
     borderRadius: 12,
     padding: 18,
     alignItems: 'center',
@@ -988,6 +939,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+  },
+  startButton: {
+    backgroundColor: '#10B981',
+  },
+  stopButton: {
+    backgroundColor: '#EF4444',
   },
   updateRatesButtonText: {
     color: '#FFFFFF',
