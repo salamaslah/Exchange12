@@ -306,6 +306,15 @@ export default function CurrencyManagementScreen() {
   };
 
   const openEditRateModal = (currency: Currency) => {
+    if (isAutoUpdateRunning) {
+      Alert.alert(
+        '⚠️ التعديل غير متاح',
+        'لا يمكن تعديل السعر يدوياً أثناء تشغيل قراءة الأسعار التلقائية.\n\nيرجى إيقاف قراءة الأسعار أولاً.',
+        [{ text: 'حسناً' }]
+      );
+      return;
+    }
+
     setEditingRateCurrency(currency);
     setNewRateValue(currency.current_rate?.toString() || '');
     setShowEditRateModal(true);
@@ -573,14 +582,18 @@ export default function CurrencyManagementScreen() {
                 </View>
                 
                 <TouchableOpacity
-                  style={styles.rateCell}
+                  style={[
+                    styles.rateCell,
+                    isAutoUpdateRunning && styles.lockedRateCell
+                  ]}
                   onPress={() => openEditRateModal(currency)}
+                  disabled={isAutoUpdateRunning}
                 >
                   <Text style={[styles.currentRate, !currency.is_active && styles.inactiveText]}>
                     {currency.current_rate ? currency.current_rate.toFixed(2) : 'N/A'}
                   </Text>
                   <Text style={[styles.editHint, !currency.is_active && styles.inactiveText]}>
-                    اضغط للتعديل
+                    {isAutoUpdateRunning ? '🔒 مقفل' : 'اضغط للتعديل'}
                   </Text>
                 </TouchableOpacity>
                 
@@ -1189,6 +1202,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
+  },
+  lockedRateCell: {
+    opacity: 0.5,
+    backgroundColor: '#F3F4F6',
   },
   currentRate: {
     fontSize: 13,
