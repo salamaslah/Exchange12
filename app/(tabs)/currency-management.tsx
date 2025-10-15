@@ -76,7 +76,7 @@ export default function CurrencyManagementScreen() {
   useEffect(() => {
     loadCurrencies();
     setupRealtimeSubscription();
-    loadAutoUpdateStatus();
+    loadAutoUpdateStatusAndUpdate();
 
     return () => {
       console.log('🔌 تنظيف الاشتراكات عند الخروج');
@@ -88,6 +88,28 @@ export default function CurrencyManagementScreen() {
       const status = await currencyUpdateLogService.getAutoUpdateStatus();
       setIsAutoUpdateRunning(status);
       console.log('📊 حالة القراءة التلقائية من قاعدة البيانات:', status ? 'مفعلة' : 'معطلة');
+    } catch (error) {
+      console.error('❌ خطأ في قراءة حالة التحديث التلقائي:', error);
+    }
+  };
+
+  const loadAutoUpdateStatusAndUpdate = async () => {
+    try {
+      const status = await currencyUpdateLogService.getAutoUpdateStatus();
+      setIsAutoUpdateRunning(status);
+      console.log('📊 حالة القراءة التلقائية من قاعدة البيانات:', status ? 'مفعلة' : 'معطلة');
+
+      if (status) {
+        console.log('🔄 القراءة التلقائية مفعّلة - سيتم تحديث الأسعار فوراً من API...');
+        const result = await exchangeRateAPI.forceUpdateCurrencyRates();
+
+        if (result.success && result.updatedCount && result.updatedCount > 0) {
+          console.log(`✅ تم تحديث ${result.updatedCount} عملة من API فوراً`);
+          await loadCurrencies();
+        } else if (result.error) {
+          console.log('⚠️ لم يتم تحديث أي عملة:', result.error);
+        }
+      }
     } catch (error) {
       console.error('❌ خطأ في قراءة حالة التحديث التلقائي:', error);
     }

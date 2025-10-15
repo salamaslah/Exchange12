@@ -121,14 +121,14 @@ export default function PricesScreen() {
       isScreenFocused.current = true;
 
       setupRealtimeSubscription();
-      // تم تعطيل التحديث التلقائي - سيتم التحديث يدوياً فقط من صفحة إدارة العملات
-      // startAutoRateUpdates();
+
+      // التحقق من حالة التحديث التلقائي وتحديث الأسعار إذا كانت مفعلة
+      checkAndUpdateRates();
 
       return () => {
         console.log('❌ صفحة الأسعار لم تعد نشطة - تنظيف المؤقتات');
         isScreenFocused.current = false;
         clearInactivityTimer();
-        // stopAutoUpdate();
       };
     }, [])
   );
@@ -226,6 +226,34 @@ export default function PricesScreen() {
     }
   };
 
+  const checkAndUpdateRates = async () => {
+    try {
+      const autoUpdateEnabled = await currencyUpdateLogService.getAutoUpdateStatus();
+
+      if (autoUpdateEnabled) {
+        console.log('🔄 القراءة التلقائية مفعّلة - سيتم تحديث الأسعار فوراً...');
+
+        const result = await exchangeRateAPI.forceUpdateCurrencyRates();
+
+        if (result.success && result.updatedCount && result.updatedCount > 0) {
+          console.log(`✅ تم تحديث ${result.updatedCount} عملة من API فوراً`);
+          await loadData();
+
+          const updateInfo = await exchangeRateAPI.getLastUpdateInfo();
+          if (updateInfo.lastUpdate) {
+            setLastUpdateTime(updateInfo.lastUpdate);
+          }
+        } else {
+          console.log('⏭️ لا حاجة للتحديث أو فشل التحديث');
+        }
+      } else {
+        console.log('⏭️ القراءة التلقائية معطلة');
+      }
+    } catch (error) {
+      console.error('❌ خطأ في التحقق من حالة التحديث:', error);
+    }
+  };
+
   const updateExchangeRates = async () => {
     if (isUpdatingRates) {
       console.log('⏳ التحديث قيد التنفيذ بالفعل...');
@@ -268,21 +296,6 @@ export default function PricesScreen() {
       clearInterval(updateIntervalRef.current);
       updateIntervalRef.current = null;
       console.log('⏹️ تم إيقاف التحديث التلقائي للأسعار');
-    }
-  };
-
-  const checkAndUpdateRates = async () => {
-    if (!isScreenFocused.current) {
-      console.log('⏭️ الصفحة غير نشطة - تجاهل التحديث');
-      return;
-    }
-
-    const shouldUpdate = await exchangeRateAPI.shouldUpdateRates();
-    if (shouldUpdate) {
-      console.log('✅ مر أكثر من 5 دقائق - سيتم التحديث');
-      await updateExchangeRates();
-    } else {
-      console.log('⏭️ لم يمر 5 دقائق بعد - تجاهل التحديث');
     }
   };
 

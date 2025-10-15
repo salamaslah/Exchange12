@@ -204,7 +204,7 @@ export class ExchangeRateAPIService {
     }
   }
 
-  // تحديث أسعار العملات في قاعدة البيانات
+  // تحديث أسعار العملات في قاعدة البيانات (مع فحص الـ 5 دقائق)
   async updateCurrencyRatesInDatabase(): Promise<{ success: boolean; updatedCount?: number; error?: string }> {
     try {
       console.log('🔄 بدء تحديث أسعار العملات في قاعدة البيانات...');
@@ -215,6 +215,18 @@ export class ExchangeRateAPIService {
         console.log('⏭️ لم يمر 5 دقائق بعد، لا حاجة للتحديث');
         return { success: true, updatedCount: 0 };
       }
+
+      return await this.forceUpdateCurrencyRates();
+    } catch (error) {
+      console.error('❌ خطأ في تحديث أسعار العملات في قاعدة البيانات:', error);
+      return { success: false, error: 'خطأ في تحديث قاعدة البيانات' };
+    }
+  }
+
+  // تحديث فوري للأسعار بدون فحص الـ 5 دقائق
+  async forceUpdateCurrencyRates(): Promise<{ success: boolean; updatedCount?: number; error?: string }> {
+    try {
+      console.log('🔄 تحديث فوري لأسعار العملات (بدون فحص الـ 5 دقائق)...');
 
       // جلب الأسعار من API
       const ratesResult = await this.fetchExchangeRates();
@@ -269,7 +281,7 @@ export class ExchangeRateAPIService {
       return { success: true, updatedCount };
 
     } catch (error) {
-      console.error('❌ خطأ في تحديث أسعار العملات في قاعدة البيانات:', error);
+      console.error('❌ خطأ في تحديث فوري لأسعار العملات:', error);
       return { success: false, error: 'خطأ في تحديث قاعدة البيانات' };
     }
   }
