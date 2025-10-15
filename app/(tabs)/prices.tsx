@@ -792,25 +792,11 @@ export default function PricesScreen() {
         {/* Last Update Time */}
         {lastUpdateTime && (
           <View style={styles.updateTimeContainer}>
-            <View style={styles.updateTimeLeft}>
-              <Text style={styles.updateTimeText}>
-                {language === 'ar' && `⏰ آخر تحديث: ${lastUpdateTime}`}
-                {language === 'he' && `⏰ עדכון אחרון: ${lastUpdateTime}`}
-                {language === 'en' && `⏰ Last Update: ${lastUpdateTime}`}
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={styles.manualUpdateButton}
-              onPress={async () => {
-                await checkAndUpdateRates();
-              }}
-            >
-              <Text style={styles.manualUpdateButtonText}>
-                {language === 'ar' && '🔄 تحديث'}
-                {language === 'he' && '🔄 עדכן'}
-                {language === 'en' && '🔄 Update'}
-              </Text>
-            </TouchableOpacity>
+            <Text style={styles.updateTimeText}>
+              {language === 'ar' && `⏰ آخر تحديث: ${lastUpdateTime}`}
+              {language === 'he' && `⏰ עדכון אחרון: ${lastUpdateTime}`}
+              {language === 'en' && `⏰ Last Update: ${lastUpdateTime}`}
+            </Text>
           </View>
         )}
 
@@ -1359,35 +1345,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#A7F3D0',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
-  },
-  updateTimeLeft: {
-    flex: 1,
   },
   updateTimeText: {
     fontSize: 13,
     color: '#047857',
     fontWeight: '700',
-  },
-  updatingText: {
-    fontSize: 12,
-    color: '#059669',
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  manualUpdateButton: {
-    backgroundColor: '#059669',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 8,
-    marginLeft: 10,
-  },
-  manualUpdateButtonText: {
-    fontSize: 12,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
   },
   // Advertisement Carousel Styles
   advertisementContainer: {
