@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار RTL - جدول الأسعار</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f0fdf4;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #065f46;
+            margin-bottom: 20px;
+        }
+
+        .info {
+            background: #e0f2fe;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #0284c7;
+        }
+
+        .table {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        /* RTL: من اليمين لليسار */
+        .table-rtl {
+            direction: rtl;
+        }
+
+        .table-header {
+            display: flex;
+            background: #f0fdf4;
+            padding: 14px 0;
+            border-bottom: 2px solid #a7f3d0;
+        }
+
+        /* RTL: عكس الاتجاه */
+        .table-rtl .table-header,
+        .table-rtl .table-row {
+            flex-direction: row-reverse;
+        }
+
+        .table-row {
+            display: flex;
+            padding: 16px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .table-row:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        .currency-cell {
+            flex: 1.5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .rate-cell {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .status-cell {
+            flex: 0.8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .header-text {
+            font-weight: bold;
+            color: #065f46;
+            font-size: 14px;
+        }
+
+        .currency-code {
+            font-weight: bold;
+            font-size: 18px;
+            color: #065f46;
+        }
+
+        .currency-name {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+
+        .rate-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .buy-rate {
+            color: #059669;
+        }
+
+        .sell-rate {
+            color: #dc2626;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .available {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .unavailable {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .toggle-btn {
+            margin: 20px 0;
+            padding: 12px 24px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+
+        .toggle-btn:hover {
+            background: #059669;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 اختبار RTL - جدول أسعار الصرف</h1>
+
+        <div class="info">
+            <strong>📋 ملاحظة:</strong> هذا الجدول يوضح الفرق بين LTR (من اليسار لليمين) و RTL (من اليمين لليسار)
+        </div>
+
+        <button class="toggle-btn" onclick="toggleDirection()">
+            🔄 تبديل الاتجاه (حالياً: RTL)
+        </button>
+
+        <div class="table table-rtl" id="priceTable">
+            <!-- Header -->
+            <div class="table-header">
+                <div class="currency-cell">
+                    <span class="header-text">العملة</span>
+                </div>
+                <div class="rate-cell">
+                    <span class="header-text">السعر الحالي</span>
+                </div>
+                <div class="rate-cell">
+                    <span class="header-text">نشتري بـ</span>
+                </div>
+                <div class="rate-cell">
+                    <span class="header-text">نبيع بـ</span>
+                </div>
+                <div class="status-cell">
+                    <span class="header-text">الحالة</span>
+                </div>
+            </div>
+
+            <!-- Currency Rows -->
+            <div class="table-row">
+                <div class="currency-cell">
+                    <div>
+                        <div class="currency-code">USD</div>
+                        <div class="currency-name">دولار أمريكي</div>
+                    </div>
+                </div>
+                <div class="rate-cell">
+                    <span class="rate-value">3.65</span>
+                </div>
+                <div class="rate-cell">
+                    <span class="rate-value buy-rate">3.59</span>
+                </div>
+                <div class="rate-cell">
+                    <span class="rate-value sell-rate">3.71</span>
+                </div>
+                <div class="status-cell">
+                    <span class="status-badge available">متوفر</span>
+                </div>
+            </div>
+
+            <div class="table-row">
+                <div class="currency-cell">
+                    <div>
+                        <div class="currency-code">EUR</div>
+                        <div class="currency-name">يورو</div>
+                    </div>
+                </div>
+                <div class="rate-cell">
+                    <span class="rate-value">3.95</span>
+                </div>
+                <div class="rate-cell">
+                    <span class="rate-value buy-rate">3.89</span>
+                </div>
+                <div class="rate-cell">
+                    <span class="rate-value sell-rate">4.01</span>
+                </div>
+                <div class="status-cell">
+                    <span class="status-badge available">متوفر</span>
+                </div>
+            </div>
+
+            <div class="table-row">
+                <div class="currency-cell">
+                    <div>
+                        <div class="currency-code">GBP</div>
+                        <div class="currency-name">جنيه استرليني</div>
+                    </div>
+                </div>
+                <div class="rate-cell">
+                    <span class="rate-value">4.53</span>
+                </div>
+                <div class="rate-cell">
+                    <span class="rate-value buy-rate">4.47</span>
+                </div>
+                <div class="rate-cell">
+                    <span class="rate-value sell-rate">4.59</span>
+                </div>
+                <div class="status-cell">
+                    <span class="status-badge available">متوفر</span>
+                </div>
+            </div>
+
+            <div class="table-row">
+                <div class="currency-cell">
+                    <div>
+                        <div class="currency-code">SAR</div>
+                        <div class="currency-name">ريال سعودي</div>
+                    </div>
+                </div>
+                <div class="rate-cell">
+                    <span class="rate-value">0.97</span>
+                </div>
+                <div class="rate-cell">
+                    <span class="rate-value buy-rate">0.91</span>
+                </div>
+                <div class="rate-cell">
+                    <span class="rate-value sell-rate">1.03</span>
+                </div>
+                <div class="status-cell">
+                    <span class="status-badge unavailable">غير متوفر</span>
+                </div>
+            </div>
+
+            <div class="table-row">
+                <div class="currency-cell">
+                    <div>
+                        <div class="currency-code">JOD</div>
+                        <div class="currency-name">دينار أردني</div>
+                    </div>
+                </div>
+                <div class="rate-cell">
+                    <span class="rate-value">5.15</span>
+                </div>
+                <div class="rate-cell">
+                    <span class="rate-value buy-rate">5.09</span>
+                </div>
+                <div class="rate-cell">
+                    <span class="rate-value sell-rate">5.21</span>
+                </div>
+                <div class="status-cell">
+                    <span class="status-badge available">متوفر</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isRTL = true;
+
+        function toggleDirection() {
+            const table = document.getElementById('priceTable');
+            const btn = document.querySelector('.toggle-btn');
+
+            if (isRTL) {
+                table.classList.remove('table-rtl');
+                btn.textContent = '🔄 تبديل الاتجاه (حالياً: LTR)';
+                isRTL = false;
+            } else {
+                table.classList.add('table-rtl');
+                btn.textContent = '🔄 تبديل الاتجاه (حالياً: RTL)';
+                isRTL = true;
+            }
+        }
+    </script>
+</body>
+</html>
