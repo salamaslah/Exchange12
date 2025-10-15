@@ -872,13 +872,7 @@ export default function PricesScreen() {
                 </Text>
               </View>
 
-              <View
-                style={styles.table}
-                {...(Platform.OS === 'web' && isRTL ? {
-                  dir: 'rtl',
-                  style: { direction: 'rtl' }
-                } : {})}
-              >
+              <View style={styles.table}>
                 <View style={[styles.tableHeaderRow, isRTL && styles.tableHeaderRowRTL]}>
                   <View style={styles.currencyHeaderCell}>
                     <Text style={[styles.headerText, { fontSize: fontSize.headerText }]}>
