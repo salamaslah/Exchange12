@@ -798,20 +798,12 @@ export default function PricesScreen() {
                 {language === 'he' && `⏰ עדכון אחרון: ${lastUpdateTime}`}
                 {language === 'en' && `⏰ Last Update: ${lastUpdateTime}`}
               </Text>
-              {isUpdatingRates && (
-                <Text style={styles.updatingText}>
-                  {language === 'ar' && '🔄 جاري التحديث...'}
-                  {language === 'he' && '🔄 מעדכן...'}
-                  {language === 'en' && '🔄 Updating...'}
-                </Text>
-              )}
             </View>
             <TouchableOpacity
               style={styles.manualUpdateButton}
               onPress={async () => {
                 await checkAndUpdateRates();
               }}
-              disabled={isUpdatingRates}
             >
               <Text style={styles.manualUpdateButtonText}>
                 {language === 'ar' && '🔄 تحديث'}
