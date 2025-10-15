@@ -868,7 +868,7 @@ export default function PricesScreen() {
               </View>
 
               <View style={styles.table}>
-                <View style={styles.tableHeaderRow}>
+                <View style={[styles.tableHeaderRow, (language === 'ar' || language === 'he') && { flexDirection: 'row-reverse' }]}>
                   <View style={styles.currencyHeaderCell}>
                     <Text style={[styles.headerText, { fontSize: fontSize.headerText }]}>
                       {language === 'ar' && 'العملة'}
@@ -907,12 +907,13 @@ export default function PricesScreen() {
                 </View>
 
                 {allCurrencies.map((currency, index) => (
-                  <TouchableOpacity 
-                    key={currency.id} 
+                  <TouchableOpacity
+                    key={currency.id}
                     style={[
-                      styles.tableRow, 
+                      styles.tableRow,
                       index % 2 === 0 ? styles.evenRow : styles.oddRow,
-                      !currency.is_active && styles.unavailableRow
+                      !currency.is_active && styles.unavailableRow,
+                      (language === 'ar' || language === 'he') && { flexDirection: 'row-reverse' }
                     ]}
                     onPress={() => {
                       if (currency.is_active) {
