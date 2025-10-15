@@ -892,15 +892,16 @@ export const currencyUpdateLogService = {
       console.log(`🔄 تحديث حالة التحديث التلقائي إلى: ${enabled ? 'مفعّل' : 'معطّل'}`);
 
       if (isSupabaseConfigured()) {
-        // جلب السجل الأول أو إنشاء واحد جديد
-        const { data: existingLog, error: fetchError } = await supabase!
+        // جلب السجل الأول للحصول على ID
+        const { data: existingLog } = await supabase!
           .from('currency_update_log')
           .select('id')
           .limit(1)
           .maybeSingle();
 
         if (existingLog) {
-          // تحديث السجل الموجود
+          // تحديث السجل الموجود فقط - لا ننشئ سجل جديد أبداً
+          console.log(`📝 تحديث السجل الموجود (ID: ${existingLog.id})`);
           const { error: updateError } = await supabase!
             .from('currency_update_log')
             .update({
@@ -913,24 +914,13 @@ export const currencyUpdateLogService = {
             console.error('❌ خطأ في تحديث حالة التحديث التلقائي:', updateError);
             throw updateError;
           }
-        } else {
-          // إنشاء سجل جديد
-          const { error: insertError } = await supabase!
-            .from('currency_update_log')
-            .insert({
-              auto_update_enabled: enabled,
-              last_update: new Date().toISOString(),
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            });
 
-          if (insertError) {
-            console.error('❌ خطأ في إنشاء سجل التحديث التلقائي:', insertError);
-            throw insertError;
-          }
+          console.log(`✅ تم تحديث حالة التحديث التلقائي في السجل ${existingLog.id}`);
+        } else {
+          console.warn('⚠️ لا يوجد سجل في جدول currency_update_log - يرجى تشغيل الـ migrations أولاً');
+          throw new Error('لا يوجد سجل في currency_update_log');
         }
 
-        console.log(`✅ تم تحديث حالة التحديث التلقائي إلى: ${enabled ? 'مفعّل' : 'معطّل'}`);
         return true;
       }
 
