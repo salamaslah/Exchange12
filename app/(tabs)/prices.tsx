@@ -48,7 +48,7 @@ interface Advertisement {
   position: string;
   title: string;
   description: string;
-  image_url: string;
+  image_url: string | number | any;
   is_active: boolean;
 }
 
@@ -358,63 +358,81 @@ export default function PricesScreen() {
   const loadAdvertisements = async () => {
     try {
       console.log('🔄 جلب الإعلانات من جدول advertisements في قاعدة البيانات...');
-      
+
       const { data, error } = await supabase
         .from('advertisements')
         .select('*')
         .eq('is_active', true)
         .order('created_at');
-      
+
       if (error) {
         console.error('❌ خطأ في جلب الإعلانات من قاعدة البيانات:', error);
         throw error;
       }
-      
+
       console.log(`✅ تم جلب ${data?.length || 0} إعلان من جدول advertisements`);
-      setAdvertisements(data || []);
-      
+
+      // إذا كان هناك إعلانات في قاعدة البيانات، استخدمها
+      if (data && data.length > 0) {
+        setAdvertisements(data);
+      } else {
+        // استخدم الإعلانات المحلية
+        loadLocalAdvertisements();
+      }
+
     } catch (error) {
       console.error('❌ خطأ في تحميل الإعلانات:', error);
-      
-      // في حالة الخطأ، استخدم إعلانات افتراضية
-      const defaultAds: Advertisement[] = [
-        {
-          id: '1',
-          position: 'header',
-          title: 'Western Union - تحويل للخارج',
-          description: 'خدمات تحويل الأموال السريعة والآمنة لجميع أنحاء العالم',
-          image_url: 'https://images.pexels.com/photos/259027/pexels-photo-259027.jpeg?auto=compress&cs=tinysrgb&w=400',
-          is_active: true
-        },
-        {
-          id: '2',
-          position: 'header',
-          title: 'صرافة العملات المتميزة',
-          description: 'أفضل أسعار الصرف في المدينة مع خدمة عملاء ممتازة',
-          image_url: 'https://images.pexels.com/photos/259132/pexels-photo-259132.jpeg?auto=compress&cs=tinysrgb&w=300',
-          is_active: true
-        },
-        {
-          id: '3',
-          position: 'header',
-          title: 'MoneyGram - حوالات سريعة',
-          description: 'استلام وإرسال الحوالات بأسرع وقت وأفضل الأسعار',
-          image_url: 'https://images.pexels.com/photos/259200/pexels-photo-259200.jpeg?auto=compress&cs=tinysrgb&w=300',
-          is_active: true
-        },
-        {
-          id: '4',
-          position: 'header',
-          title: 'WorldCom - خدمات الفيزا',
-          description: 'سحب وإيداع من جميع أنواع بطاقات الفيزا والماستركارد',
-          image_url: 'https://images.pexels.com/photos/164527/pexels-photo-164527.jpeg?auto=compress&cs=tinysrgb&w=400',
-          is_active: true
-        }
-      ];
-      
-      console.log('📱 استخدام الإعلانات الافتراضية كبديل');
-      setAdvertisements(defaultAds);
+      loadLocalAdvertisements();
     }
+  };
+
+  const loadLocalAdvertisements = () => {
+    // استخدام الصور المحلية الجديدة
+    const localAds: Advertisement[] = [
+      {
+        id: '1',
+        position: 'header',
+        title: 'UPT Money Transfer',
+        description: 'خدمات تحويل الأموال السريعة والآمنة',
+        image_url: require('@/assets/images/1.jpeg'),
+        is_active: true
+      },
+      {
+        id: '2',
+        position: 'header',
+        title: 'KoronaPay',
+        description: 'حوالات مالية سريعة وآمنة',
+        image_url: require('@/assets/images/2.jpeg'),
+        is_active: true
+      },
+      {
+        id: '3',
+        position: 'header',
+        title: 'WORLDCOM FINANCE',
+        description: 'خدمات مالية متكاملة - Ria, Intel Express, KoronaPay',
+        image_url: require('@/assets/images/3.jpeg'),
+        is_active: true
+      },
+      {
+        id: '4',
+        position: 'header',
+        title: 'WORLDCOM FINANCE Money Transfer',
+        description: 'إرسال واستقبال الأموال من هنا',
+        image_url: require('@/assets/images/4.jpeg'),
+        is_active: true
+      },
+      {
+        id: '5',
+        position: 'header',
+        title: 'Ria Money Transfer',
+        description: 'حوالات مالية دولية موثوقة',
+        image_url: require('@/assets/images/5.jpeg'),
+        is_active: true
+      }
+    ];
+
+    console.log('📱 استخدام الإعلانات المحلية الجديدة');
+    setAdvertisements(localAds);
   };
 
   const getWorkingDaysText = () => {
@@ -944,7 +962,11 @@ export default function PricesScreen() {
         {currentAd && !isLargeScreen && (
           <View style={styles.advertisementContainer}>
             <View style={styles.advertisementCard}>
-              <Image source={{ uri: currentAd.image_url }} style={styles.adImage} resizeMode="cover" />
+              <Image
+                source={typeof currentAd.image_url === 'string' ? { uri: currentAd.image_url } : currentAd.image_url}
+                style={styles.adImage}
+                resizeMode="contain"
+              />
               <View style={styles.adContent}>
                 <Text style={styles.adTitle}>{currentAd.title}</Text>
                 <Text style={styles.adDescription}>{currentAd.description}</Text>
@@ -1647,7 +1669,7 @@ const styles = StyleSheet.create({
   },
   adImage: {
     width: '100%',
-    height: 100,
+    height: 180,
   },
   adContent: {
     padding: 10,
