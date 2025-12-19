@@ -963,6 +963,15 @@ export default function PricesScreen() {
                     }}
                     activeOpacity={0.7}
                   >
+                    {!currency.is_active && (
+                      <View style={styles.unavailableOverlay}>
+                        <Text style={styles.unavailableOverlayText}>
+                          {language === 'ar' && '⚠️ غير متوفر - اضغط للاستفسار'}
+                          {language === 'he' && '⚠️ לא זמין - לחץ לבירור'}
+                          {language === 'en' && '⚠️ Unavailable - Click to inquire'}
+                        </Text>
+                      </View>
+                    )}
                     <View style={styles.currencyCell}>
                       <Text style={[styles.currencyCode, !currency.is_active && styles.unavailableCurrencyCode, { fontSize: fontSize.currencyCode }]}>
                         {currency.code}
@@ -1642,6 +1651,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
+    position: 'relative',
   },
   tableRowRTL: {
     flexDirection: 'row-reverse',
@@ -1653,8 +1663,43 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   unavailableRow: {
-    backgroundColor: '#E5E7EB',
-    opacity: 0.9,
+    backgroundColor: '#F5F5F5',
+    opacity: 0.95,
+  },
+  unavailableOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+    borderWidth: 2,
+    borderColor: '#F59E0B',
+    borderStyle: 'dashed',
+  },
+  unavailableOverlayText: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#DC2626',
+    textAlign: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#F59E0B',
+    shadowColor: '#DC2626',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+    letterSpacing: 0.5,
   },
   currencyCell: {
     flex: 1.5,
