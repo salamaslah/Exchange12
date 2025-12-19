@@ -319,7 +319,12 @@ export default function CalculatorScreen() {
               style={styles.swapButton}
               onPress={swapCurrencies}
             >
-              <Text style={styles.swapButtonText}>⇅</Text>
+              <Text style={styles.swapButtonText}>⇄</Text>
+              <Text style={styles.swapButtonLabel}>
+                {language === 'ar' && 'تبديل'}
+                {language === 'he' && 'החלף'}
+                {language === 'en' && 'Swap'}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.currencyButton}
@@ -528,9 +533,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   swapButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    minWidth: 65,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderRadius: 12,
     backgroundColor: '#0369A1',
     alignItems: 'center',
     justifyContent: 'center',
@@ -544,9 +550,17 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   swapButtonText: {
-    fontSize: 24,
+    fontSize: 28,
     color: '#FFFFFF',
     fontWeight: 'bold',
+    marginBottom: 2,
+  },
+  swapButtonLabel: {
+    fontSize: 11,
+    color: '#FFFFFF',
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: 2,
   },
   amountInputRow: {
     flexDirection: 'row',
