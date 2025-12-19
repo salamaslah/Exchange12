@@ -931,9 +931,24 @@ export default function PricesScreen() {
                 <Text style={styles.instructionText}>
                   {!selectedFirstCurrency ? (
                     <>
-                      {language === 'ar' && '👆 اضغط على اسم العملة لاختيارها'}
-                      {language === 'he' && '👆 לחץ על שם המטבע לבחירה'}
-                      {language === 'en' && '👆 Click on currency name to select'}
+                      {language === 'ar' && (
+                        <>
+                          {'👇 اضغط على سعر شراء أو بيع عملة أجنبية في الجدول\n'}
+                          {'لتبديل عملة أجنبية اختر العملتين اللتين تريد تبديلهما'}
+                        </>
+                      )}
+                      {language === 'he' && (
+                        <>
+                          {'👇 לחץ על שער קנייה או מכירה של מטבע זר בטבלה\n'}
+                          {'להמרת מטבע זר בחר את שני המטבעות שברצונך להמיר'}
+                        </>
+                      )}
+                      {language === 'en' && (
+                        <>
+                          {'👇 Click on buy or sell rate of a foreign currency in the table\n'}
+                          {'To exchange foreign currency select the two currencies you want to exchange'}
+                        </>
+                      )}
                     </>
                   ) : (
                     <>
