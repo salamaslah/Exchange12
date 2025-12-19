@@ -7,6 +7,7 @@ import { currencyService, companySettingsService, workingHoursService, currencyU
 import { supabase } from '@/lib/supabase';
 import { exchangeRateAPI } from '@/lib/exchangeRateAPI';
 import { useAutoUpdateRates } from '@/hooks/useAutoUpdateRates';
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface Currency {
   id: string;
@@ -60,6 +61,30 @@ const DAYS_OF_WEEK = [
   { key: 'friday', ar: 'الجمعة', he: 'שישי', en: 'Friday' },
   { key: 'saturday', ar: 'السبت', he: 'שבת', en: 'Saturday' }
 ];
+
+// دالة لتحديد لون كل عملة
+const getCurrencyColor = (currencyCode: string): string => {
+  const colors: { [key: string]: string } = {
+    'USD': '#E8F5E9',  // أخضر فاتح للدولار
+    'EUR': '#E3F2FD',  // أزرق فاتح لليورو
+    'GBP': '#FCE4EC',  // وردي فاتح للجنيه
+    'JPY': '#FFF3E0',  // برتقالي فاتح للين
+    'AUD': '#F3E5F5',  // بنفسجي فاتح للدولار الأسترالي
+    'CAD': '#FFEBEE',  // أحمر فاتح للدولار الكندي
+    'CHF': '#F1F8E9',  // أخضر ليموني فاتح للفرنك السويسري
+    'CNY': '#FFF9C4',  // أصفر فاتح لليوان
+    'SEK': '#E0F2F1',  // تركواز فاتح للكرونة السويدية
+    'NZD': '#FCE4EC',  // وردي فاتح للدولار النيوزيلندي
+    'JOD': '#E8EAF6',  // أزرق بنفسجي فاتح للدينار الأردني
+    'EGP': '#FFF8E1',  // كهرماني فاتح للجنيه المصري
+    'AED': '#E0F7FA',  // سماوي فاتح للدرهم الإماراتي
+    'SAR': '#F9FBE7',  // أخضر فاتح جداً للريال السعودي
+    'KWD': '#F3E5F5',  // أرجواني فاتح للدينار الكويتي
+    'TRY': '#FFCCBC',  // برتقالي خوخي للليرة التركية
+  };
+
+  return colors[currencyCode] || '#F8FAFC';
+};
 
 export default function PricesScreen() {
   const [allCurrencies, setAllCurrencies] = useState<Currency[]>([]);
@@ -789,13 +814,18 @@ export default function PricesScreen() {
         showsVerticalScrollIndicator={false}
         showsHorizontalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={[styles.header, isLargeScreen && styles.headerLarge]}>
+        {/* Header with Gradient */}
+        <LinearGradient
+          colors={['#059669', '#10B981', '#34D399']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.header, isLargeScreen && styles.headerLarge]}
+        >
           <View style={styles.headerTop}>
             <TouchableOpacity style={styles.settingsButton} onPress={navigateToSettings}>
               <Text style={styles.settingsButtonText}>⚙️</Text>
             </TouchableOpacity>
-            
+
             <View style={styles.languageSelector}>
               {(['ar', 'he', 'en'] as const).map((lang) => (
                 <TouchableOpacity
@@ -827,28 +857,30 @@ export default function PricesScreen() {
                   'Naamneh Exchange'
                 )}
               </Text>
-              <Text style={[styles.companyAddress, isLargeScreen && styles.companyAddressLarge]}>
-                {companyInfo ? (
-                  language === 'ar' ? companyInfo.address_ar :
-                  language === 'he' ? companyInfo.address_he :
-                  companyInfo.address_en
-                ) : (
-                  language === 'ar' ? 'عرابة الشارع الرئيسي' :
-                  language === 'he' ? 'ערבה הרחוב הראשי' :
-                  'Arraba Main Street'
-                )}
-              </Text>
-              <Text style={[styles.companyPhone, isLargeScreen && styles.companyPhoneLarge]}>
-                {companyInfo?.phone1 || '05260000841'}
-                {companyInfo?.phone2 && ` | ${companyInfo.phone2}`}
-                {companyInfo?.phone3 && ` | ${companyInfo.phone3}`}
-              </Text>
+              <View style={styles.companyDetailsContainer}>
+                <Text style={[styles.companyAddress, isLargeScreen && styles.companyAddressLarge]}>
+                  📍 {companyInfo ? (
+                    language === 'ar' ? companyInfo.address_ar :
+                    language === 'he' ? companyInfo.address_he :
+                    companyInfo.address_en
+                  ) : (
+                    language === 'ar' ? 'عرابة الشارع الرئيسي' :
+                    language === 'he' ? 'ערבה הרחוב הראשי' :
+                    'Arraba Main Street'
+                  )}
+                </Text>
+                <Text style={[styles.companyPhone, isLargeScreen && styles.companyPhoneLarge]}>
+                  📞 {companyInfo?.phone1 || '05260000841'}
+                  {companyInfo?.phone2 && ` | ${companyInfo.phone2}`}
+                  {companyInfo?.phone3 && ` | ${companyInfo.phone3}`}
+                </Text>
+              </View>
             </View>
             {isLargeScreen && (
               <Text style={styles.currencyIconRight}>💶</Text>
             )}
           </View>
-        </View>
+        </LinearGradient>
 
         {/* Last Update Time */}
         {lastUpdateTime && (
@@ -1004,7 +1036,7 @@ export default function PricesScreen() {
                     key={currency.id}
                     style={[
                       styles.tableRow,
-                      index % 2 === 0 ? styles.evenRow : styles.oddRow,
+                      { backgroundColor: getCurrencyColor(currency.code) },
                       !currency.is_active && styles.unavailableRow,
                       isRTL && styles.tableRowRTL
                     ]}
@@ -1368,7 +1400,7 @@ export default function PricesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F0FDF4',
   },
   scrollContainer: {
     flex: 1,
@@ -1382,20 +1414,19 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   header: {
-    backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 12,
-    borderBottomWidth: 2,
-    borderBottomColor: '#059669',
-    shadowColor: '#000',
+    borderBottomWidth: 3,
+    borderBottomColor: '#047857',
+    shadowColor: '#059669',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 6,
     },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 10,
   },
   headerLarge: {
     paddingTop: 30,
@@ -1411,18 +1442,22 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
   },
   settingsButtonText: {
     fontSize: 20,
   },
   languageSelector: {
     flexDirection: 'row',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 20,
     padding: 2,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
   },
   langButton: {
     paddingHorizontal: 12,
@@ -1430,15 +1465,15 @@ const styles = StyleSheet.create({
     borderRadius: 18,
   },
   activeLangButton: {
-    backgroundColor: '#059669',
+    backgroundColor: '#FFFFFF',
   },
   langButtonText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#6B7280',
+    color: '#FFFFFF',
   },
   activeLangButtonText: {
-    color: '#FFFFFF',
+    color: '#059669',
   },
   companyInfo: {
     alignItems: 'center',
@@ -1459,49 +1494,70 @@ const styles = StyleSheet.create({
     fontSize: 60,
   },
   companyName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#059669',
-    marginBottom: 4,
+    fontSize: 24,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    marginBottom: 12,
     textAlign: 'center',
-    letterSpacing: 0.5,
+    letterSpacing: 1.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 6,
   },
   companyNameLarge: {
-    fontSize: 36,
-    marginBottom: 8,
+    fontSize: 42,
+    marginBottom: 16,
+    letterSpacing: 2,
+  },
+  companyDetailsContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    gap: 4,
   },
   companyAddress: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 2,
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '600',
+    marginBottom: 4,
     textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   companyAddressLarge: {
-    fontSize: 20,
-    marginBottom: 5,
+    fontSize: 22,
+    marginBottom: 6,
   },
   companyPhone: {
-    fontSize: 11,
-    color: '#059669',
-    fontWeight: '600',
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '700',
     textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   companyPhoneLarge: {
-    fontSize: 18,
+    fontSize: 20,
   },
   updateTimeContainer: {
-    backgroundColor: '#ECFDF5',
-    paddingVertical: 10,
+    backgroundColor: '#D1FAE5',
+    paddingVertical: 12,
     paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#A7F3D0',
+    borderBottomWidth: 2,
+    borderBottomColor: '#10B981',
     justifyContent: 'center',
     alignItems: 'center',
   },
   updateTimeText: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#047857',
-    fontWeight: '700',
+    fontWeight: '900',
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   // Advertisement Carousel Styles
   advertisementContainer: {
@@ -1575,7 +1631,7 @@ const styles = StyleSheet.create({
   },
   // Working Hours Styles
   workingHoursContainer: {
-    backgroundColor: '#065F46',
+    backgroundColor: '#047857',
     margin: 20,
     padding: 24,
     borderRadius: 16,
@@ -1583,16 +1639,16 @@ const styles = StyleSheet.create({
     shadowColor: '#059669',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 6,
     },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 6,
-    borderWidth: 2,
-    borderColor: '#059669',
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 10,
+    borderWidth: 3,
+    borderColor: '#10B981',
   },
   workingHoursContainerLarge: {
-    backgroundColor: '#065F46',
+    backgroundColor: '#047857',
     width: 280,
     padding: 24,
     borderRadius: 16,
@@ -1600,38 +1656,47 @@ const styles = StyleSheet.create({
     shadowColor: '#059669',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 6,
     },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 6,
-    borderWidth: 2,
-    borderColor: '#059669',
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 10,
+    borderWidth: 3,
+    borderColor: '#10B981',
   },
   workingHoursTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '900',
     color: '#FFFFFF',
     marginBottom: 16,
-    letterSpacing: 0.5,
+    letterSpacing: 1,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   workingHoursContent: {
     width: '100%',
     alignItems: 'center',
   },
   workingHoursText: {
-    fontSize: 16,
-    color: '#D1FAE5',
-    fontWeight: '600',
+    fontSize: 18,
+    color: '#FFFFFF',
+    fontWeight: '700',
     marginBottom: 10,
     textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   workingDaysText: {
-    fontSize: 14,
-    color: '#A7F3D0',
+    fontSize: 16,
+    color: '#D1FAE5',
     textAlign: 'center',
     marginTop: 6,
-    fontWeight: '600',
+    fontWeight: '700',
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   tableContainer: {
     backgroundColor: '#FFFFFF',
@@ -1639,21 +1704,23 @@ const styles = StyleSheet.create({
     shadowColor: '#059669',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 6,
     },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 10,
     marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#D1FAE5',
+    borderWidth: 3,
+    borderColor: '#10B981',
   },
   tableHeader: {
-    backgroundColor: '#059669',
+    backgroundColor: '#047857',
     paddingHorizontal: 20,
-    paddingVertical: 18,
+    paddingVertical: 20,
     borderTopLeftRadius: 15,
     borderTopRightRadius: 15,
+    borderBottomWidth: 3,
+    borderBottomColor: '#059669',
   },
   tableHeaderLarge: {
     position: 'relative',
@@ -1668,10 +1735,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tableTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '900',
     color: '#FFFFFF',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   calculatorButton: {
     width: 40,
@@ -1692,19 +1762,21 @@ const styles = StyleSheet.create({
   },
   // Instruction Message
   instructionContainer: {
-    backgroundColor: '#10B981',
-    paddingVertical: 16,
+    backgroundColor: '#059669',
+    paddingVertical: 18,
     paddingHorizontal: 20,
     borderBottomWidth: 3,
-    borderBottomColor: '#059669',
+    borderBottomColor: '#047857',
+    borderTopWidth: 3,
+    borderTopColor: '#10B981',
     shadowColor: '#10B981',
     shadowOffset: {
       width: 0,
       height: 4,
     },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    elevation: 10,
   },
   instructionText: {
     fontSize: 16,
@@ -1721,10 +1793,10 @@ const styles = StyleSheet.create({
   },
   tableHeaderRow: {
     flexDirection: 'row',
-    backgroundColor: '#F0FDF4',
-    paddingVertical: 14,
-    borderBottomWidth: 2,
-    borderBottomColor: '#A7F3D0',
+    backgroundColor: '#D1FAE5',
+    paddingVertical: 16,
+    borderBottomWidth: 3,
+    borderBottomColor: '#059669',
   },
   tableHeaderRowRTL: {
     flexDirection: 'row-reverse',
@@ -1754,22 +1826,17 @@ const styles = StyleSheet.create({
   tableRow: {
     flexDirection: 'row',
     paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomWidth: 2,
+    borderBottomColor: '#D1D5DB',
     position: 'relative',
+    borderLeftWidth: 4,
+    borderLeftColor: '#059669',
   },
   tableRowRTL: {
     flexDirection: 'row-reverse',
   },
-  evenRow: {
-    backgroundColor: '#FFFFFF',
-  },
-  oddRow: {
-    backgroundColor: '#F8FAFC',
-  },
   unavailableRow: {
-    backgroundColor: '#F5F5F5',
-    opacity: 0.95,
+    opacity: 0.7,
   },
   unavailableOverlay: {
     position: 'absolute',
@@ -1820,21 +1887,25 @@ const styles = StyleSheet.create({
   },
   currencyCode: {
     fontSize: 17,
-    fontWeight: 'bold',
-    color: '#059669',
+    fontWeight: '900',
+    color: '#047857',
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   selectedCurrencyCode: {
-    color: '#047857',
+    color: '#065F46',
     fontWeight: '900',
   },
   currencyName: {
     fontSize: 12,
-    color: '#6B7280',
+    color: '#374151',
     marginTop: 2,
     textAlign: 'center',
+    fontWeight: '600',
   },
   selectedCurrencyName: {
-    color: '#047857',
+    color: '#065F46',
     fontWeight: 'bold',
   },
   selectedIndicator: {
@@ -1876,18 +1947,27 @@ const styles = StyleSheet.create({
   },
   currentRate: {
     fontSize: 15,
-    fontWeight: 'bold',
+    fontWeight: '900',
     color: '#0891B2',
+    textShadowColor: 'rgba(8, 145, 178, 0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   buyRate: {
     fontSize: 15,
-    fontWeight: 'bold',
+    fontWeight: '900',
     color: '#DC2626',
+    textShadowColor: 'rgba(220, 38, 38, 0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   sellRate: {
     fontSize: 15,
-    fontWeight: 'bold',
+    fontWeight: '900',
     color: '#059669',
+    textShadowColor: 'rgba(5, 150, 105, 0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   availabilityCell: {
     flex: 0.8,
@@ -1912,28 +1992,31 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   customerButton: {
-    backgroundColor: '#059669',
+    backgroundColor: '#047857',
     margin: 20,
     marginTop: 10,
-    padding: 22,
+    padding: 24,
     borderRadius: 16,
     alignItems: 'center',
     shadowColor: '#059669',
     shadowOffset: {
       width: 0,
-      height: 6,
+      height: 8,
     },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 10,
-    borderWidth: 2,
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 12,
+    borderWidth: 3,
     borderColor: '#10B981',
   },
   customerButtonText: {
-    fontSize: 22,
-    fontWeight: 'bold',
+    fontSize: 24,
+    fontWeight: '900',
     color: '#FFFFFF',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   // Calculator Modal Styles
   modalOverlay: {
