@@ -294,6 +294,11 @@ export default function CalculatorScreen() {
               style={styles.currencyButton}
               onPress={() => cycleCurrency(fromCurrency, true)}
             >
+              <Text style={styles.currencyLabel}>
+                {language === 'ar' && 'تدفع بعملة'}
+                {language === 'he' && 'אתה משלם'}
+                {language === 'en' && 'You pay'}
+              </Text>
               <Text style={styles.currencyButtonCode}>{fromCurrency}</Text>
               <Text style={styles.currencyButtonName}>
                 {fromCurrency === 'ILS' ? (
@@ -330,6 +335,11 @@ export default function CalculatorScreen() {
               style={styles.currencyButton}
               onPress={() => cycleCurrency(toCurrency, false)}
             >
+              <Text style={styles.currencyLabel}>
+                {language === 'ar' && 'تأخذ العملة'}
+                {language === 'he' && 'אתה מקבל'}
+                {language === 'en' && 'You receive'}
+              </Text>
               <Text style={styles.currencyButtonCode}>{toCurrency}</Text>
               <Text style={styles.currencyButtonName}>
                 {toCurrency === 'ILS' ? (
@@ -511,6 +521,15 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
     marginBottom: 5,
+  },
+  currencyLabel: {
+    fontSize: 11,
+    color: '#0369A1',
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   tapHintContainer: {
     flexDirection: 'row',
