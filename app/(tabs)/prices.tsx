@@ -574,10 +574,21 @@ export default function PricesScreen() {
     resetInactivityTimer();
   };
 
-  const openCalculator = async (currencyCode?: string) => {
+  const openCalculator = async (currencyCode?: string, rateType?: 'buy' | 'sell' | 'current') => {
     if (currencyCode && currencyCode !== 'ILS') {
-      await AsyncStorage.setItem('calculatorFromCurrency', 'ILS');
-      await AsyncStorage.setItem('calculatorToCurrency', currencyCode);
+      if (rateType === 'buy') {
+        // نشتري منك: العميل يدفع العملة الأجنبية (يسار) ويأخذ شيكل (يمين)
+        await AsyncStorage.setItem('calculatorFromCurrency', currencyCode);
+        await AsyncStorage.setItem('calculatorToCurrency', 'ILS');
+      } else if (rateType === 'sell') {
+        // نبيع لك: العميل يدفع شيكل (يسار) ويأخذ العملة الأجنبية (يمين)
+        await AsyncStorage.setItem('calculatorFromCurrency', 'ILS');
+        await AsyncStorage.setItem('calculatorToCurrency', currencyCode);
+      } else {
+        // السلوك الافتراضي
+        await AsyncStorage.setItem('calculatorFromCurrency', 'ILS');
+        await AsyncStorage.setItem('calculatorToCurrency', currencyCode);
+      }
     }
     router.push('/calculator');
   };
@@ -943,7 +954,7 @@ export default function PricesScreen() {
                 </View>
 
                 {allCurrencies.map((currency, index) => (
-                  <TouchableOpacity
+                  <View
                     key={currency.id}
                     style={[
                       styles.tableRow,
@@ -951,28 +962,35 @@ export default function PricesScreen() {
                       !currency.is_active && styles.unavailableRow,
                       isRTL && styles.tableRowRTL
                     ]}
-                    onPress={() => {
-                      if (currency.is_active) {
-                        openCalculator(currency.code);
-                      } else {
-                        const currencyName = language === 'ar' ? currency.name_ar :
-                                           language === 'he' ? (currency.name_he || currency.name_ar) :
-                                           currency.name_en;
-                        sendWhatsAppMessage(currencyName);
-                      }
-                    }}
-                    activeOpacity={0.7}
                   >
                     {!currency.is_active && (
-                      <View style={styles.unavailableOverlay}>
+                      <TouchableOpacity
+                        style={styles.unavailableOverlay}
+                        onPress={() => {
+                          const currencyName = language === 'ar' ? currency.name_ar :
+                                             language === 'he' ? (currency.name_he || currency.name_ar) :
+                                             currency.name_en;
+                          sendWhatsAppMessage(currencyName);
+                        }}
+                        activeOpacity={0.7}
+                      >
                         <Text style={styles.unavailableOverlayText}>
                           {language === 'ar' && '⚠️ غير متوفر - اضغط للاستفسار'}
                           {language === 'he' && '⚠️ לא זמין - לחץ לבירור'}
                           {language === 'en' && '⚠️ Unavailable - Click to inquire'}
                         </Text>
-                      </View>
+                      </TouchableOpacity>
                     )}
-                    <View style={styles.currencyCell}>
+                    <TouchableOpacity
+                      style={styles.currencyCell}
+                      onPress={() => {
+                        if (currency.is_active) {
+                          openCalculator(currency.code, 'current');
+                        }
+                      }}
+                      activeOpacity={0.7}
+                      disabled={!currency.is_active}
+                    >
                       <Text style={[styles.currencyCode, !currency.is_active && styles.unavailableCurrencyCode, { fontSize: fontSize.currencyCode }]}>
                         {currency.code}
                       </Text>
@@ -981,22 +999,49 @@ export default function PricesScreen() {
                         {language === 'he' && (currency.name_he || currency.name_ar)}
                         {language === 'en' && currency.name_en}
                       </Text>
-                    </View>
-                    <View style={styles.rateCell}>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.rateCell}
+                      onPress={() => {
+                        if (currency.is_active) {
+                          openCalculator(currency.code, 'current');
+                        }
+                      }}
+                      activeOpacity={0.7}
+                      disabled={!currency.is_active}
+                    >
                       <Text style={[styles.currentRate, !currency.is_active && styles.unavailableCurrentRate, { fontSize: fontSize.rateValue }]}>
                         {currency.current_rate?.toFixed(2) || 'N/A'}
                       </Text>
-                    </View>
-                    <View style={styles.rateCell}>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.rateCell}
+                      onPress={() => {
+                        if (currency.is_active) {
+                          openCalculator(currency.code, 'buy');
+                        }
+                      }}
+                      activeOpacity={0.7}
+                      disabled={!currency.is_active}
+                    >
                       <Text style={[styles.buyRate, !currency.is_active && styles.unavailableBuyRate, { fontSize: fontSize.rateValue }]}>
                         {currency.buy_rate?.toFixed(2) || 'N/A'}
                       </Text>
-                    </View>
-                    <View style={styles.rateCell}>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.rateCell}
+                      onPress={() => {
+                        if (currency.is_active) {
+                          openCalculator(currency.code, 'sell');
+                        }
+                      }}
+                      activeOpacity={0.7}
+                      disabled={!currency.is_active}
+                    >
                       <Text style={[styles.sellRate, !currency.is_active && styles.unavailableSellRate, { fontSize: fontSize.rateValue }]}>
                         {currency.sell_rate?.toFixed(2) || 'N/A'}
                       </Text>
-                    </View>
+                    </TouchableOpacity>
                     <View style={styles.availabilityCell}>
                       <Text
                         style={[
@@ -1004,9 +1049,6 @@ export default function PricesScreen() {
                           currency.is_active ? styles.availableIcon : styles.unavailableIcon,
                           { fontSize: isLargeScreen ? 26 : 16 }
                         ]}
-                        onPress={(e) => {
-                          e.stopPropagation();
-                        }}
                       >
                         {currency.is_active ? '✅' : '⚠️'}
                       </Text>
@@ -1022,7 +1064,7 @@ export default function PricesScreen() {
                         )}
                       </Text>
                     </View>
-                  </TouchableOpacity>
+                  </View>
                 ))}
               </View>
             </View>
