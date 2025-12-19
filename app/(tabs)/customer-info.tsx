@@ -249,11 +249,13 @@ export default function CustomerInfoScreen() {
   };
 
   const handleNationalIdChange = (text: string) => {
+    resetTimer();
+
     // السماح بالأرقام فقط
     const numericText = text.replace(/[^0-9]/g, '');
-    
+
     setCustomerInfo(prev => ({ ...prev, national_id: numericText }));
-    
+
     // البحث التلقائي عند إكمال 9 أرقام
     if (numericText.length === 9) {
       searchCustomerByNationalId(numericText);
@@ -778,12 +780,15 @@ export default function CustomerInfoScreen() {
               </Text>
               <TextInput
                 style={[
-                  styles.input, 
+                  styles.input,
                   customerFound && styles.foundInput,
                   { textAlign: getTextAlign() }
                 ]}
                 value={customerInfo.customer_name}
-                onChangeText={(text) => setCustomerInfo(prev => ({ ...prev, customer_name: text }))}
+                onChangeText={(text) => {
+                  resetTimer();
+                  setCustomerInfo(prev => ({ ...prev, customer_name: text }));
+                }}
                 placeholder={
                   language === 'ar' ? 'أحمد محمد' :
                   language === 'he' ? 'אחמד מוחמד' :
@@ -807,7 +812,10 @@ export default function CustomerInfoScreen() {
                   { textAlign: 'center' }
                 ]}
                 value={customerInfo.phone_number}
-                onChangeText={(text) => setCustomerInfo(prev => ({ ...prev, phone_number: text }))}
+                onChangeText={(text) => {
+                  resetTimer();
+                  setCustomerInfo(prev => ({ ...prev, phone_number: text }));
+                }}
                 placeholder="0501234567"
                 keyboardType="phone-pad"
                 editable={true}
