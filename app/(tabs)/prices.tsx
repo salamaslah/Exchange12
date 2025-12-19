@@ -79,6 +79,7 @@ export default function PricesScreen() {
   const [inactivityTimer, setInactivityTimer] = useState<NodeJS.Timeout | null>(null);
   const [screenData, setScreenData] = useState(Dimensions.get('window'));
   const [lastUpdateTime, setLastUpdateTime] = useState<string>('');
+  const [selectedFirstCurrency, setSelectedFirstCurrency] = useState<string | null>(null);
   const router = useRouter();
   const isScreenFocused = useRef<boolean>(false);
   const appState = useRef(AppState.currentState);
@@ -154,6 +155,7 @@ export default function PricesScreen() {
         console.log('❌ صفحة الأسعار لم تعد نشطة - تنظيف المؤقتات');
         isScreenFocused.current = false;
         clearInactivityTimer();
+        setSelectedFirstCurrency(null);
       };
     }, [])
   );
@@ -574,6 +576,25 @@ export default function PricesScreen() {
     resetInactivityTimer();
   };
 
+  const handleCurrencyNameClick = (currencyCode: string) => {
+    if (!selectedFirstCurrency) {
+      setSelectedFirstCurrency(currencyCode);
+    } else {
+      if (selectedFirstCurrency === currencyCode) {
+        setSelectedFirstCurrency(null);
+      } else {
+        openCalculatorWithTwoCurrencies(selectedFirstCurrency, currencyCode);
+        setSelectedFirstCurrency(null);
+      }
+    }
+  };
+
+  const openCalculatorWithTwoCurrencies = async (firstCurrency: string, secondCurrency: string) => {
+    await AsyncStorage.setItem('calculatorFromCurrency', firstCurrency);
+    await AsyncStorage.setItem('calculatorToCurrency', secondCurrency);
+    router.push('/calculator');
+  };
+
   const openCalculator = async (currencyCode?: string, rateType?: 'buy' | 'sell' | 'current') => {
     if (currencyCode && currencyCode !== 'ILS') {
       if (rateType === 'buy') {
@@ -908,9 +929,19 @@ export default function PricesScreen() {
                 ]}
               >
                 <Text style={styles.instructionText}>
-                  {language === 'ar' && '👆 اضغط على العملة بالجدول  '}
-                  {language === 'he' && '👆 לחץ על המטבע בטבלה '}
-                  {language === 'en' && '👆 Click on the currency '}
+                  {!selectedFirstCurrency ? (
+                    <>
+                      {language === 'ar' && '👆 اضغط على اسم العملة لاختيارها'}
+                      {language === 'he' && '👆 לחץ על שם המטבע לבחירה'}
+                      {language === 'en' && '👆 Click on currency name to select'}
+                    </>
+                  ) : (
+                    <>
+                      {language === 'ar' && '✓ اختر عملة ثانية للتبديل'}
+                      {language === 'he' && '✓ בחר מטבע שני להמרה'}
+                      {language === 'en' && '✓ Select second currency to exchange'}
+                    </>
+                  )}
                 </Text>
               </Animated.View>
 
@@ -982,23 +1013,39 @@ export default function PricesScreen() {
                       </TouchableOpacity>
                     )}
                     <TouchableOpacity
-                      style={styles.currencyCell}
+                      style={[
+                        styles.currencyCell,
+                        selectedFirstCurrency === currency.code && styles.selectedCurrencyCell
+                      ]}
                       onPress={() => {
                         if (currency.is_active) {
-                          openCalculator(currency.code, 'current');
+                          handleCurrencyNameClick(currency.code);
                         }
                       }}
                       activeOpacity={0.7}
                       disabled={!currency.is_active}
                     >
-                      <Text style={[styles.currencyCode, !currency.is_active && styles.unavailableCurrencyCode, { fontSize: fontSize.currencyCode }]}>
+                      <Text style={[
+                        styles.currencyCode,
+                        !currency.is_active && styles.unavailableCurrencyCode,
+                        selectedFirstCurrency === currency.code && styles.selectedCurrencyCode,
+                        { fontSize: fontSize.currencyCode }
+                      ]}>
                         {currency.code}
                       </Text>
-                      <Text style={[styles.currencyName, !currency.is_active && styles.unavailableCurrencyName, { fontSize: fontSize.currencyName }]}>
+                      <Text style={[
+                        styles.currencyName,
+                        !currency.is_active && styles.unavailableCurrencyName,
+                        selectedFirstCurrency === currency.code && styles.selectedCurrencyName,
+                        { fontSize: fontSize.currencyName }
+                      ]}>
                         {language === 'ar' && currency.name_ar}
                         {language === 'he' && (currency.name_he || currency.name_ar)}
                         {language === 'en' && currency.name_en}
                       </Text>
+                      {selectedFirstCurrency === currency.code && (
+                        <Text style={styles.selectedIndicator}>✓</Text>
+                      )}
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.rateCell}
@@ -1748,17 +1795,40 @@ const styles = StyleSheet.create({
     flex: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
+  },
+  selectedCurrencyCell: {
+    backgroundColor: '#D1FAE5',
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#059669',
   },
   currencyCode: {
     fontSize: 17,
     fontWeight: 'bold',
     color: '#059669',
   },
+  selectedCurrencyCode: {
+    color: '#047857',
+    fontWeight: '900',
+  },
   currencyName: {
     fontSize: 12,
     color: '#6B7280',
     marginTop: 2,
     textAlign: 'center',
+  },
+  selectedCurrencyName: {
+    color: '#047857',
+    fontWeight: 'bold',
+  },
+  selectedIndicator: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    fontSize: 16,
+    color: '#059669',
+    fontWeight: 'bold',
   },
   unavailableText: {
     color: '#6B7280',
