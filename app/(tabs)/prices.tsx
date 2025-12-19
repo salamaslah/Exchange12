@@ -952,45 +952,56 @@ export default function PricesScreen() {
               </View>
 
               {/* Instruction Message */}
-              <Animated.View
-                style={[
-                  styles.instructionContainer,
-                  {
-                    transform: [{ scale: pulseAnim }],
-                  }
-                ]}
-              >
-                <Text style={styles.instructionText}>
-                  {!selectedFirstCurrency ? (
-                    <>
-                      {language === 'ar' && (
-                        <>
-                          {'👇 اضغط على سعر شراء أو بيع عملة أجنبية في الجدول\n'}
-                          {'لتبديل عملة أجنبية اختر العملتين اللتين تريد تبديلهما'}
-                        </>
-                      )}
-                      {language === 'he' && (
-                        <>
-                          {'👇 לחץ על שער קנייה או מכירה של מטבע זר בטבלה\n'}
-                          {'להמרת מטבע זר בחר את שני המטבעות שברצונך להמיר'}
-                        </>
-                      )}
-                      {language === 'en' && (
-                        <>
-                          {'👇 Click on buy or sell rate of a foreign currency in the table\n'}
-                          {'To exchange foreign currency select the two currencies you want to exchange'}
-                        </>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      {language === 'ar' && '✓ اختر عملة ثانية للتبديل'}
-                      {language === 'he' && '✓ בחר מטבע שני להמרה'}
-                      {language === 'en' && '✓ Select second currency to exchange'}
-                    </>
-                  )}
-                </Text>
-              </Animated.View>
+              {!selectedFirstCurrency ? (
+                <View style={styles.instructionWrapper}>
+                  <Animated.View
+                    style={[
+                      styles.instructionContainer,
+                      styles.instructionBox1,
+                      {
+                        transform: [{ scale: pulseAnim }],
+                      }
+                    ]}
+                  >
+                    <Text style={styles.instructionText}>
+                      {language === 'ar' && '👇 اضغط على سعر شراء أو بيع عملة أجنبية في الجدول'}
+                      {language === 'he' && '👇 לחץ על שער קנייה או מכירה של מטבע זר בטבלה'}
+                      {language === 'en' && '👇 Click on buy or sell rate of a foreign currency in the table'}
+                    </Text>
+                  </Animated.View>
+
+                  <Animated.View
+                    style={[
+                      styles.instructionContainer,
+                      styles.instructionBox2,
+                      {
+                        transform: [{ scale: pulseAnim }],
+                      }
+                    ]}
+                  >
+                    <Text style={styles.instructionText}>
+                      {language === 'ar' && 'لتبديل عملة أجنبية اختر العملتين اللتين تريد تبديلهما'}
+                      {language === 'he' && 'להמרת מטבע זר בחר את שני המטבעות שברצונך להמיר'}
+                      {language === 'en' && 'To exchange foreign currency select the two currencies you want to exchange'}
+                    </Text>
+                  </Animated.View>
+                </View>
+              ) : (
+                <Animated.View
+                  style={[
+                    styles.instructionContainer,
+                    {
+                      transform: [{ scale: pulseAnim }],
+                    }
+                  ]}
+                >
+                  <Text style={styles.instructionText}>
+                    {language === 'ar' && '✓ اختر عملة ثانية للتبديل'}
+                    {language === 'he' && '✓ בחר מטבע שני להמרה'}
+                    {language === 'en' && '✓ Select second currency to exchange'}
+                  </Text>
+                </Animated.View>
+              )}
 
               <View style={styles.table}>
                 <View style={[styles.tableHeaderRow, isRTL && styles.tableHeaderRowRTL]}>
@@ -1761,6 +1772,9 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   // Instruction Message
+  instructionWrapper: {
+    overflow: 'hidden',
+  },
   instructionContainer: {
     backgroundColor: '#059669',
     paddingVertical: 18,
@@ -1777,6 +1791,25 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.5,
     shadowRadius: 10,
     elevation: 10,
+  },
+  instructionBox1: {
+    backgroundColor: '#0891B2',
+    marginBottom: 0,
+    borderBottomWidth: 2,
+    borderBottomColor: '#FFFFFF',
+    borderTopWidth: 3,
+    borderTopColor: '#06B6D4',
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+  },
+  instructionBox2: {
+    backgroundColor: '#059669',
+    marginTop: 0,
+    borderTopWidth: 0,
+    borderBottomWidth: 3,
+    borderBottomColor: '#047857',
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
   },
   instructionText: {
     fontSize: 16,
