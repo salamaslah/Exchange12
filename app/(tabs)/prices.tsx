@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, TextInput, Alert, SafeAreaView, Image, Dimensions, Linking, AppState, AppStateStatus, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, TextInput, Alert, SafeAreaView, Image, Dimensions, Linking, AppState, AppStateStatus, Platform, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -82,6 +82,7 @@ export default function PricesScreen() {
   const router = useRouter();
   const isScreenFocused = useRef<boolean>(false);
   const appState = useRef(AppState.currentState);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useAutoUpdateRates();
 
@@ -114,6 +115,29 @@ export default function PricesScreen() {
       appStateSubscription?.remove();
     };
   }, []);
+
+  // Animation للجملة التعليمية
+  useEffect(() => {
+    const pulseAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.15,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulseAnimation.start();
+
+    return () => {
+      pulseAnimation.stop();
+    };
+  }, [pulseAnim]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -864,13 +888,20 @@ export default function PricesScreen() {
               </View>
 
               {/* Instruction Message */}
-              <View style={styles.instructionContainer}>
+              <Animated.View
+                style={[
+                  styles.instructionContainer,
+                  {
+                    transform: [{ scale: pulseAnim }],
+                  }
+                ]}
+              >
                 <Text style={styles.instructionText}>
-                  {language === 'ar' && '💡 للشراء أو البيع اضغط على الجدول'}
-                  {language === 'he' && '💡 לקנייה או מכירה לחץ על הטבלה'}
-                  {language === 'en' && '💡 For buying or selling, click on the table'}
+                  {language === 'ar' && '👆 اضغط على العملة بالجدول  '}
+                  {language === 'he' && '👆 לחץ על המטבע בטבלה '}
+                  {language === 'en' && '👆 Click on the currency '}
                 </Text>
-              </View>
+              </Animated.View>
 
               <View style={styles.table}>
                 <View style={[styles.tableHeaderRow, isRTL && styles.tableHeaderRowRTL]}>
@@ -1548,17 +1579,29 @@ const styles = StyleSheet.create({
   },
   // Instruction Message
   instructionContainer: {
-    backgroundColor: '#ECFDF5',
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#A7F3D0',
+    backgroundColor: '#10B981',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 3,
+    borderBottomColor: '#059669',
+    shadowColor: '#10B981',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
   },
   instructionText: {
-    fontSize: 14,
-    color: '#047857',
+    fontSize: 16,
+    color: '#FFFFFF',
     textAlign: 'center',
-    fontWeight: '700',
+    fontWeight: '900',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   table: {
     backgroundColor: '#FFFFFF',
