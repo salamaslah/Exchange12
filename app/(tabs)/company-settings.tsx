@@ -3,7 +3,6 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert,
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { companySettingsService, workingHoursService } from '@/lib/supabase';
-import { useInactivityTimer } from '@/hooks/useInactivityTimer';
 
 interface CompanyInfo {
   name_ar: string;
@@ -52,7 +51,6 @@ export default function CompanySettingsScreen() {
 
   const [screenData, setScreenData] = useState(Dimensions.get('window'));
   const router = useRouter();
-  const { resetTimer } = useInactivityTimer();
 
   useEffect(() => {
     const onChange = (result: any) => {
@@ -263,7 +261,6 @@ export default function CompanySettingsScreen() {
       <ScrollView
         style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
-        onTouchStart={resetTimer}
         contentContainerStyle={{ paddingBottom: 50 }}
       >
         <View style={styles.header}>

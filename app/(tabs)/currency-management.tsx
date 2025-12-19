@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert,
 import { useRouter } from 'expo-router';
 import { currencyService, currencyUpdateLogService, supabase } from '@/lib/supabase';
 import { exchangeRateAPI } from '@/lib/exchangeRateAPI';
-import { useInactivityTimer } from '@/hooks/useInactivityTimer';
 
 interface Currency {
   id: string;
@@ -44,7 +43,6 @@ export default function CurrencyManagementScreen() {
   const [editingRateCurrency, setEditingRateCurrency] = useState<Currency | null>(null);
   const [newRateValue, setNewRateValue] = useState('');
   const router = useRouter();
-  const { resetTimer } = useInactivityTimer();
 
   // قائمة العملات المتاحة للإضافة
   const availableCurrencies = [
@@ -517,7 +515,6 @@ export default function CurrencyManagementScreen() {
       <ScrollView
         style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
-        onTouchStart={resetTimer}
         showsHorizontalScrollIndicator={false}
       >
         <View style={styles.header}>

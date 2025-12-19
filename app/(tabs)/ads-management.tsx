@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Modal, Image, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
-import { useInactivityTimer } from '@/hooks/useInactivityTimer';
 
 interface Advertisement {
   id: string;
@@ -24,7 +23,6 @@ export default function AdsManagementScreen() {
     image_url: ''
   });
   const router = useRouter();
-  const { resetTimer } = useInactivityTimer();
 
   useEffect(() => {
     loadAdvertisements();
@@ -186,7 +184,6 @@ export default function AdsManagementScreen() {
     <ScrollView
       style={styles.scrollContainer}
       showsVerticalScrollIndicator={false}
-      onTouchStart={resetTimer}
       showsHorizontalScrollIndicator={false}
     >
       <View style={styles.header}>
