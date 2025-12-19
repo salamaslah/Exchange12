@@ -725,7 +725,7 @@ export default function PricesScreen() {
 
   // أحجام خطوط ديناميكية حسب حجم الشاشة
   const fontSize = {
-    headerText: isLargeScreen ? 22 : 13,
+    headerText: isLargeScreen ? 26 : 16,
     currencyCode: isLargeScreen ? 28 : 17,
     currencyName: isLargeScreen ? 18 : 12,
     rateValue: isLargeScreen ? 26 : 15,
@@ -921,16 +921,16 @@ export default function PricesScreen() {
                   </View>
                   <View style={styles.rateHeaderCell}>
                     <Text style={[styles.headerText, { fontSize: fontSize.headerText }]}>
-                      {language === 'ar' && 'نشتري'}
-                      {language === 'he' && 'קונים'}
-                      {language === 'en' && 'We Buy'}
+                      {language === 'ar' && 'نشتري منك'}
+                      {language === 'he' && 'קונים ממך'}
+                      {language === 'en' && 'We Buy from You'}
                     </Text>
                   </View>
                   <View style={styles.rateHeaderCell}>
                     <Text style={[styles.headerText, { fontSize: fontSize.headerText }]}>
-                      {language === 'ar' && 'نبيع'}
-                      {language === 'he' && 'מוכרים'}
-                      {language === 'en' && 'We Sell'}
+                      {language === 'ar' && 'نبيع لك'}
+                      {language === 'he' && 'מוכרים לך'}
+                      {language === 'en' && 'We Sell to You'}
                     </Text>
                   </View>
                   <View style={styles.availabilityHeaderCell}>
@@ -1641,10 +1641,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerText: {
-    fontSize: 13,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '900',
     color: '#065F46',
     textAlign: 'center',
+    letterSpacing: 0.3,
   },
   tableRow: {
     flexDirection: 'row',
