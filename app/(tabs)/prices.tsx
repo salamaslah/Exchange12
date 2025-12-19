@@ -732,6 +732,66 @@ export default function PricesScreen() {
     };
   }, []);
 
+  const openMapsOptions = () => {
+    const latitude = 32.856665;
+    const longitude = 35.335847;
+    const label = 'Naamneh Exchange';
+
+    Alert.alert(
+      language === 'ar' ? 'اختر تطبيق الخرائط' :
+      language === 'he' ? 'בחר אפליקציית מפות' :
+      'Choose Map App',
+      language === 'ar' ? 'كيف تريد فتح الموقع؟' :
+      language === 'he' ? 'איך תרצה לפתוח את המיקום?' :
+      'How would you like to open the location?',
+      [
+        {
+          text: 'Google Maps',
+          onPress: async () => {
+            const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
+            try {
+              const canOpen = await Linking.canOpenURL(googleMapsUrl);
+              if (canOpen) {
+                await Linking.openURL(googleMapsUrl);
+              }
+            } catch (error) {
+              console.error('خطأ في فتح Google Maps:', error);
+            }
+          }
+        },
+        {
+          text: 'Waze',
+          onPress: async () => {
+            const wazeUrl = `https://waze.com/ul?ll=${latitude},${longitude}&navigate=yes`;
+            try {
+              const canOpen = await Linking.canOpenURL(wazeUrl);
+              if (canOpen) {
+                await Linking.openURL(wazeUrl);
+              } else {
+                Alert.alert(
+                  language === 'ar' ? 'خطأ' :
+                  language === 'he' ? 'שגיאה' :
+                  'Error',
+                  language === 'ar' ? 'تطبيق Waze غير مثبت' :
+                  language === 'he' ? 'אפליקציית Waze לא מותקנת' :
+                  'Waze app is not installed'
+                );
+              }
+            } catch (error) {
+              console.error('خطأ في فتح Waze:', error);
+            }
+          }
+        },
+        {
+          text: language === 'ar' ? 'إلغاء' :
+                language === 'he' ? 'ביטול' :
+                'Cancel',
+          style: 'cancel'
+        }
+      ]
+    );
+  };
+
   const openWhatsApp = async () => {
     const phoneNumber = '972526000841';
 
@@ -917,17 +977,23 @@ export default function PricesScreen() {
                 )}
               </Text>
               <View style={styles.companyDetailsContainer}>
-                <Text style={[styles.companyAddress, isLargeScreen && styles.companyAddressLarge]}>
-                  📍 {companyInfo ? (
-                    language === 'ar' ? companyInfo.address_ar :
-                    language === 'he' ? companyInfo.address_he :
-                    companyInfo.address_en
-                  ) : (
-                    language === 'ar' ? 'عرابة الشارع الرئيسي' :
-                    language === 'he' ? 'ערבה הרחוב הראשי' :
-                    'Arraba Main Street'
-                  )}
-                </Text>
+                <TouchableOpacity
+                  onPress={() => openMapsOptions()}
+                  activeOpacity={0.7}
+                  style={styles.addressButton}
+                >
+                  <Text style={[styles.companyAddress, isLargeScreen && styles.companyAddressLarge]}>
+                    📍 {companyInfo ? (
+                      language === 'ar' ? companyInfo.address_ar :
+                      language === 'he' ? companyInfo.address_he :
+                      companyInfo.address_en
+                    ) : (
+                      language === 'ar' ? 'عرابة الشارع الرئيسي' :
+                      language === 'he' ? 'ערבה הרחוב הראשי' :
+                      'Arraba Main Street'
+                    )}
+                  </Text>
+                </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => openWhatsApp()}
                   activeOpacity={0.7}
@@ -1609,6 +1675,11 @@ const styles = StyleSheet.create({
   companyAddressLarge: {
     fontSize: 22,
     marginBottom: 6,
+  },
+  addressButton: {
+    borderRadius: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
   },
   phoneButton: {
     borderRadius: 8,
