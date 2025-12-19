@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, SafeAreaVi
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/lib/supabase';
+import { useInactivityTimer } from '@/hooks/useInactivityTimer';
 
 interface Service {
   id: string;
@@ -17,6 +18,7 @@ export default function ServicesScreen() {
   const [loading, setLoading] = useState(true);
   const [language, setLanguage] = useState<'ar' | 'he' | 'en'>('ar');
   const router = useRouter();
+  const { resetTimer } = useInactivityTimer();
 
   useEffect(() => {
     loadServices();
@@ -239,10 +241,11 @@ export default function ServicesScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
+      <ScrollView
         style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
         showsHorizontalScrollIndicator={false}
+        onTouchStart={resetTimer}
       >
         <View style={styles.header}>
           <Text style={[styles.title, { textAlign: getTextAlign() }]}>
@@ -250,7 +253,10 @@ export default function ServicesScreen() {
             {language === 'he' && 'שירותים זמינים'}
             {language === 'en' && 'Available Services'}
           </Text>
-          <TouchableOpacity style={styles.backToPricesButton} onPress={handleBackToPrices}>
+          <TouchableOpacity style={styles.backToPricesButton} onPress={() => {
+            resetTimer();
+            handleBackToPrices();
+          }}>
             <Text style={styles.backToPricesButtonText}>
               {language === 'ar' && 'العودة للأسعار'}
               {language === 'he' && 'חזרה למחירים'}
@@ -279,7 +285,10 @@ export default function ServicesScreen() {
               <TouchableOpacity
                 key={service.id}
                 style={styles.serviceCard}
-                onPress={() => handleServiceSelect(service)}
+                onPress={() => {
+                  resetTimer();
+                  handleServiceSelect(service);
+                }}
               >
                 <View style={styles.serviceContent}>
                   <Text style={styles.serviceIcon}>{getServiceIcon(service.service_number)}</Text>

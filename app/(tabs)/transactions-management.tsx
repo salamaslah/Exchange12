@@ -14,6 +14,7 @@ import {
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useInactivityTimer } from '@/hooks/useInactivityTimer';
 
 interface Transaction {
   id: string;
@@ -38,6 +39,7 @@ interface Currency {
 export default function TransactionsManagement() {
   const { width } = useWindowDimensions();
   const isLargeScreen = width >= 768;
+  const { resetTimer } = useInactivityTimer();
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [completedTransactions, setCompletedTransactions] = useState<Transaction[]>([]);
@@ -291,7 +293,7 @@ export default function TransactionsManagement() {
       </View>
 
       {/* Main ScrollView */}
-      <ScrollView style={styles.mainScrollView}>
+      <ScrollView style={styles.mainScrollView} onTouchStart={resetTimer}>
         {/* المعاملات غير المكتملة */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>المعاملات غير المكتملة</Text>

@@ -14,6 +14,7 @@ import {
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useInactivityTimer } from '@/hooks/useInactivityTimer';
 
 interface TreasuryBalance {
   id: string;
@@ -30,6 +31,7 @@ interface TreasuryBalance {
 export default function TreasuryManagement() {
   const { width } = useWindowDimensions();
   const isLargeScreen = width >= 768;
+  const { resetTimer } = useInactivityTimer();
 
   const [balances, setBalances] = useState<TreasuryBalance[]>([]);
   const [loading, setLoading] = useState(true);
@@ -244,7 +246,7 @@ export default function TreasuryManagement() {
         <Text style={styles.closeTreasuryButtonText}>🔒 إقفال الخزينة</Text>
       </TouchableOpacity>
 
-      <ScrollView style={styles.scrollView} horizontal={!isLargeScreen}>
+      <ScrollView style={styles.scrollView} horizontal={!isLargeScreen} onTouchStart={resetTimer}>
         <View style={styles.tableContainer}>
           <View style={styles.tableHeader}>
             <Text style={[styles.headerCell, styles.codeCell]}>رمز العملة</Text>

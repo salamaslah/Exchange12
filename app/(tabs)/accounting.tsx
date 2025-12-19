@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useInactivityTimer } from '@/hooks/useInactivityTimer';
 
 export default function AccountingScreen() {
   const router = useRouter();
+  const { resetTimer } = useInactivityTimer();
 
   useEffect(() => {
     checkLoginStatus();
@@ -48,9 +50,10 @@ export default function AccountingScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-    <ScrollView 
+    <ScrollView
       style={styles.scrollContainer}
       showsVerticalScrollIndicator={false}
+      onTouchStart={resetTimer}
       showsHorizontalScrollIndicator={false}
     >
       <View style={styles.header}>

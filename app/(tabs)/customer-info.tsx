@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert,
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { customerService, transactionService } from '@/lib/supabase';
+import { useInactivityTimer } from '@/hooks/useInactivityTimer';
 
 interface CustomerInfo {
   customer_name: string;
@@ -26,6 +27,7 @@ export default function CustomerInfoScreen() {
   const [calculatorData, setCalculatorData] = useState<any>(null);
   const [hasCompleted, setHasCompleted] = useState(false);
   const router = useRouter();
+  const { resetTimer } = useInactivityTimer();
 
   useFocusEffect(
     React.useCallback(() => {
@@ -685,10 +687,11 @@ export default function CustomerInfoScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
+      <ScrollView
         style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
         showsHorizontalScrollIndicator={false}
+        onTouchStart={resetTimer}
       >
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={handleBack}>

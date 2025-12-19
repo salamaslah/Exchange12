@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert,
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { treasuryService, TreasuryBalance } from '@/lib/treasuryService';
+import { useInactivityTimer } from '@/hooks/useInactivityTimer';
 
 export default function TreasuryScreen() {
   const [balances, setBalances] = useState<TreasuryBalance[]>([]);
@@ -20,6 +21,7 @@ export default function TreasuryScreen() {
     notes: ''
   });
   const router = useRouter();
+  const { resetTimer } = useInactivityTimer();
 
   useEffect(() => {
     checkLoginStatus();
@@ -218,9 +220,10 @@ export default function TreasuryScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
+      <ScrollView
         style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
+        onTouchStart={resetTimer}
         showsHorizontalScrollIndicator={false}
       >
         <View style={styles.header}>
