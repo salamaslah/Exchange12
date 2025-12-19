@@ -306,11 +306,14 @@ export default function CalculatorScreen() {
                   allCurrencies.find(c => c.code === fromCurrency)?.name_en
                 ) || fromCurrency}
               </Text>
-              <Text style={styles.tapHint}>
-                {language === 'ar' && 'اضغط للتبديل'}
-                {language === 'he' && 'לחץ להחלפה'}
-                {language === 'en' && 'Tap to switch'}
-              </Text>
+              <View style={styles.tapHintContainer}>
+                <Text style={styles.tapHintEmoji}>👆</Text>
+                <Text style={styles.tapHint}>
+                  {language === 'ar' && 'اضغط لتبديل العملة'}
+                  {language === 'he' && 'לחץ להחלפת מטבע'}
+                  {language === 'en' && 'Tap to switch currency'}
+                </Text>
+              </View>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.swapButton}
@@ -334,11 +337,14 @@ export default function CalculatorScreen() {
                   allCurrencies.find(c => c.code === toCurrency)?.name_en
                 ) || toCurrency}
               </Text>
-              <Text style={styles.tapHint}>
-                {language === 'ar' && 'اضغط للتبديل'}
-                {language === 'he' && 'לחץ להחלפה'}
-                {language === 'en' && 'Tap to switch'}
-              </Text>
+              <View style={styles.tapHintContainer}>
+                <Text style={styles.tapHintEmoji}>👆</Text>
+                <Text style={styles.tapHint}>
+                  {language === 'ar' && 'اضغط لتبديل العملة'}
+                  {language === 'he' && 'לחץ להחלפת מטבע'}
+                  {language === 'en' && 'Tap to switch currency'}
+                </Text>
+              </View>
             </TouchableOpacity>
           </View>
         </View>
@@ -501,9 +507,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 5,
   },
+  tapHintContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    marginTop: 8,
+    backgroundColor: '#E0F2FE',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  tapHintEmoji: {
+    fontSize: 14,
+  },
   tapHint: {
-    fontSize: 10,
-    color: '#9CA3AF',
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#0369A1',
     textAlign: 'center',
   },
   swapButton: {
