@@ -19,6 +19,7 @@ export default function CustomerInfoScreen() {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [nationalId, setNationalId] = useState('');
   const [customerName, setCustomerName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [language, setLanguage] = useState<'ar' | 'he' | 'en'>('ar');
   const [idImage, setIdImage] = useState<string | null>(null);
@@ -63,6 +64,7 @@ export default function CustomerInfoScreen() {
         // مسح البيانات السابقة
         setNationalId('');
         setCustomerName('');
+        setPhoneNumber('');
         setIdImage(null);
         setLicenseImage(null);
         setPassportImage(null);
@@ -254,6 +256,17 @@ export default function CustomerInfoScreen() {
       return;
     }
 
+    // التحقق من رقم الهاتف للزبائن الجدد
+    if (isNewCustomer && (!phoneNumber || phoneNumber.trim().length < 9)) {
+      Alert.alert(
+        language === 'ar' ? 'خطأ' : language === 'he' ? 'שגיאה' : 'Error',
+        language === 'ar' ? 'الرجاء إدخال رقم هاتف صحيح (9 أرقام على الأقل)' :
+        language === 'he' ? 'אנא הכנס מספר טלפון תקין (9 ספרות לפחות)' :
+        'Please enter valid phone number (at least 9 digits)'
+      );
+      return;
+    }
+
     // التحقق من صورة الهوية للزبائن الجدد
     if (isNewCustomer && !idImage) {
       Alert.alert(
@@ -265,13 +278,33 @@ export default function CustomerInfoScreen() {
       return;
     }
 
-    // التحقق من المتطلبات الإضافية
-    if (selectedService.service_number === 1 && isNewCustomer && !licenseImage) {
+    // التحقق من المتطلبات الإضافية للخدمات: 1 (كرت مسبق الدفع)، 3 (صرافة أموال)، 4 (تحويل لحساب صاحب المحل)
+    if (isNewCustomer && (selectedService.service_number === 1 || selectedService.service_number === 3 || selectedService.service_number === 4) && !licenseImage) {
+      const serviceNames = {
+        1: {
+          ar: 'إنشاء كرت مسبق الدفع',
+          he: 'יצירת כרטיס משולם מראש',
+          en: 'creating a prepaid card'
+        },
+        3: {
+          ar: 'صرافة الأموال',
+          he: 'החלפת כסף',
+          en: 'money exchange'
+        },
+        4: {
+          ar: 'التحويل لحساب صاحب المحل',
+          he: 'העברה לחשבון בעל החנות',
+          en: 'transfer to shop owner account'
+        }
+      };
+
+      const serviceName = serviceNames[selectedService.service_number as keyof typeof serviceNames];
+
       Alert.alert(
         language === 'ar' ? 'تنبيه' : language === 'he' ? 'אזהרה' : 'Warning',
-        language === 'ar' ? 'لإنشاء كرت مسبق الدفع، يرجى رفع صورة رخصة أو جواز سفر' :
-        language === 'he' ? 'ליצירת כרטיס משולם מראש, אנא העלה תמונת רישיון או דרכון' :
-        'To create a prepaid card, please upload license or passport image'
+        language === 'ar' ? `لخدمة ${serviceName.ar}، يرجى رفع صورة رخصة أو جواز سفر` :
+        language === 'he' ? `לשירות ${serviceName.he}, אנא העלה תמונת רישיון או דרכון` :
+        `For ${serviceName.en}, please upload license or passport image`
       );
       return;
     }
@@ -294,6 +327,7 @@ export default function CustomerInfoScreen() {
       await AsyncStorage.setItem('selectedServiceName', selectedService.service_name);
       await AsyncStorage.setItem('currentCustomerId', nationalId);
       if (customerName) await AsyncStorage.setItem('currentCustomerName', customerName.trim());
+      if (phoneNumber) await AsyncStorage.setItem('currentCustomerPhone', phoneNumber.trim());
       if (idImage) await AsyncStorage.setItem('currentCustomerImage1', idImage);
       if (licenseImage) await AsyncStorage.setItem('currentCustomerImage2', licenseImage);
       if (passportImage) await AsyncStorage.setItem('currentCustomerImage3', passportImage);
@@ -325,6 +359,7 @@ export default function CustomerInfoScreen() {
       await AsyncStorage.removeItem('selectedServiceName');
       await AsyncStorage.removeItem('currentCustomerId');
       await AsyncStorage.removeItem('currentCustomerName');
+      await AsyncStorage.removeItem('currentCustomerPhone');
       await AsyncStorage.removeItem('currentCustomerImage1');
       await AsyncStorage.removeItem('currentCustomerImage2');
       await AsyncStorage.removeItem('currentCustomerImage3');
@@ -342,7 +377,11 @@ export default function CustomerInfoScreen() {
   };
 
   const shouldShowLicenseUpload = () => {
-    return selectedService?.service_number === 1 && isNewCustomer;
+    return isNewCustomer && (
+      selectedService?.service_number === 1 ||  // كرت مسبق الدفع
+      selectedService?.service_number === 3 ||  // صرافة أموال
+      selectedService?.service_number === 4     // تحويل لحساب صاحب المحل
+    );
   };
 
   const shouldShowPassportUpload = () => {
@@ -447,27 +486,53 @@ export default function CustomerInfoScreen() {
 
           {/* Customer Name Input for New Customers */}
           {isNewCustomer && (
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { textAlign: getTextAlign() }]}>
-                {language === 'ar' && 'اسم الزبون:'}
-                {language === 'he' && 'שם הלקוח:'}
-                {language === 'en' && 'Customer Name:'}
-              </Text>
+            <>
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { textAlign: getTextAlign() }]}>
+                  {language === 'ar' && 'اسم الزبون:'}
+                  {language === 'he' && 'שם הלקוח:'}
+                  {language === 'en' && 'Customer Name:'}
+                </Text>
 
-              <TextInput
-                style={[styles.input, { textAlign: getTextAlign() }]}
-                value={customerName}
-                onChangeText={(text) => {
-                  resetTimer();
-                  setCustomerName(text);
-                }}
-                placeholder={
-                  language === 'ar' ? 'أدخل اسم الزبون' :
-                  language === 'he' ? 'הכנס את שם הלקוח' :
-                  'Enter customer name'
-                }
-              />
-            </View>
+                <TextInput
+                  style={[styles.input, { textAlign: getTextAlign() }]}
+                  value={customerName}
+                  onChangeText={(text) => {
+                    resetTimer();
+                    setCustomerName(text);
+                  }}
+                  placeholder={
+                    language === 'ar' ? 'أدخل اسم الزبون' :
+                    language === 'he' ? 'הכנס את שם הלקוח' :
+                    'Enter customer name'
+                  }
+                />
+              </View>
+
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { textAlign: getTextAlign() }]}>
+                  {language === 'ar' && 'رقم الهاتف:'}
+                  {language === 'he' && 'מספר טלפון:'}
+                  {language === 'en' && 'Phone Number:'}
+                </Text>
+
+                <TextInput
+                  style={[styles.input, { textAlign: 'center' }]}
+                  value={phoneNumber}
+                  onChangeText={(text) => {
+                    resetTimer();
+                    setPhoneNumber(text);
+                  }}
+                  placeholder={
+                    language === 'ar' ? '0501234567' :
+                    language === 'he' ? '0501234567' :
+                    '0501234567'
+                  }
+                  keyboardType="phone-pad"
+                  maxLength={15}
+                />
+              </View>
+            </>
           )}
 
           {/* New Customer Message & Image Uploads */}
@@ -516,7 +581,7 @@ export default function CustomerInfoScreen() {
                 )}
               </View>
 
-              {/* License/Passport Upload for Prepaid Card */}
+              {/* License/Passport Upload for Prepaid Card, Money Exchange, and Shop Owner Transfer */}
               {shouldShowLicenseUpload() && (
                 <View style={styles.uploadSection}>
                   <Text style={[styles.uploadLabel, { textAlign: getTextAlign() }]}>
@@ -525,9 +590,9 @@ export default function CustomerInfoScreen() {
                     {language === 'en' && '📸 License or Passport Image'}
                   </Text>
                   <Text style={[styles.uploadNote, { textAlign: getTextAlign() }]}>
-                    {language === 'ar' && '(مطلوب لإنشاء كرت مسبق الدفع أو معاملة أكثر من 20000 شيقل)'}
-                    {language === 'he' && '(נדרש ליצירת כרטיס משולם מראש או עסקה מעל 20,000 שקל)'}
-                    {language === 'en' && '(Required for prepaid card or transaction over 20,000 NIS)'}
+                    {language === 'ar' && '(مطلوب لهذه الخدمة)'}
+                    {language === 'he' && '(נדרש לשירות זה)'}
+                    {language === 'en' && '(Required for this service)'}
                   </Text>
 
                   {licenseImage ? (
