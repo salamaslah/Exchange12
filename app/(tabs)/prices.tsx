@@ -1327,6 +1327,11 @@ export default function PricesScreen() {
                   <Text style={styles.workingDaysText}>
                     📅 {getWorkingDaysText()}
                   </Text>
+                  <Text style={styles.holidayText}>
+                    {language === 'ar' && '🌙 الجمعة عطلة'}
+                    {language === 'he' && '🌙 יום שישי חופש'}
+                    {language === 'en' && '🌙 Friday Holiday'}
+                  </Text>
                 </View>
               </View>
             )}
@@ -1349,6 +1354,11 @@ export default function PricesScreen() {
                 </Text>
                 <Text style={styles.workingDaysText}>
                   📅 {getWorkingDaysText()}
+                </Text>
+                <Text style={styles.holidayText}>
+                  {language === 'ar' && '🌙 الجمعة عطلة'}
+                  {language === 'he' && '🌙 יום שישי חופש'}
+                  {language === 'en' && '🌙 Friday Holiday'}
                 </Text>
               </View>
             </View>
@@ -1853,6 +1863,19 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.2)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
+  },
+  holidayText: {
+    fontSize: 16,
+    color: '#FEF3C7',
+    textAlign: 'center',
+    marginTop: 10,
+    fontWeight: '800',
+    textShadowColor: 'rgba(0, 0, 0, 0.4)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.2)',
   },
   tableContainer: {
     backgroundColor: '#FFFFFF',
