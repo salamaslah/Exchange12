@@ -4,13 +4,19 @@ import { AppState, AppStateStatus } from 'react-native';
 
 const INACTIVITY_TIMEOUT = 10000;
 
+// الصفحات التي تعود للصفحة الرئيسية بعد عدم النشاط
+const PAGES_WITH_TIMER = [
+  '/calculator',
+  '/(tabs)/customer-info'
+];
+
 export function useInactivityTimer() {
   const router = useRouter();
   const pathname = usePathname();
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const appState = useRef(AppState.currentState);
 
-  const isHomePage = pathname === '/(tabs)/prices' || pathname === '/';
+  const shouldUseTimer = PAGES_WITH_TIMER.includes(pathname);
 
   const clearTimer = () => {
     if (timerRef.current) {
@@ -20,7 +26,7 @@ export function useInactivityTimer() {
   };
 
   const resetTimer = () => {
-    if (isHomePage) {
+    if (!shouldUseTimer) {
       return;
     }
 
@@ -33,7 +39,7 @@ export function useInactivityTimer() {
   };
 
   useEffect(() => {
-    if (isHomePage) {
+    if (!shouldUseTimer) {
       clearTimer();
       return;
     }
@@ -58,7 +64,7 @@ export function useInactivityTimer() {
       clearTimer();
       subscription?.remove();
     };
-  }, [pathname, isHomePage]);
+  }, [pathname, shouldUseTimer]);
 
   return { resetTimer };
 }
