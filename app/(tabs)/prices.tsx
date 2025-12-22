@@ -874,20 +874,20 @@ export default function PricesScreen() {
     }
   };
 
-  const navigateToServices = async () => {
+  const navigateToCustomerInfo = async () => {
     try {
       await AsyncStorage.setItem('selectedLanguage', language);
       console.log('تم حفظ اللغة قبل الانتقال:', language);
-      
+
       await AsyncStorage.setItem('languageUpdateTime', Date.now().toString());
       console.log('تم حفظ وقت تحديث اللغة');
     } catch (error) {
       console.log('خطأ في حفظ اللغة:', error);
     }
-    
-    // الانتقال مباشرة لصفحة الخدمات
-    console.log('📋 الانتقال مباشرة لصفحة الخدمات...');
-    router.push('/(tabs)/services');
+
+    // الانتقال مباشرة لصفحة معلومات الزبون
+    console.log('📋 الانتقال مباشرة لصفحة معلومات الزبون...');
+    router.push('/(tabs)/customer-info');
   };
 
   const navigateToSettings = () => {
@@ -1366,7 +1366,7 @@ export default function PricesScreen() {
         </View>
 
         {/* Customer Service Button */}
-        <TouchableOpacity style={styles.customerButton} onPress={navigateToServices}>
+        <TouchableOpacity style={styles.customerButton} onPress={navigateToCustomerInfo}>
           <Text style={styles.customerButtonText}>
             {language === 'ar' && '👤 خدمة الزبائن'}
             {language === 'he' && '👤 שירות לקוחות'}

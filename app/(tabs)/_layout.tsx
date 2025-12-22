@@ -26,15 +26,6 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="services"
-        options={{
-          title: 'الخدمات',
-          tabBarIcon: ({ size, color }) => (
-            <Ionicons name="business" size={size} color={color} />
-          ),
-        }}
-      />
       {/* الصفحات الأخرى مخفية ولكن متاحة للوصول المباشر */}
       <Tabs.Screen
         name="staff"
