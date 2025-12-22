@@ -24,6 +24,7 @@ export default function CustomerInfoScreen() {
   const [licenseImage, setLicenseImage] = useState<string | null>(null);
   const [passportImage, setPassportImage] = useState<string | null>(null);
   const [isNewCustomer, setIsNewCustomer] = useState(false);
+  const [fromCalculator, setFromCalculator] = useState(false);
   const router = useRouter();
   const { resetTimer } = useInactivityTimer();
 
@@ -39,13 +40,34 @@ export default function CustomerInfoScreen() {
       await loadLanguage();
       await loadServices();
 
-      // مسح البيانات السابقة
-      setNationalId('');
-      setIdImage(null);
-      setLicenseImage(null);
-      setPassportImage(null);
-      setSelectedService(null);
-      setIsNewCustomer(false);
+      // فحص إذا كان قادماً من الآلة الحاسبة
+      const isFromCalculator = await AsyncStorage.getItem('fromCalculator');
+      const calculatorTransactionData = await AsyncStorage.getItem('calculatorData');
+
+      if (isFromCalculator === 'true' && calculatorTransactionData) {
+        console.log('📊 قادم من الآلة الحاسبة - تحديد خدمة صرافة الأموال تلقائياً');
+
+        // تعيين خدمة صرافة الأموال (رقم 8) تلقائياً
+        const exchangeService: Service = {
+          id: '8',
+          service_number: 8,
+          service_name: 'صرافة أموال',
+          service_name_he: 'החלפת כספים',
+          service_name_en: 'Money Exchange'
+        };
+        setSelectedService(exchangeService);
+        setFromCalculator(true);
+        console.log('✅ تم تعيين خدمة صرافة الأموال تلقائياً');
+      } else {
+        // مسح البيانات السابقة
+        setNationalId('');
+        setIdImage(null);
+        setLicenseImage(null);
+        setPassportImage(null);
+        setSelectedService(null);
+        setIsNewCustomer(false);
+        setFromCalculator(false);
+      }
     } catch (error) {
       console.error('❌ خطأ في تحميل البيانات:', error);
     }
@@ -158,7 +180,7 @@ export default function CustomerInfoScreen() {
         return;
       }
 
-      const result = await ImagePicker.launchImagePickerAsync({
+      const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [4, 3],
@@ -280,8 +302,24 @@ export default function CustomerInfoScreen() {
     }
   };
 
-  const handleBackToPrices = () => {
-    router.replace('/(tabs)/prices');
+  const handleBackToPrices = async () => {
+    try {
+      // مسح بيانات الآلة الحاسبة والبيانات المحفوظة
+      await AsyncStorage.removeItem('fromCalculator');
+      await AsyncStorage.removeItem('calculatorData');
+      await AsyncStorage.removeItem('selectedServiceNumber');
+      await AsyncStorage.removeItem('selectedServiceName');
+      await AsyncStorage.removeItem('currentCustomerId');
+      await AsyncStorage.removeItem('currentCustomerImage1');
+      await AsyncStorage.removeItem('currentCustomerImage2');
+      await AsyncStorage.removeItem('currentCustomerImage3');
+
+      console.log('🧹 تم مسح جميع البيانات المحفوظة');
+      router.replace('/(tabs)/prices');
+    } catch (error) {
+      console.error('❌ خطأ في مسح البيانات:', error);
+      router.replace('/(tabs)/prices');
+    }
   };
 
   const getTextAlign = () => {
@@ -322,42 +360,57 @@ export default function CustomerInfoScreen() {
         </View>
 
         <View style={styles.content}>
-          {/* Service Selection */}
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { textAlign: getTextAlign() }]}>
-              {language === 'ar' && 'اختر الخدمة:'}
-              {language === 'he' && 'בחר שירות:'}
-              {language === 'en' && 'Select Service:'}
-            </Text>
+          {/* Service Selection or Display */}
+          {fromCalculator ? (
+            // عرض الخدمة المحددة مسبقاً (صرافة الأموال)
+            <View style={styles.selectedServiceBanner}>
+              <Text style={[styles.selectedServiceBannerLabel, { textAlign: getTextAlign() }]}>
+                {language === 'ar' && 'الخدمة:'}
+                {language === 'he' && 'שירות:'}
+                {language === 'en' && 'Service:'}
+              </Text>
+              <Text style={[styles.selectedServiceBannerName, { textAlign: getTextAlign() }]}>
+                {selectedService && getServiceName(selectedService)}
+              </Text>
+            </View>
+          ) : (
+            // عرض قائمة الخدمات للاختيار
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { textAlign: getTextAlign() }]}>
+                {language === 'ar' && 'اختر الخدمة:'}
+                {language === 'he' && 'בחר שירות:'}
+                {language === 'en' && 'Select Service:'}
+              </Text>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.servicesScroll}>
-              {services.map((service) => (
-                <TouchableOpacity
-                  key={service.id}
-                  style={[
-                    styles.serviceCard,
-                    selectedService?.id === service.id && styles.serviceCardSelected
-                  ]}
-                  onPress={() => {
-                    resetTimer();
-                    setSelectedService(service);
-                    // مسح الصور السابقة عند تغيير الخدمة
-                    setIdImage(null);
-                    setLicenseImage(null);
-                    setPassportImage(null);
-                  }}
-                >
-                  <Text style={[
-                    styles.serviceCardText,
-                    selectedService?.id === service.id && styles.serviceCardTextSelected,
-                    { textAlign: 'center' }
-                  ]}>
-                    {getServiceName(service)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.servicesScroll}>
+                {services.map((service) => (
+                  <TouchableOpacity
+                    key={service.id}
+                    style={[
+                      styles.serviceCard,
+                      selectedService?.id === service.id && styles.serviceCardSelected
+                    ]}
+                    onPress={() => {
+                      resetTimer();
+                      setSelectedService(service);
+                      // مسح الصور السابقة عند تغيير الخدمة
+                      setIdImage(null);
+                      setLicenseImage(null);
+                      setPassportImage(null);
+                    }}
+                  >
+                    <Text style={[
+                      styles.serviceCardText,
+                      selectedService?.id === service.id && styles.serviceCardTextSelected,
+                      { textAlign: 'center' }
+                    ]}>
+                      {getServiceName(service)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
 
           {/* National ID Input */}
           <View style={styles.section}>
@@ -575,6 +628,26 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  selectedServiceBanner: {
+    backgroundColor: '#059669',
+    padding: 20,
+    borderRadius: 12,
+    marginBottom: 25,
+    borderLeftWidth: 4,
+    borderLeftColor: '#047857',
+  },
+  selectedServiceBannerLabel: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '600',
+    marginBottom: 5,
+    opacity: 0.9,
+  },
+  selectedServiceBannerName: {
+    fontSize: 22,
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
   section: {
     marginBottom: 25,
