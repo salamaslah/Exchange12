@@ -18,6 +18,7 @@ export default function CustomerInfoScreen() {
   const [services, setServices] = useState<Service[]>([]);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [nationalId, setNationalId] = useState('');
+  const [customerName, setCustomerName] = useState('');
   const [loading, setLoading] = useState(false);
   const [language, setLanguage] = useState<'ar' | 'he' | 'en'>('ar');
   const [idImage, setIdImage] = useState<string | null>(null);
@@ -61,6 +62,7 @@ export default function CustomerInfoScreen() {
       } else {
         // مسح البيانات السابقة
         setNationalId('');
+        setCustomerName('');
         setIdImage(null);
         setLicenseImage(null);
         setPassportImage(null);
@@ -241,6 +243,17 @@ export default function CustomerInfoScreen() {
       return;
     }
 
+    // التحقق من اسم الزبون للزبائن الجدد
+    if (isNewCustomer && (!customerName || customerName.trim().length < 2)) {
+      Alert.alert(
+        language === 'ar' ? 'خطأ' : language === 'he' ? 'שגיאה' : 'Error',
+        language === 'ar' ? 'الرجاء إدخال اسم الزبون' :
+        language === 'he' ? 'אנא הכנס את שם הלקוח' :
+        'Please enter customer name'
+      );
+      return;
+    }
+
     // التحقق من صورة الهوية للزبائن الجدد
     if (isNewCustomer && !idImage) {
       Alert.alert(
@@ -280,6 +293,7 @@ export default function CustomerInfoScreen() {
       await AsyncStorage.setItem('selectedServiceNumber', selectedService.service_number.toString());
       await AsyncStorage.setItem('selectedServiceName', selectedService.service_name);
       await AsyncStorage.setItem('currentCustomerId', nationalId);
+      if (customerName) await AsyncStorage.setItem('currentCustomerName', customerName.trim());
       if (idImage) await AsyncStorage.setItem('currentCustomerImage1', idImage);
       if (licenseImage) await AsyncStorage.setItem('currentCustomerImage2', licenseImage);
       if (passportImage) await AsyncStorage.setItem('currentCustomerImage3', passportImage);
@@ -310,6 +324,7 @@ export default function CustomerInfoScreen() {
       await AsyncStorage.removeItem('selectedServiceNumber');
       await AsyncStorage.removeItem('selectedServiceName');
       await AsyncStorage.removeItem('currentCustomerId');
+      await AsyncStorage.removeItem('currentCustomerName');
       await AsyncStorage.removeItem('currentCustomerImage1');
       await AsyncStorage.removeItem('currentCustomerImage2');
       await AsyncStorage.removeItem('currentCustomerImage3');
@@ -429,6 +444,31 @@ export default function CustomerInfoScreen() {
               maxLength={9}
             />
           </View>
+
+          {/* Customer Name Input for New Customers */}
+          {isNewCustomer && (
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { textAlign: getTextAlign() }]}>
+                {language === 'ar' && 'اسم الزبون:'}
+                {language === 'he' && 'שם הלקוח:'}
+                {language === 'en' && 'Customer Name:'}
+              </Text>
+
+              <TextInput
+                style={[styles.input, { textAlign: getTextAlign() }]}
+                value={customerName}
+                onChangeText={(text) => {
+                  resetTimer();
+                  setCustomerName(text);
+                }}
+                placeholder={
+                  language === 'ar' ? 'أدخل اسم الزبون' :
+                  language === 'he' ? 'הכנס את שם הלקוח' :
+                  'Enter customer name'
+                }
+              />
+            </View>
+          )}
 
           {/* New Customer Message & Image Uploads */}
           {isNewCustomer && (
