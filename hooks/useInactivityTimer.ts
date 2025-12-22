@@ -4,18 +4,6 @@ import { AppState, AppStateStatus } from 'react-native';
 
 const INACTIVITY_TIMEOUT = 10000;
 
-const ADMIN_PAGES = [
-  '/(tabs)/staff',
-  '/(tabs)/accounting',
-  '/(tabs)/company-settings',
-  '/(tabs)/currency-management',
-  '/(tabs)/transactions-management',
-  '/(tabs)/treasury',
-  '/(tabs)/ads-management',
-  '/login',
-  '/treasury-management'
-];
-
 export function useInactivityTimer() {
   const router = useRouter();
   const pathname = usePathname();
@@ -23,7 +11,6 @@ export function useInactivityTimer() {
   const appState = useRef(AppState.currentState);
 
   const isHomePage = pathname === '/(tabs)/prices' || pathname === '/';
-  const isAdminPage = ADMIN_PAGES.includes(pathname);
 
   const clearTimer = () => {
     if (timerRef.current) {
@@ -33,7 +20,7 @@ export function useInactivityTimer() {
   };
 
   const resetTimer = () => {
-    if (isHomePage || isAdminPage) {
+    if (isHomePage) {
       return;
     }
 
@@ -46,7 +33,7 @@ export function useInactivityTimer() {
   };
 
   useEffect(() => {
-    if (isHomePage || isAdminPage) {
+    if (isHomePage) {
       clearTimer();
       return;
     }
@@ -71,7 +58,7 @@ export function useInactivityTimer() {
       clearTimer();
       subscription?.remove();
     };
-  }, [pathname, isHomePage, isAdminPage]);
+  }, [pathname, isHomePage]);
 
   return { resetTimer };
 }
