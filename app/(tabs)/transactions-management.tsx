@@ -96,12 +96,12 @@ export default function TransactionsManagement() {
     try {
       setLoading(true);
 
-      // جلب المعاملات غير المكتملة
+      // جلب جميع المعاملات غير المكتملة مرتبة من الأقدم للأحدث
       const { data: incompleteData, error: incompleteError } = await supabase
         .from('transactions')
         .select('*')
         .eq('is_completed', false)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
 
       if (incompleteError) throw incompleteError;
 
@@ -116,26 +116,44 @@ export default function TransactionsManagement() {
 
       // جلب أسماء العملاء
       const allTransactions = [...(incompleteData || []), ...(completedData || [])];
-      const customerIds = allTransactions.map(t => t.customer_id).filter(Boolean) || [];
-      const { data: customersData, error: customersError } = await supabase
-        .from('customers')
-        .select('national_id, customer_name')
-        .in('national_id', customerIds);
 
-      if (customersError) throw customersError;
+      if (allTransactions.length === 0) {
+        setTransactions([]);
+        setCompletedTransactions([]);
+        setLoading(false);
+        return;
+      }
+
+      const customerIds = [...new Set(allTransactions.map(t => t.customer_id).filter(Boolean))];
+
+      let customersData = [];
+      if (customerIds.length > 0) {
+        const { data, error: customersError } = await supabase
+          .from('customers')
+          .select('id, customer_name, national_id')
+          .in('id', customerIds);
+
+        if (customersError) throw customersError;
+        customersData = data || [];
+      }
 
       // جلب أسماء الخدمات
-      const serviceNumbers = allTransactions.map(t => t.service_number).filter(Boolean) || [];
-      const { data: servicesData, error: servicesError } = await supabase
-        .from('services')
-        .select('service_number, service_name')
-        .in('service_number', serviceNumbers);
+      const serviceNumbers = [...new Set(allTransactions.map(t => t.service_number).filter(Boolean))];
 
-      if (servicesError) throw servicesError;
+      let servicesData = [];
+      if (serviceNumbers.length > 0) {
+        const { data, error: servicesError } = await supabase
+          .from('services')
+          .select('service_number, service_name')
+          .in('service_number', serviceNumbers);
+
+        if (servicesError) throw servicesError;
+        servicesData = data || [];
+      }
 
       // دمج البيانات
       const customersMap = new Map(
-        customersData?.map(c => [c.national_id, c.customer_name]) || []
+        customersData?.map(c => [c.id, c.customer_name]) || []
       );
 
       const servicesMap = new Map(
@@ -294,48 +312,34 @@ export default function TransactionsManagement() {
       <ScrollView style={styles.mainScrollView}>
         {/* المعاملات غير المكتملة */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>المعاملات غير المكتملة</Text>
-          <ScrollView horizontal={!isLargeScreen} style={styles.tableScrollView}>
-            <View style={styles.tableContainer}>
-              {/* Table Header */}
-              <View style={styles.tableHeader}>
-                <Text style={[styles.headerCell, styles.nameCell]}>اسم الزبون</Text>
-                <Text style={[styles.headerCell, styles.serviceCell]}>اسم الخدمة</Text>
-                <Text style={[styles.headerCell, styles.amountCell]}>المبلغ المدفوع</Text>
-                <Text style={[styles.headerCell, styles.currencyCell]}>العملة المدفوعة</Text>
-                <Text style={[styles.headerCell, styles.amountCell]}>المبلغ المستلم</Text>
-                <Text style={[styles.headerCell, styles.currencyCell]}>العملة المستلمة</Text>
-                <Text style={[styles.headerCell, styles.customerCell]}>رقم الهوية</Text>
-                <Text style={[styles.headerCell, styles.dateCell]}>التاريخ</Text>
-              </View>
-
-              {/* Table Rows */}
-              {transactions.map((transaction, index) => (
-                <TouchableOpacity
-                  key={transaction.id}
-                  style={[styles.tableRow, index % 2 === 0 ? styles.evenRow : styles.oddRow]}
-                  onPress={() => openEditModal(transaction)}
-                >
-                  <Text style={[styles.cell, styles.nameCell]} numberOfLines={1}>
-                    {transaction.customer_name || 'غير متوفر'}
-                  </Text>
-                  <Text style={[styles.cell, styles.serviceCell]}>{transaction.service_name || 'غير متوفر'}</Text>
-                  <Text style={[styles.cell, styles.amountCell]}>{transaction.amount_paid.toFixed(2)}</Text>
-                  <Text style={[styles.cell, styles.currencyCell]}>{transaction.currency_paid}</Text>
-                  <Text style={[styles.cell, styles.amountCell]}>{transaction.amount_received.toFixed(2)}</Text>
-                  <Text style={[styles.cell, styles.currencyCell]}>{transaction.currency_received}</Text>
-                  <Text style={[styles.cell, styles.customerCell]}>{transaction.customer_id || 'غير متوفر'}</Text>
-                  <Text style={[styles.cell, styles.dateCell]}>{formatDate(transaction.created_at)}</Text>
-                </TouchableOpacity>
-              ))}
-
-              {transactions.length === 0 && (
-                <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>لا توجد معاملات غير مكتملة</Text>
+          <Text style={styles.sectionTitle}>قائمة انتظار المعاملات</Text>
+          <View style={styles.cardsContainer}>
+            {transactions.map((transaction, index) => (
+              <TouchableOpacity
+                key={transaction.id}
+                style={styles.transactionCard}
+                onPress={() => openEditModal(transaction)}
+              >
+                <View style={styles.cardHeader}>
+                  <Text style={styles.queueNumber}>#{index + 1}</Text>
+                  <Text style={styles.cardDate}>{formatDate(transaction.created_at)}</Text>
                 </View>
-              )}
-            </View>
-          </ScrollView>
+                <View style={styles.cardBody}>
+                  <Text style={styles.customerName}>{transaction.customer_name || 'غير متوفر'}</Text>
+                  <Text style={styles.serviceName}>{transaction.service_name || 'غير متوفر'}</Text>
+                </View>
+                <View style={styles.cardFooter}>
+                  <Text style={styles.tapHint}>اضغط للتعديل والإتمام ✓</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+
+            {transactions.length === 0 && (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>لا توجد معاملات في قائمة الانتظار</Text>
+              </View>
+            )}
+          </View>
         </View>
 
         {/* المعاملات المكتملة */}
@@ -573,11 +577,77 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#111827',
     marginHorizontal: 20,
-    marginBottom: 12,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  cardsContainer: {
+    paddingHorizontal: 20,
+    gap: 16,
+    paddingBottom: 20,
+  },
+  transactionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: '#059669',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  queueNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#059669',
+  },
+  cardDate: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  cardBody: {
+    gap: 12,
+    marginBottom: 16,
+  },
+  customerName: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#111827',
+    textAlign: 'center',
+  },
+  serviceName: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: '#059669',
+    textAlign: 'center',
+  },
+  cardFooter: {
+    alignItems: 'center',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  tapHint: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
   },
   tableScrollView: {
     flexGrow: 0,
