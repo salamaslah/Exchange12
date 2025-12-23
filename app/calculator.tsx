@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, SafeAr
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { currencyService } from '@/lib/supabase';
+import { useInactivityTimer } from '@/hooks/useInactivityTimer';
 
 export default function CalculatorScreen() {
   const [allCurrencies, setAllCurrencies] = useState<any[]>([]);
@@ -13,18 +14,13 @@ export default function CalculatorScreen() {
   const [calculationDetails, setCalculationDetails] = useState('');
   const [language, setLanguage] = useState<'ar' | 'he' | 'en'>('ar');
   const [loading, setLoading] = useState(true);
-  const [inactivityTimer, setInactivityTimer] = useState<NodeJS.Timeout | null>(null);
   const router = useRouter();
+  const { resetTimer } = useInactivityTimer();
 
   useEffect(() => {
     loadLanguage();
     loadCurrencies();
     loadPreselectedCurrencies();
-    startInactivityTimer();
-
-    return () => {
-      clearInactivityTimer();
-    };
   }, []);
 
   const loadLanguage = async () => {
@@ -67,28 +63,6 @@ export default function CalculatorScreen() {
     } catch (error) {
       console.log('خطأ في تحميل العملات المحفوظة:', error);
     }
-  };
-
-  const startInactivityTimer = () => {
-    clearInactivityTimer();
-
-    const timer = setTimeout(() => {
-      console.log('⏰ إغلاق آلة الحاسبة تلقائياً بعد 15 ثانية من عدم الاستخدام');
-      router.back();
-    }, 15000);
-
-    setInactivityTimer(timer);
-  };
-
-  const clearInactivityTimer = () => {
-    if (inactivityTimer) {
-      clearTimeout(inactivityTimer);
-      setInactivityTimer(null);
-    }
-  };
-
-  const resetInactivityTimer = () => {
-    startInactivityTimer();
   };
 
   const calculateConversion = (amount: string, side: 'left' | 'right') => {
@@ -168,13 +142,13 @@ export default function CalculatorScreen() {
   const handleFromAmountChange = (text: string) => {
     setFromAmount(text);
     calculateConversion(text, 'left');
-    resetInactivityTimer();
+    resetTimer();
   };
 
   const handleToAmountChange = (text: string) => {
     setToAmount(text);
     calculateConversion(text, 'right');
-    resetInactivityTimer();
+    resetTimer();
   };
 
   const cycleCurrency = (currentCurrency: string, isFromCurrency: boolean) => {
@@ -198,7 +172,7 @@ export default function CalculatorScreen() {
         calculateConversion(fromAmount, 'left');
       }
     }
-    resetInactivityTimer();
+    resetTimer();
   };
 
   const swapCurrencies = () => {
@@ -213,16 +187,13 @@ export default function CalculatorScreen() {
     if (toAmount) {
       calculateConversion(toAmount, 'left');
     }
-    resetInactivityTimer();
+    resetTimer();
   };
 
   const handleProceedToTransaction = async () => {
     try {
       console.log('🔄 بدء عملية المتابعة للمعاملة...');
       console.log('📊 بيانات الآلة الحاسبة:', { fromCurrency, toCurrency, fromAmount, toAmount });
-
-      // إلغاء مؤقت الخمول قبل الانتقال
-      clearInactivityTimer();
 
       const calculatorTransactionData = {
         fromCurrency,
@@ -240,7 +211,6 @@ export default function CalculatorScreen() {
 
       console.log('✅ تم حفظ بيانات الآلة الحاسبة:', calculatorTransactionData);
 
-      // استخدام replace بدلاً من push لإزالة الآلة الحاسبة من الـ stack
       router.replace('/(tabs)/customer-info');
     } catch (error) {
       console.error('❌ خطأ في حفظ بيانات الآلة الحاسبة:', error);
@@ -279,8 +249,8 @@ export default function CalculatorScreen() {
         style={styles.scrollContainer}
         showsVerticalScrollIndicator={true}
         contentContainerStyle={{ paddingBottom: 20 }}
-        onTouchStart={resetInactivityTimer}
-        onScroll={resetInactivityTimer}
+        onTouchStart={resetTimer}
+        onScroll={resetTimer}
         scrollEventThrottle={400}
       >
         <View style={styles.currencySection}>
@@ -377,8 +347,8 @@ export default function CalculatorScreen() {
                 style={styles.amountInput}
                 value={fromAmount}
                 onChangeText={handleFromAmountChange}
-                onFocus={resetInactivityTimer}
-                onKeyPress={resetInactivityTimer}
+                onFocus={resetTimer}
+                onKeyPress={resetTimer}
                 placeholder="0.00"
                 keyboardType="decimal-pad"
                 placeholderTextColor="#9CA3AF"
@@ -390,8 +360,8 @@ export default function CalculatorScreen() {
                 style={styles.amountInput}
                 value={toAmount}
                 onChangeText={handleToAmountChange}
-                onFocus={resetInactivityTimer}
-                onKeyPress={resetInactivityTimer}
+                onFocus={resetTimer}
+                onKeyPress={resetTimer}
                 placeholder="0.00"
                 keyboardType="decimal-pad"
                 placeholderTextColor="#9CA3AF"
