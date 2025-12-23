@@ -34,7 +34,8 @@ export default function CustomerInfoScreen() {
     React.useCallback(() => {
       console.log('🔄 تم تفعيل صفحة معلومات الزبائن');
       loadInitialData();
-    }, [])
+      resetTimer();
+    }, [resetTimer])
   );
 
   const loadInitialData = async () => {
