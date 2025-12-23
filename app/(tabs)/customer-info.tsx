@@ -220,6 +220,43 @@ export default function CustomerInfoScreen() {
     }
   };
 
+  const convertImageToBase64 = async (imageUri: string): Promise<string | null> => {
+    try {
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = reader.result as string;
+          const base64Data = base64.includes(',') ? base64.split(',')[1] : base64;
+          resolve(base64Data);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error('❌ خطأ في تحويل الصورة:', error);
+      return null;
+    }
+  };
+
+  const getImageType = (imageUri: string): string => {
+    const extension = imageUri.split('.').pop()?.toLowerCase();
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      default:
+        return 'image/jpeg';
+    }
+  };
+
   const validateAndContinue = async () => {
     resetTimer();
 
@@ -321,21 +358,102 @@ export default function CustomerInfoScreen() {
 
     try {
       setLoading(true);
+      console.log('🔄 بدء معالجة المعاملة...');
 
-      // حفظ البيانات في AsyncStorage
-      await AsyncStorage.setItem('selectedServiceNumber', selectedService.service_number.toString());
-      await AsyncStorage.setItem('selectedServiceName', selectedService.service_name);
-      await AsyncStorage.setItem('currentCustomerId', nationalId);
-      if (customerName) await AsyncStorage.setItem('currentCustomerName', customerName.trim());
-      if (phoneNumber) await AsyncStorage.setItem('currentCustomerPhone', phoneNumber.trim());
-      if (idImage) await AsyncStorage.setItem('currentCustomerImage1', idImage);
-      if (licenseImage) await AsyncStorage.setItem('currentCustomerImage2', licenseImage);
-      if (passportImage) await AsyncStorage.setItem('currentCustomerImage3', passportImage);
+      let customerId = nationalId;
 
-      console.log('✅ تم حفظ البيانات');
+      // إذا كان زبون جديد، نضيفه إلى جدول customers
+      if (isNewCustomer) {
+        console.log('📝 إضافة زبون جديد...');
 
-      // الانتقال إلى صفحة الانتظار
-      router.replace('/waiting-screen');
+        const image1Data = idImage ? await convertImageToBase64(idImage) : null;
+        const image1Type = idImage ? getImageType(idImage) : null;
+        const image2Data = licenseImage ? await convertImageToBase64(licenseImage) : null;
+        const image2Type = licenseImage ? getImageType(licenseImage) : null;
+
+        const customerData = {
+          customer_name: customerName.trim(),
+          national_id: nationalId,
+          phone_number: phoneNumber.trim(),
+          image1_data: image1Data,
+          image1_type: image1Type,
+          image2_data: image2Data,
+          image2_type: image2Type
+        };
+
+        const newCustomer = await customerService.create(customerData);
+
+        if (newCustomer) {
+          customerId = newCustomer.id;
+          console.log(`✅ تم إضافة الزبون بنجاح - ID: ${customerId}`);
+        } else {
+          throw new Error('فشل في إضافة الزبون');
+        }
+      } else {
+        console.log('👤 زبون موجود مسبقاً');
+        const existingCustomer = await customerService.getByNationalId(nationalId);
+        if (existingCustomer) {
+          customerId = existingCustomer.id;
+        }
+      }
+
+      // جلب بيانات الآلة الحاسبة إذا كانت موجودة
+      let amountPaid = 0;
+      let currencyPaid = '';
+      let amountReceived = 0;
+      let currencyReceived = '';
+      let notes = '';
+
+      if (fromCalculator) {
+        const calculatorData = await AsyncStorage.getItem('calculatorData');
+        if (calculatorData) {
+          const data = JSON.parse(calculatorData);
+          amountPaid = parseFloat(data.fromAmount) || 0;
+          currencyPaid = data.fromCurrency || '';
+          amountReceived = parseFloat(data.toAmount) || 0;
+          currencyReceived = data.toCurrency || '';
+          notes = data.calculationDetails || '';
+          console.log('📊 بيانات الآلة الحاسبة:', { amountPaid, currencyPaid, amountReceived, currencyReceived });
+        }
+      }
+
+      // إضافة المعاملة
+      console.log('💼 إضافة المعاملة...');
+      const transactionData = {
+        service_number: selectedService.service_number,
+        amount_paid: amountPaid,
+        currency_paid: currencyPaid,
+        amount_received: amountReceived,
+        currency_received: currencyReceived,
+        customer_id: customerId,
+        notes: notes
+      };
+
+      const newTransaction = await transactionService.create(transactionData);
+
+      if (newTransaction) {
+        console.log(`✅ تم إضافة المعاملة بنجاح - ID: ${newTransaction.id}`);
+
+        // مسح جميع البيانات المحفوظة
+        await AsyncStorage.removeItem('fromCalculator');
+        await AsyncStorage.removeItem('calculatorData');
+        await AsyncStorage.removeItem('calculatorTransactionReady');
+
+        Alert.alert(
+          language === 'ar' ? 'نجاح' : language === 'he' ? 'הצלחה' : 'Success',
+          language === 'ar' ? 'تم إضافة المعاملة بنجاح' :
+          language === 'he' ? 'העסקה נוספה בהצלחה' :
+          'Transaction added successfully',
+          [
+            {
+              text: language === 'ar' ? 'موافق' : language === 'he' ? 'אישור' : 'OK',
+              onPress: () => router.replace('/(tabs)/prices')
+            }
+          ]
+        );
+      } else {
+        throw new Error('فشل في إضافة المعاملة');
+      }
 
     } catch (error) {
       console.error('❌ خطأ في المعالجة:', error);

@@ -705,7 +705,7 @@ export const customerService = {
         if (customer.image2_data) insertData.image2_data = customer.image2_data;
         if (customer.image2_type) insertData.image2_type = customer.image2_type;
 
-        console.log('📊 البيانات النهائية المرسلة:', insertData);
+        console.log('📊 البيانات النهائية المرسلة:', { ...insertData, image1_data: insertData.image1_data ? 'موجودة' : null, image2_data: insertData.image2_data ? 'موجودة' : null });
 
         const { data, error } = await supabase!
           .from('customers')
