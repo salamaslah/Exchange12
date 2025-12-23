@@ -109,6 +109,8 @@ export default function PricesScreen() {
   const isScreenFocused = useRef<boolean>(false);
   const appState = useRef(AppState.currentState);
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const pulseAnim1 = useRef(new Animated.Value(1)).current;
+  const pulseAnim2 = useRef(new Animated.Value(1)).current;
 
   useAutoUpdateRates();
 
@@ -164,6 +166,45 @@ export default function PricesScreen() {
       pulseAnimation.stop();
     };
   }, [pulseAnim]);
+
+  // Animation عكسية للمربعين
+  useEffect(() => {
+    const boxesAnimation = Animated.loop(
+      Animated.parallel([
+        // المربع الأول يكبر ثم يصغر
+        Animated.sequence([
+          Animated.timing(pulseAnim1, {
+            toValue: 1.15,
+            duration: 1200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim1, {
+            toValue: 1,
+            duration: 1200,
+            useNativeDriver: true,
+          }),
+        ]),
+        // المربع الثاني يصغر ثم يكبر (عكس الأول)
+        Animated.sequence([
+          Animated.timing(pulseAnim2, {
+            toValue: 0.92,
+            duration: 1200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim2, {
+            toValue: 1,
+            duration: 1200,
+            useNativeDriver: true,
+          }),
+        ]),
+      ])
+    );
+    boxesAnimation.start();
+
+    return () => {
+      boxesAnimation.stop();
+    };
+  }, [pulseAnim1, pulseAnim2]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -1094,7 +1135,7 @@ export default function PricesScreen() {
                       styles.instructionContainer,
                       styles.instructionBox1,
                       {
-                        transform: [{ scale: pulseAnim }],
+                        transform: [{ scale: pulseAnim1 }],
                       }
                     ]}
                   >
@@ -1110,14 +1151,14 @@ export default function PricesScreen() {
                       styles.instructionContainer,
                       styles.instructionBox2,
                       {
-                        transform: [{ scale: pulseAnim }],
+                        transform: [{ scale: pulseAnim2 }],
                       }
                     ]}
                   >
                     <Text style={styles.instructionText}>
-                      {language === 'ar' && 'لتبديل عملة أجنبية اختر العملتين اللتين تريد تبديلهما'}
-                      {language === 'he' && 'להמרת מטבע זר בחר את שני המטבעות שברצונך להמיר'}
-                      {language === 'en' && 'To exchange foreign currency select the two currencies you want to exchange'}
+                      {language === 'ar' && 'لتبديل بين عملتين أجنبيتين اخترهما من الجدول'}
+                      {language === 'he' && 'להחלפה בין שני מטבעות זרים בחר אותם מהטבלה'}
+                      {language === 'en' && 'To exchange between two foreign currencies select them from the table'}
                     </Text>
                   </Animated.View>
                 </View>
@@ -1977,13 +2018,13 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 0,
   },
   instructionBox2: {
-    backgroundColor: '#059669',
+    backgroundColor: '#DC2626',
     borderLeftWidth: 2,
     borderLeftColor: '#FFFFFF',
     borderTopWidth: 3,
-    borderTopColor: '#10B981',
+    borderTopColor: '#EF4444',
     borderBottomWidth: 3,
-    borderBottomColor: '#047857',
+    borderBottomColor: '#B91C1C',
     borderTopLeftRadius: 0,
     borderTopRightRadius: 0,
   },
