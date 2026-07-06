@@ -927,7 +927,7 @@ const s = StyleSheet.create({
   unavailBadge: {
     position: 'absolute',
     alignSelf: 'center',
-    top: '40%',
+    top: '55%',
     zIndex: 10,
     backgroundColor: '#6B7280',
     borderRadius: 8,
