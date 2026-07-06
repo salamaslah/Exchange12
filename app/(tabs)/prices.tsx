@@ -922,15 +922,15 @@ const s = StyleSheet.create({
     borderColor: '#E2EBF0',
   },
   cardSelected: { borderWidth: 2, borderColor: GOLD },
-  cardInactive: { opacity: 0.35 },
+  cardInactive: {},
 
   unavailOverlay: {
     position: 'absolute', inset: 0, zIndex: 10,
-    backgroundColor: 'rgba(0,0,0,0.72)',
+    backgroundColor: 'rgba(255,255,255,0.88)',
     justifyContent: 'center', alignItems: 'center',
     borderRadius: 14,
   },
-  unavailText: { color: '#FF5555', fontSize: 16, fontWeight: '900', textAlign: 'center', lineHeight: 22, letterSpacing: 0.5 },
+  unavailText: { color: '#CC2222', fontSize: 16, fontWeight: '900', textAlign: 'center', lineHeight: 22, letterSpacing: 0.5 },
 
   cardFlagArea: {
     alignItems: 'center',
