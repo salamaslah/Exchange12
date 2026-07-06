@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, TextInput, Alert, SafeAreaView, Image, Dimensions, Linking, AppState, AppStateStatus, Platform, Animated } from 'react-native';
+import {
+  View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal,
+  TextInput, Alert, SafeAreaView, Image, Dimensions, Linking,
+  AppState, AppStateStatus, Platform, Animated
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -62,28 +66,15 @@ const DAYS_OF_WEEK = [
   { key: 'saturday', ar: 'السبت', he: 'שבת', en: 'Saturday' }
 ];
 
-// دالة لتحديد لون كل عملة
-const getCurrencyColor = (currencyCode: string): string => {
-  const colors: { [key: string]: string } = {
-    'USD': '#E8F5E9',  // أخضر فاتح للدولار
-    'EUR': '#E3F2FD',  // أزرق فاتح لليورو
-    'GBP': '#FCE4EC',  // وردي فاتح للجنيه
-    'JPY': '#FFF3E0',  // برتقالي فاتح للين
-    'AUD': '#F3E5F5',  // بنفسجي فاتح للدولار الأسترالي
-    'CAD': '#FFEBEE',  // أحمر فاتح للدولار الكندي
-    'CHF': '#F1F8E9',  // أخضر ليموني فاتح للفرنك السويسري
-    'CNY': '#FFF9C4',  // أصفر فاتح لليوان
-    'SEK': '#E0F2F1',  // تركواز فاتح للكرونة السويدية
-    'NZD': '#FCE4EC',  // وردي فاتح للدولار النيوزيلندي
-    'JOD': '#E8EAF6',  // أزرق بنفسجي فاتح للدينار الأردني
-    'EGP': '#FFF8E1',  // كهرماني فاتح للجنيه المصري
-    'AED': '#E0F7FA',  // سماوي فاتح للدرهم الإماراتي
-    'SAR': '#F9FBE7',  // أخضر فاتح جداً للريال السعودي
-    'KWD': '#F3E5F5',  // أرجواني فاتح للدينار الكويتي
-    'TRY': '#FFCCBC',  // برتقالي خوخي للليرة التركية
+const getCurrencyFlag = (code: string): string => {
+  const flags: { [key: string]: string } = {
+    'USD': '🇺🇸', 'EUR': '🇪🇺', 'GBP': '🇬🇧', 'JPY': '🇯🇵',
+    'AUD': '🇦🇺', 'CAD': '🇨🇦', 'CHF': '🇨🇭', 'CNY': '🇨🇳',
+    'SEK': '🇸🇪', 'NZD': '🇳🇿', 'JOD': '🇯🇴', 'EGP': '🇪🇬',
+    'AED': '🇦🇪', 'SAR': '🇸🇦', 'KWD': '🇰🇼', 'TRY': '🇹🇷',
+    'ILS': '🇮🇱',
   };
-
-  return colors[currencyCode] || '#F8FAFC';
+  return flags[code] || '💱';
 };
 
 export default function PricesScreen() {
@@ -105,6 +96,7 @@ export default function PricesScreen() {
   const [screenData, setScreenData] = useState(Dimensions.get('window'));
   const [lastUpdateTime, setLastUpdateTime] = useState<string>('');
   const [selectedFirstCurrency, setSelectedFirstCurrency] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
   const router = useRouter();
   const isScreenFocused = useRef<boolean>(false);
   const appState = useRef(AppState.currentState);
@@ -115,10 +107,14 @@ export default function PricesScreen() {
   useAutoUpdateRates();
 
   useEffect(() => {
+    const clockTimer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(clockTimer);
+  }, []);
+
+  useEffect(() => {
     const onChange = (result: any) => {
       setScreenData(result.window);
     };
-
     const subscription = Dimensions.addEventListener('change', onChange);
     loadData();
     loadLanguage();
@@ -129,9 +125,7 @@ export default function PricesScreen() {
         nextAppState === 'active' &&
         isScreenFocused.current
       ) {
-        console.log('📱 التطبيق عاد للنشاط - التحديث التلقائي معطل');
-        // تم تعطيل التحديث التلقائي
-        // checkAndUpdateRates();
+        // تحديث تلقائي معطل
       }
       appState.current = nextAppState;
     };
@@ -144,81 +138,40 @@ export default function PricesScreen() {
     };
   }, []);
 
-  // Animation للجملة التعليمية
   useEffect(() => {
     const pulseAnimation = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.15,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
+        Animated.timing(pulseAnim, { toValue: 1.15, duration: 1000, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
       ])
     );
     pulseAnimation.start();
-
-    return () => {
-      pulseAnimation.stop();
-    };
+    return () => pulseAnimation.stop();
   }, [pulseAnim]);
 
-  // Animation عكسية للمربعين
   useEffect(() => {
     const boxesAnimation = Animated.loop(
       Animated.parallel([
-        // المربع الأول يكبر ثم يصغر
         Animated.sequence([
-          Animated.timing(pulseAnim1, {
-            toValue: 1.15,
-            duration: 1200,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim1, {
-            toValue: 1,
-            duration: 1200,
-            useNativeDriver: true,
-          }),
+          Animated.timing(pulseAnim1, { toValue: 1.15, duration: 1200, useNativeDriver: true }),
+          Animated.timing(pulseAnim1, { toValue: 1, duration: 1200, useNativeDriver: true }),
         ]),
-        // المربع الثاني يصغر ثم يكبر (عكس الأول)
         Animated.sequence([
-          Animated.timing(pulseAnim2, {
-            toValue: 0.92,
-            duration: 1200,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim2, {
-            toValue: 1,
-            duration: 1200,
-            useNativeDriver: true,
-          }),
+          Animated.timing(pulseAnim2, { toValue: 0.92, duration: 1200, useNativeDriver: true }),
+          Animated.timing(pulseAnim2, { toValue: 1, duration: 1200, useNativeDriver: true }),
         ]),
       ])
     );
     boxesAnimation.start();
-
-    return () => {
-      boxesAnimation.stop();
-    };
+    return () => boxesAnimation.stop();
   }, [pulseAnim1, pulseAnim2]);
 
   useFocusEffect(
     React.useCallback(() => {
-      console.log('✅ صفحة الأسعار أصبحت نشطة');
-      console.log(`📱 المنصة: ${Platform.OS}`);
       isScreenFocused.current = true;
-
       setupRealtimeSubscription();
-
-      // التحديث يحدث فقط مرة واحدة عند فتح الصفحة على Web فقط
       checkAndUpdateRates();
-
       return () => {
-        console.log('❌ صفحة الأسعار لم تعد نشطة - تنظيف المؤقتات');
         isScreenFocused.current = false;
         clearInactivityTimer();
         setSelectedFirstCurrency(null);
@@ -226,171 +179,89 @@ export default function PricesScreen() {
     }, [])
   );
 
-  // إعداد الاشتراك في التحديثات الفورية من Supabase
   const setupRealtimeSubscription = () => {
-    console.log('🔄 إعداد الاشتراك في التحديثات الفورية للعملات...');
-
     const channel = supabase
       .channel('currencies-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'currencies'
-        },
-        (payload) => {
-          console.log('🔔 تحديث فوري للعملة:', payload.new);
-          handleCurrencyUpdate(payload.new);
-        }
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'currencies' },
+        (payload) => handleCurrencyUpdate(payload.new)
       )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('✅ تم الاشتراك في التحديثات الفورية للعملات');
-        }
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   };
 
-  // معالجة تحديث العملة الفوري
   const handleCurrencyUpdate = (updatedCurrency: any) => {
-    setAllCurrencies((prevCurrencies) =>
-      prevCurrencies.map((currency) =>
-        currency.id === updatedCurrency.id
-          ? { ...currency, ...updatedCurrency }
-          : currency
-      ).sort((a, b) => {
-        // ترتيب حسب sort_num تصاعدياً
-        const sortA = a.sort_num ?? 999;
-        const sortB = b.sort_num ?? 999;
-        return sortA - sortB;
-      })
+    setAllCurrencies((prev) =>
+      prev.map((c) => c.id === updatedCurrency.id ? { ...c, ...updatedCurrency } : c)
+        .sort((a, b) => (a.sort_num ?? 999) - (b.sort_num ?? 999))
     );
-    console.log('💡 تم تحديث العملة في الجدول تلقائياً');
   };
 
-  // تبديل الإعلانات تلقائياً كل 5 ثوانٍ
   useEffect(() => {
     if (advertisements.length > 1) {
       const interval = setInterval(() => {
-        setCurrentAdIndex((prevIndex) => (prevIndex + 1) % advertisements.length);
+        setCurrentAdIndex((prev) => (prev + 1) % advertisements.length);
       }, 5000);
-      
       return () => clearInterval(interval);
     }
   }, [advertisements.length]);
 
   useEffect(() => {
     saveLanguage();
-    // إشعار صفحات أخرى بتغيير اللغة
     notifyLanguageChange();
   }, [language]);
 
   const loadLanguage = async () => {
     try {
-      const savedLanguage = await AsyncStorage.getItem('selectedLanguage');
-      if (savedLanguage && ['ar', 'he', 'en'].includes(savedLanguage)) {
-        setLanguage(savedLanguage as 'ar' | 'he' | 'en');
+      const saved = await AsyncStorage.getItem('selectedLanguage');
+      if (saved && ['ar', 'he', 'en'].includes(saved)) {
+        setLanguage(saved as 'ar' | 'he' | 'en');
       }
-    } catch (error) {
-      console.log('Error loading language:', error);
-    }
+    } catch {}
   };
 
   const saveLanguage = async () => {
     try {
       await AsyncStorage.setItem('selectedLanguage', language);
       await AsyncStorage.setItem('languageChangeTimestamp', Date.now().toString());
-      console.log('✅ تم حفظ اللغة مع timestamp:', language);
-    } catch (error) {
-      console.log('Error saving language:', error);
-    }
+    } catch {}
   };
 
   const notifyLanguageChange = async () => {
     try {
       await AsyncStorage.setItem('languageChanged', 'true');
-      console.log('🔔 تم إشعار الصفحات الأخرى بتغيير اللغة');
-    } catch (error) {
-      console.log('خطأ في إشعار تغيير اللغة:', error);
-    }
+    } catch {}
   };
 
   const checkAndUpdateRates = async () => {
     try {
-      // التحديث يحدث فقط على Web وليس على الهاتف
-      if (Platform.OS !== 'web') {
-        console.log('📱 التطبيق يعمل على الهاتف - لن يتم تحديث الأسعار');
-        return;
-      }
-
+      if (Platform.OS !== 'web') return;
       const autoUpdateEnabled = await currencyUpdateLogService.getAutoUpdateStatus();
-
       if (autoUpdateEnabled) {
-        console.log('🌐 Web - القراءة التلقائية مفعّلة - سيتم تحديث الأسعار مرة واحدة...');
-
         const result = await exchangeRateAPI.forceUpdateCurrencyRates();
-
         if (result.success && result.updatedCount && result.updatedCount > 0) {
-          console.log(`✅ تم تحديث ${result.updatedCount} عملة من API`);
           await loadData();
-
           const updateInfo = await exchangeRateAPI.getLastUpdateInfo();
-          if (updateInfo.lastUpdate) {
-            setLastUpdateTime(updateInfo.lastUpdate);
-          }
-        } else {
-          console.log('⏭️ لا حاجة للتحديث أو فشل التحديث');
+          if (updateInfo.lastUpdate) setLastUpdateTime(updateInfo.lastUpdate);
         }
-      } else {
-        console.log('⏭️ القراءة التلقائية معطلة');
       }
-    } catch (error) {
-      console.error('❌ خطأ في التحقق من حالة التحديث:', error);
-    }
+    } catch {}
   };
-
 
   const loadData = async () => {
     try {
       setLoading(true);
-      console.log('🔄 بدء تحميل البيانات...');
-      
-      // تحميل جميع العملات من قاعدة البيانات (المتوفرة وغير المتوفرة)
       const currenciesData = await currencyService.getAll();
+      const sorted = currenciesData.sort((a, b) => (a.sort_num ?? 999) - (b.sort_num ?? 999));
+      setAllCurrencies(sorted);
 
-      // ترتيب العملات حسب sort_num تصاعدياً
-      const sortedCurrencies = currenciesData.sort((a, b) => {
-        const sortA = a.sort_num ?? 999;
-        const sortB = b.sort_num ?? 999;
-        return sortA - sortB;
-      });
-      
-      setAllCurrencies(sortedCurrencies);
-      console.log(`✅ تم تحميل ${sortedCurrencies.length} عملة (متوفرة وغير متوفرة)`);
-      console.log(`📊 العملات المتوفرة: ${sortedCurrencies.filter(c => c.is_active).length}`);
-      console.log(`📊 العملات غير المتوفرة: ${sortedCurrencies.filter(c => !c.is_active).length}`);
-      
-      // تحميل معلومات الشركة
       const companyData = await companySettingsService.get();
       if (companyData) {
         setCompanyInfo(companyData);
-        console.log('✅ تم تحميل معلومات الشركة');
-        
-        // تحميل أوقات العمل
-        const workingHoursData = await workingHoursService.getByCompanyId(companyData.id);
-        setWorkingHours(workingHoursData);
-        console.log(`✅ تم تحميل ${workingHoursData.length} يوم من أوقات العمل`);
+        const whData = await workingHoursService.getByCompanyId(companyData.id);
+        setWorkingHours(whData);
       }
-
-      // تحميل الإعلانات من قاعدة البيانات
       await loadAdvertisements();
-      
-    } catch (error) {
-      console.error('❌ خطأ في تحميل البيانات:', error);
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -398,212 +269,110 @@ export default function PricesScreen() {
 
   const loadAdvertisements = async () => {
     try {
-      console.log('🔄 جلب الإعلانات من جدول advertisements في قاعدة البيانات...');
-
       const { data, error } = await supabase
         .from('advertisements')
         .select('*')
         .eq('is_active', true)
         .order('created_at');
-
-      if (error) {
-        console.error('❌ خطأ في جلب الإعلانات من قاعدة البيانات:', error);
-        throw error;
-      }
-
-      console.log(`✅ تم جلب ${data?.length || 0} إعلان من جدول advertisements`);
-
-      // إذا كان هناك إعلانات في قاعدة البيانات، استخدمها
+      if (error) throw error;
       if (data && data.length > 0) {
         setAdvertisements(data);
       } else {
-        // استخدم الإعلانات المحلية
         loadLocalAdvertisements();
       }
-
-    } catch (error) {
-      console.error('❌ خطأ في تحميل الإعلانات:', error);
+    } catch {
       loadLocalAdvertisements();
     }
   };
 
   const loadLocalAdvertisements = () => {
-    // استخدام الصور المحلية الجديدة
-    const localAds: Advertisement[] = [
-      {
-        id: '1',
-        position: 'header',
-        title: 'UPT Money Transfer',
-        description: 'خدمات تحويل الأموال السريعة والآمنة',
-        image_url: require('@/assets/images/1.jpeg'),
-        is_active: true
-      },
-      {
-        id: '2',
-        position: 'header',
-        title: 'KoronaPay',
-        description: 'حوالات مالية سريعة وآمنة',
-        image_url: require('@/assets/images/2.jpeg'),
-        is_active: true
-      },
-      {
-        id: '3',
-        position: 'header',
-        title: 'WORLDCOM FINANCE',
-        description: 'خدمات مالية متكاملة - Ria, Intel Express, KoronaPay',
-        image_url: require('@/assets/images/3.jpeg'),
-        is_active: true
-      },
-      {
-        id: '4',
-        position: 'header',
-        title: 'WORLDCOM FINANCE Money Transfer',
-        description: 'إرسال واستقبال الأموال من هنا',
-        image_url: require('@/assets/images/4.jpeg'),
-        is_active: true
-      },
-      {
-        id: '5',
-        position: 'header',
-        title: 'Ria Money Transfer',
-        description: 'حوالات مالية دولية موثوقة',
-        image_url: require('@/assets/images/5.jpeg'),
-        is_active: true
-      }
-    ];
-
-    console.log('📱 استخدام الإعلانات المحلية الجديدة');
-    setAdvertisements(localAds);
+    setAdvertisements([
+      { id: '1', position: 'header', title: 'UPT Money Transfer', description: 'خدمات تحويل الأموال', image_url: require('@/assets/images/1.jpeg'), is_active: true },
+      { id: '2', position: 'header', title: 'KoronaPay', description: 'حوالات مالية سريعة', image_url: require('@/assets/images/2.jpeg'), is_active: true },
+      { id: '3', position: 'header', title: 'WORLDCOM FINANCE', description: 'خدمات مالية متكاملة', image_url: require('@/assets/images/3.jpeg'), is_active: true },
+      { id: '4', position: 'header', title: 'WORLDCOM FINANCE Money Transfer', description: 'إرسال واستقبال الأموال', image_url: require('@/assets/images/4.jpeg'), is_active: true },
+      { id: '5', position: 'header', title: 'Ria Money Transfer', description: 'حوالات مالية دولية', image_url: require('@/assets/images/5.jpeg'), is_active: true },
+    ]);
   };
 
   const getWorkingDaysText = () => {
     if (!workingHours || workingHours.length === 0) {
-      switch (language) {
-        case 'he': return 'ראשון - חמישי, שבת';
-        case 'en': return 'Sunday - Thursday, Saturday';
-        default: return 'الأحد - الخميس، السبت';
-      }
+      if (language === 'he') return 'ראשון - חמישי, שבת';
+      if (language === 'en') return 'Sunday - Thursday, Saturday';
+      return 'الأحد - الخميس، السبت';
     }
-
     const workingDays = workingHours
       .filter(wh => wh.is_working_day === true || wh.is_working_day === 'true' as any)
       .map(wh => wh.day_of_week);
-
     if (workingDays.length === 0) {
-      switch (language) {
-        case 'he': return 'ראשון - חמישי, שבת';
-        case 'en': return 'Sunday - Thursday, Saturday';
-        default: return 'الأحد - الخميس، السبت';
-      }
+      if (language === 'he') return 'ראשון - חמישי, שבת';
+      if (language === 'en') return 'Sunday - Thursday, Saturday';
+      return 'الأحد - الخميس، السبت';
     }
-
-    const orderedWorkingDays = DAYS_OF_WEEK
+    return DAYS_OF_WEEK
       .filter(day => workingDays.includes(day.key))
-      .map(day => {
-        switch (language) {
-          case 'he': return day.he;
-          case 'en': return day.en;
-          default: return day.ar;
-        }
-      });
-
-    if (language === 'ar') {
-      return orderedWorkingDays.join(' - ');
-    } else if (language === 'he') {
-      return orderedWorkingDays.join(' - ');
-    } else {
-      return orderedWorkingDays.join(' - ');
-    }
+      .map(day => language === 'he' ? day.he : language === 'en' ? day.en : day.ar)
+      .join(' - ');
   };
 
   const getWorkingHoursText = () => {
     if (!workingHours || workingHours.length === 0) {
       return { morning: '09:00 - 14:00', evening: '16:00 - 18:00' };
     }
-
-    const firstWorkingDay = workingHours.find(wh => wh.is_working_day === true || wh.is_working_day === 'true' as any);
-    
-    if (firstWorkingDay) {
+    const first = workingHours.find(wh => wh.is_working_day === true || wh.is_working_day === 'true' as any);
+    if (first) {
       return {
-        morning: `${firstWorkingDay.morning_start} - ${firstWorkingDay.morning_end}`,
-        evening: `${firstWorkingDay.evening_start} - ${firstWorkingDay.evening_end}`
+        morning: `${first.morning_start} - ${first.morning_end}`,
+        evening: `${first.evening_start} - ${first.evening_end}`,
       };
     }
-
     return { morning: '09:00 - 14:00', evening: '16:00 - 18:00' };
   };
 
   const calculateConversion = (amount: string, side: 'left' | 'right') => {
     if (!amount || isNaN(parseFloat(amount))) {
-      setFromAmount('');
-      setToAmount('');
-      setCalculationDetails('');
+      setFromAmount(''); setToAmount(''); setCalculationDetails('');
       return;
     }
-
     const inputAmount = parseFloat(amount);
     let result = 0;
     let details = '';
-
     const fromCurrencyData = allCurrencies.find(c => c.code === fromCurrency);
     const toCurrencyData = allCurrencies.find(c => c.code === toCurrency);
-
     if ((fromCurrency !== 'ILS' && !fromCurrencyData) || (toCurrency !== 'ILS' && !toCurrencyData)) {
       setCalculationDetails('عملة غير موجودة');
       return;
     }
-
     if (fromCurrency === toCurrency) {
       result = inputAmount;
       details = 'نفس العملة';
-    } else {
-      let targetCurrency, sourceCurrency, targetCurrencyData, sourceCurrencyData;
-      
-      if (side === 'right') {
-        targetCurrency = toCurrency;
-        sourceCurrency = fromCurrency;
-        targetCurrencyData = toCurrencyData;
-        sourceCurrencyData = fromCurrencyData;
+    } else if (side === 'right') {
+      if (toCurrency === 'ILS') {
+        result = inputAmount / fromCurrencyData!.buy_rate;
+        details = `${inputAmount.toFixed(2)} شيقل ÷ ${fromCurrencyData!.buy_rate.toFixed(2)} = ${result.toFixed(2)} ${fromCurrency}`;
+      } else if (fromCurrency === 'ILS') {
+        result = inputAmount * toCurrencyData!.sell_rate;
+        details = `${inputAmount.toFixed(2)} ${toCurrency} × ${toCurrencyData!.sell_rate.toFixed(2)} = ${result.toFixed(2)} شيقل`;
       } else {
-        targetCurrency = toCurrency;
-        sourceCurrency = fromCurrency;
-        targetCurrencyData = toCurrencyData;
-        sourceCurrencyData = fromCurrencyData;
+        const shekelAmount = inputAmount * toCurrencyData!.sell_rate;
+        result = shekelAmount / fromCurrencyData!.buy_rate;
+        details = `${inputAmount.toFixed(2)} ${toCurrency} × ${toCurrencyData!.sell_rate.toFixed(2)} = ${shekelAmount.toFixed(2)} ÷ ${fromCurrencyData!.buy_rate.toFixed(2)} = ${result.toFixed(2)} ${fromCurrency}`;
       }
-      
-      if (side === 'right') {
-        if (targetCurrency === 'ILS') {
-          result = inputAmount / sourceCurrencyData!.buy_rate;
-          details = `${inputAmount.toFixed(2)} شيقل ÷ ${sourceCurrencyData!.buy_rate.toFixed(2)} (سعر الشراء) = ${result.toFixed(2)} ${sourceCurrency}`;
-        } else if (sourceCurrency === 'ILS') {
-          result = inputAmount * targetCurrencyData!.sell_rate;
-          details = `${inputAmount.toFixed(2)} ${targetCurrency} × ${targetCurrencyData!.sell_rate.toFixed(2)} (سعر البيع) = ${result.toFixed(2)} شيقل`;
-        } else {
-          const shekelAmount = inputAmount * targetCurrencyData!.sell_rate;
-          result = shekelAmount / sourceCurrencyData!.buy_rate;
-          details = `${inputAmount.toFixed(2)} ${targetCurrency} × ${targetCurrencyData!.sell_rate.toFixed(2)} = ${shekelAmount.toFixed(2)} شيقل ÷ ${sourceCurrencyData!.buy_rate.toFixed(2)} = ${result.toFixed(2)} ${sourceCurrency}`;
-        }
+    } else {
+      if (toCurrency === 'ILS') {
+        result = inputAmount * fromCurrencyData!.buy_rate;
+        details = `${inputAmount.toFixed(2)} ${fromCurrency} × ${fromCurrencyData!.buy_rate.toFixed(2)} = ${result.toFixed(2)} شيقل`;
+      } else if (fromCurrency === 'ILS') {
+        result = inputAmount / toCurrencyData!.sell_rate;
+        details = `${inputAmount.toFixed(2)} شيقل ÷ ${toCurrencyData!.sell_rate.toFixed(2)} = ${result.toFixed(2)} ${toCurrency}`;
       } else {
-        if (targetCurrency === 'ILS') {
-          result = inputAmount * sourceCurrencyData!.buy_rate;
-          details = `${inputAmount.toFixed(2)} ${sourceCurrency} × ${sourceCurrencyData!.buy_rate.toFixed(2)} (سعر الشراء) = ${result.toFixed(2)} شيقل`;
-        } else if (sourceCurrency === 'ILS') {
-          result = inputAmount / targetCurrencyData!.sell_rate;
-          details = `${inputAmount.toFixed(2)} شيقل ÷ ${targetCurrencyData!.sell_rate.toFixed(2)} (سعر البيع) = ${result.toFixed(2)} ${targetCurrency}`;
-        } else {
-          const shekelAmount = inputAmount * sourceCurrencyData!.buy_rate;
-          result = shekelAmount / targetCurrencyData!.sell_rate;
-          details = `${inputAmount.toFixed(2)} ${sourceCurrency} × ${sourceCurrencyData!.buy_rate.toFixed(2)} = ${shekelAmount.toFixed(2)} شيقل ÷ ${targetCurrencyData!.sell_rate.toFixed(2)} = ${result.toFixed(2)} ${targetCurrency}`;
-        }
+        const shekelAmount = inputAmount * fromCurrencyData!.buy_rate;
+        result = shekelAmount / toCurrencyData!.sell_rate;
+        details = `${inputAmount.toFixed(2)} ${fromCurrency} × ${fromCurrencyData!.buy_rate.toFixed(2)} = ${shekelAmount.toFixed(2)} ÷ ${toCurrencyData!.sell_rate.toFixed(2)} = ${result.toFixed(2)} ${toCurrency}`;
       }
     }
-
-    if (side === 'left') {
-      setToAmount(result.toFixed(2));
-    } else {
-      setFromAmount(result.toFixed(2));
-    }
-
+    if (side === 'left') setToAmount(result.toFixed(2));
+    else setFromAmount(result.toFixed(2));
     setCalculationDetails(details);
   };
 
@@ -622,75 +391,50 @@ export default function PricesScreen() {
   };
 
   const swapCurrencies = () => {
-    const tempCurrency = fromCurrency;
-    const tempAmount = fromAmount;
-    
+    const tmp = fromCurrency;
     setFromCurrency(toCurrency);
-    setToCurrency(tempCurrency);
+    setToCurrency(tmp);
     setFromAmount(toAmount);
-    setToAmount(tempAmount);
-    
-    if (toAmount) {
-      calculateConversion(toAmount, 'left');
-    }
+    setToAmount(fromAmount);
+    if (toAmount) calculateConversion(toAmount, 'left');
     resetInactivityTimer();
   };
 
-  const cycleCurrency = (currentCurrency: string, isFromCurrency: boolean) => {
-    const allCurrenciesWithILS = [
-      { code: 'ILS', name_ar: 'شيقل إسرائيلي' },
-      ...allCurrencies.filter(c => c.is_active) // فقط العملات المتوفرة في الحاسبة
-    ];
-    
-    const currentIndex = allCurrenciesWithILS.findIndex(c => c.code === currentCurrency);
-    const nextIndex = (currentIndex + 1) % allCurrenciesWithILS.length;
-    const nextCurrency = allCurrenciesWithILS[nextIndex].code;
-    
-    if (isFromCurrency) {
-      setFromCurrency(nextCurrency);
-      if (fromAmount) {
-        calculateConversion(fromAmount, 'left');
-      }
-    } else {
-      setToCurrency(nextCurrency);
-      if (fromAmount) {
-        calculateConversion(fromAmount, 'left');
-      }
-    }
+  const cycleCurrency = (current: string, isFrom: boolean) => {
+    const list = [{ code: 'ILS' }, ...allCurrencies.filter(c => c.is_active)];
+    const idx = list.findIndex(c => c.code === current);
+    const next = list[(idx + 1) % list.length].code;
+    if (isFrom) { setFromCurrency(next); if (fromAmount) calculateConversion(fromAmount, 'left'); }
+    else { setToCurrency(next); if (fromAmount) calculateConversion(fromAmount, 'left'); }
     resetInactivityTimer();
   };
 
-  const handleCurrencyNameClick = (currencyCode: string) => {
+  const handleCurrencyNameClick = (code: string) => {
     if (!selectedFirstCurrency) {
-      setSelectedFirstCurrency(currencyCode);
+      setSelectedFirstCurrency(code);
+    } else if (selectedFirstCurrency === code) {
+      setSelectedFirstCurrency(null);
     } else {
-      if (selectedFirstCurrency === currencyCode) {
-        setSelectedFirstCurrency(null);
-      } else {
-        openCalculatorWithTwoCurrencies(selectedFirstCurrency, currencyCode);
-        setSelectedFirstCurrency(null);
-      }
+      openCalculatorWithTwoCurrencies(selectedFirstCurrency, code);
+      setSelectedFirstCurrency(null);
     }
   };
 
-  const openCalculatorWithTwoCurrencies = async (firstCurrency: string, secondCurrency: string) => {
-    await AsyncStorage.setItem('calculatorFromCurrency', firstCurrency);
-    await AsyncStorage.setItem('calculatorToCurrency', secondCurrency);
+  const openCalculatorWithTwoCurrencies = async (first: string, second: string) => {
+    await AsyncStorage.setItem('calculatorFromCurrency', first);
+    await AsyncStorage.setItem('calculatorToCurrency', second);
     router.push('/calculator');
   };
 
   const openCalculator = async (currencyCode?: string, rateType?: 'buy' | 'sell' | 'current') => {
     if (currencyCode && currencyCode !== 'ILS') {
       if (rateType === 'buy') {
-        // نشتري منك: العميل يدفع العملة الأجنبية (يسار) ويأخذ شيكل (يمين)
         await AsyncStorage.setItem('calculatorFromCurrency', currencyCode);
         await AsyncStorage.setItem('calculatorToCurrency', 'ILS');
       } else if (rateType === 'sell') {
-        // نبيع لك: العميل يدفع شيكل (يسار) ويأخذ العملة الأجنبية (يمين)
         await AsyncStorage.setItem('calculatorFromCurrency', 'ILS');
         await AsyncStorage.setItem('calculatorToCurrency', currencyCode);
       } else {
-        // السلوك الافتراضي
         await AsyncStorage.setItem('calculatorFromCurrency', 'ILS');
         await AsyncStorage.setItem('calculatorToCurrency', currencyCode);
       }
@@ -700,272 +444,118 @@ export default function PricesScreen() {
 
   const closeCalculator = () => {
     setShowCalculator(false);
-    setFromAmount('');
-    setToAmount('');
-    setCalculationDetails('');
+    setFromAmount(''); setToAmount(''); setCalculationDetails('');
     clearInactivityTimer();
   };
 
   const handleProceedToTransaction = async () => {
     try {
-      console.log('🔄 بدء عملية المتابعة للمعاملة...');
-      console.log('📊 بيانات الآلة الحاسبة:', { fromCurrency, toCurrency, fromAmount, toAmount });
-
-      // إلغاء مؤقت الخمول
       clearInactivityTimer();
-
-      // حفظ بيانات الآلة الحاسبة بشكل مفصل
-      const calculatorTransactionData = {
-        fromCurrency,
-        toCurrency,
-        fromAmount,
-        toAmount,
-        calculationDetails,
-        timestamp: new Date().toISOString(),
-        isFromCalculator: true
-      };
-
+      const data = { fromCurrency, toCurrency, fromAmount, toAmount, calculationDetails, timestamp: new Date().toISOString(), isFromCalculator: true };
       await AsyncStorage.setItem('fromCalculator', 'true');
-      await AsyncStorage.setItem('calculatorData', JSON.stringify(calculatorTransactionData));
+      await AsyncStorage.setItem('calculatorData', JSON.stringify(data));
       await AsyncStorage.setItem('calculatorTransactionReady', 'true');
-
-      console.log('✅ تم حفظ بيانات الآلة الحاسبة:', calculatorTransactionData);
-
-      // إغلاق الآلة الحاسبة
       closeCalculator();
-
-      // الانتقال لصفحة معلومات الزبائن
       router.push('/(tabs)/customer-info');
-      
-    } catch (error) {
-      console.error('❌ خطأ في حفظ بيانات الآلة الحاسبة:', error);
+    } catch {
       Alert.alert('خطأ', 'حدث خطأ في حفظ البيانات');
     }
   };
 
   const startInactivityTimer = () => {
     clearInactivityTimer();
-    
-    const timer = setTimeout(() => {
-      console.log('⏰ إغلاق آلة الحاسبة تلقائياً بعد 10 ثوانٍ من عدم الاستخدام');
-      closeCalculator();
-    }, 10000);
-    
+    const timer = setTimeout(() => closeCalculator(), 10000);
     setInactivityTimer(timer);
   };
 
   const clearInactivityTimer = () => {
-    if (inactivityTimer) {
-      clearTimeout(inactivityTimer);
-      setInactivityTimer(null);
-    }
+    if (inactivityTimer) { clearTimeout(inactivityTimer); setInactivityTimer(null); }
   };
 
-  const resetInactivityTimer = () => {
-    if (showCalculator) {
-      startInactivityTimer();
-    }
-  };
+  const resetInactivityTimer = () => { if (showCalculator) startInactivityTimer(); };
 
-  useEffect(() => {
-    return () => {
-      clearInactivityTimer();
-    };
-  }, []);
+  useEffect(() => { return () => { clearInactivityTimer(); }; }, []);
 
   const openMapsOptions = () => {
-    const latitude = 32.856665;
-    const longitude = 35.335847;
-    const label = 'Naamneh Exchange';
-
+    const lat = 32.856665;
+    const lng = 35.335847;
     Alert.alert(
-      language === 'ar' ? 'اختر تطبيق الخرائط' :
-      language === 'he' ? 'בחר אפליקציית מפות' :
-      'Choose Map App',
-      language === 'ar' ? 'كيف تريد فتح الموقع؟' :
-      language === 'he' ? 'איך תרצה לפתוח את המיקום?' :
-      'How would you like to open the location?',
+      language === 'ar' ? 'اختر تطبيق الخرائط' : language === 'he' ? 'בחר אפליקציית מפות' : 'Choose Map App',
+      '',
       [
-        {
-          text: 'Google Maps',
-          onPress: async () => {
-            const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
-            try {
-              const canOpen = await Linking.canOpenURL(googleMapsUrl);
-              if (canOpen) {
-                await Linking.openURL(googleMapsUrl);
-              }
-            } catch (error) {
-              console.error('خطأ في فتح Google Maps:', error);
-            }
-          }
-        },
-        {
-          text: 'Waze',
-          onPress: async () => {
-            const wazeUrl = `https://waze.com/ul?ll=${latitude},${longitude}&navigate=yes`;
-            try {
-              const canOpen = await Linking.canOpenURL(wazeUrl);
-              if (canOpen) {
-                await Linking.openURL(wazeUrl);
-              } else {
-                Alert.alert(
-                  language === 'ar' ? 'خطأ' :
-                  language === 'he' ? 'שגיאה' :
-                  'Error',
-                  language === 'ar' ? 'تطبيق Waze غير مثبت' :
-                  language === 'he' ? 'אפליקציית Waze לא מותקנת' :
-                  'Waze app is not installed'
-                );
-              }
-            } catch (error) {
-              console.error('خطأ في فتح Waze:', error);
-            }
-          }
-        },
-        {
-          text: language === 'ar' ? 'إلغاء' :
-                language === 'he' ? 'ביטול' :
-                'Cancel',
-          style: 'cancel'
-        }
+        { text: 'Google Maps', onPress: () => Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`) },
+        { text: 'Waze', onPress: () => Linking.openURL(`https://waze.com/ul?ll=${lat},${lng}&navigate=yes`) },
+        { text: language === 'ar' ? 'إلغاء' : language === 'he' ? 'ביטול' : 'Cancel', style: 'cancel' }
       ]
     );
   };
 
   const openWhatsApp = async () => {
-    const phoneNumber = '972526000841';
-
-    const messages = {
-      ar: `مرحباً، أريد التواصل معكم`,
-      he: `שלום, אני רוצה ליצור קשר`,
-      en: `Hello, I would like to contact you`
-    };
-
-    const message = messages[language as keyof typeof messages] || messages.ar;
-    const whatsappUrl = `whatsapp://send?phone=${phoneNumber}&text=${encodeURIComponent(message)}`;
-
+    const phone = '972526000841';
+    const msg = language === 'ar' ? 'مرحباً، أريد التواصل معكم' : language === 'he' ? 'שלום, אני רוצה ליצור קשר' : 'Hello, I would like to contact you';
+    const url = `whatsapp://send?phone=${phone}&text=${encodeURIComponent(msg)}`;
     try {
-      const canOpen = await Linking.canOpenURL(whatsappUrl);
-      if (canOpen) {
-        await Linking.openURL(whatsappUrl);
-      } else {
-        Alert.alert(
-          language === 'ar' ? 'خطأ' :
-          language === 'he' ? 'שגיאה' :
-          'Error',
-
-          language === 'ar' ? 'لا يمكن فتح واتساب. يرجى التأكد من تثبيت التطبيق.' :
-          language === 'he' ? 'לא ניתן לפתוח WhatsApp. אנא ודא שהאפליקציה מותקנת.' :
-          'Cannot open WhatsApp. Please make sure the app is installed.'
-        );
-      }
-    } catch (error) {
-      console.error('خطأ في فتح واتساب:', error);
-      Alert.alert(
-        language === 'ar' ? 'خطأ' :
-        language === 'he' ? 'שגיאה' :
-        'Error',
-
-        language === 'ar' ? 'حدث خطأ في فتح واتساب' :
-        language === 'he' ? 'אירעה שגיאה בפתיחת WhatsApp' :
-        'Error opening WhatsApp'
-      );
-    }
+      const can = await Linking.canOpenURL(url);
+      if (can) await Linking.openURL(url);
+      else Alert.alert('خطأ', 'لا يمكن فتح واتساب');
+    } catch {}
   };
 
   const sendWhatsAppMessage = async (currencyName: string) => {
-    const phoneNumber = '972526000841';
-
-    const messages = {
-      ar: `مرحباً، أرغب في طلب كمية من عملة ${currencyName}. هل يمكنكم توفيرها؟`,
-      he: `שלום, אני רוצה להזמין כמות של מטבע ${currencyName}. האם אתם יכולים לספק?`,
-      en: `Hello, I would like to order some ${currencyName} currency. Can you provide it?`
-    };
-
-    const message = messages[language as keyof typeof messages] || messages.ar;
-    const whatsappUrl = `whatsapp://send?phone=${phoneNumber}&text=${encodeURIComponent(message)}`;
-
+    const phone = '972526000841';
+    const msg = language === 'ar' ? `مرحباً، أرغب في طلب كمية من عملة ${currencyName}.` : language === 'he' ? `שלום, אני רוצה להזמין ${currencyName}.` : `Hello, I'd like to order ${currencyName}.`;
+    const url = `whatsapp://send?phone=${phone}&text=${encodeURIComponent(msg)}`;
     try {
-      const canOpen = await Linking.canOpenURL(whatsappUrl);
-      if (canOpen) {
-        await Linking.openURL(whatsappUrl);
-      } else {
-        Alert.alert(
-          language === 'ar' ? 'خطأ' :
-          language === 'he' ? 'שגיאה' :
-          'Error',
-
-          language === 'ar' ? 'لا يمكن فتح واتساب. يرجى التأكد من تثبيت التطبيق.' :
-          language === 'he' ? 'לא ניתן לפתוח WhatsApp. אנא ודא שהאפליקציה מותקנת.' :
-          'Cannot open WhatsApp. Please make sure the app is installed.'
-        );
-      }
-    } catch (error) {
-      console.error('خطأ في فتح واتساب:', error);
-      Alert.alert(
-        language === 'ar' ? 'خطأ' :
-        language === 'he' ? 'שגיאה' :
-        'Error',
-
-        language === 'ar' ? 'حدث خطأ في فتح واتساب' :
-        language === 'he' ? 'אירעה שגיאה בפתיחת WhatsApp' :
-        'Error opening WhatsApp'
-      );
-    }
+      const can = await Linking.canOpenURL(url);
+      if (can) await Linking.openURL(url);
+    } catch {}
   };
 
   const navigateToCustomerInfo = async () => {
-    try {
-      await AsyncStorage.setItem('selectedLanguage', language);
-      console.log('تم حفظ اللغة قبل الانتقال:', language);
-
-      await AsyncStorage.setItem('languageUpdateTime', Date.now().toString());
-      console.log('تم حفظ وقت تحديث اللغة');
-    } catch (error) {
-      console.log('خطأ في حفظ اللغة:', error);
-    }
-
-    // الانتقال مباشرة لصفحة معلومات الزبون
-    console.log('📋 الانتقال مباشرة لصفحة معلومات الزبون...');
+    try { await AsyncStorage.setItem('selectedLanguage', language); } catch {}
     router.push('/(tabs)/customer-info');
   };
 
-  const navigateToSettings = () => {
-    router.push('/login');
-  };
+  const navigateToSettings = () => { router.push('/login'); };
 
   const workingHoursData = getWorkingHoursText();
-
-  // تحديد ما إذا كانت الشاشة كبيرة أم صغيرة
   const isLargeScreen = screenData.width >= 768;
-
-  // أحجام خطوط ديناميكية حسب حجم الشاشة
-  const fontSize = {
-    headerText: isLargeScreen ? 26 : 16,
-    currencyCode: isLargeScreen ? 28 : 17,
-    currencyName: isLargeScreen ? 18 : 12,
-    rateValue: isLargeScreen ? 26 : 15,
-    tooltipText: isLargeScreen ? 13 : 8,
-  };
-
-  // الحصول على الإعلان الحالي
   const currentAd = advertisements.length > 0 ? advertisements[currentAdIndex] : null;
+  const activeCurrencies = allCurrencies.filter(c => c.is_active);
+  const trendingCurrencies = activeCurrencies.slice(0, 4);
+
+  const timeStr = currentTime.toLocaleTimeString(
+    language === 'ar' ? 'ar-SA' : language === 'he' ? 'he-IL' : 'en-US',
+    { hour: '2-digit', minute: '2-digit', hour12: true }
+  );
+  const dateStr = currentTime.toLocaleDateString(
+    language === 'ar' ? 'ar-SA' : language === 'he' ? 'he-IL' : 'en-US',
+    { year: 'numeric', month: '2-digit', day: '2-digit' }
+  );
+  const dayStr = currentTime.toLocaleDateString(
+    language === 'ar' ? 'ar-SA' : language === 'he' ? 'he-IL' : 'en-US',
+    { weekday: 'long' }
+  );
+
+  const companyName = companyInfo
+    ? (language === 'ar' ? companyInfo.name_ar : language === 'he' ? companyInfo.name_he : companyInfo.name_en)
+    : (language === 'ar' ? 'نعامنة للصرافة' : language === 'he' ? 'נעאמנה להמרות' : 'Naamneh Exchange');
+
+  const companyAddress = companyInfo
+    ? (language === 'ar' ? companyInfo.address_ar : language === 'he' ? companyInfo.address_he : companyInfo.address_en)
+    : (language === 'ar' ? 'عرابة الشارع الرئيسي' : language === 'he' ? 'ערבה הרחוב הראשי' : 'Arraba Main Street');
+
+  const companyPhone = companyInfo?.phone1 || '0526000841';
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.centerContent]}>
-        <Text style={styles.loadingText}>جاري تحميل الأسعار...</Text>
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>
+          {language === 'ar' ? 'جاري تحميل الأسعار...' : language === 'he' ? 'טוען שערים...' : 'Loading rates...'}
+        </Text>
       </View>
     );
   }
-
-  const calculatorCurrencies = [
-    { code: 'ILS', name_ar: 'شيقل إسرائيلي', name_en: 'Israeli Shekel', name_he: 'שקל ישראלי' },
-    ...allCurrencies.filter(c => c.is_active) // فقط العملات المتوفرة
-  ];
-
-  const isRTL = language === 'ar' || language === 'he';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -974,123 +564,209 @@ export default function PricesScreen() {
         showsVerticalScrollIndicator={false}
         showsHorizontalScrollIndicator={false}
       >
-        {/* Header with Gradient */}
-        <LinearGradient
-          colors={['#059669', '#10B981', '#34D399']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.header, isLargeScreen && styles.headerLarge]}
-        >
+        {/* ===== HEADER ===== */}
+        <View style={styles.header}>
+          {/* Language + Settings */}
           <View style={styles.headerTop}>
-            <TouchableOpacity style={styles.settingsButton} onPress={navigateToSettings}>
-              <Text style={styles.settingsButtonText}>⚙️</Text>
-            </TouchableOpacity>
-
-            <View style={styles.languageSelector}>
+            <View style={styles.langRow}>
               {(['ar', 'he', 'en'] as const).map((lang) => (
                 <TouchableOpacity
                   key={lang}
-                  style={[styles.langButton, language === lang && styles.activeLangButton]}
                   onPress={() => setLanguage(lang)}
+                  style={[styles.langBtn, language === lang && styles.langBtnActive]}
                 >
-                  <Text style={[styles.langButtonText, language === lang && styles.activeLangButtonText]}>
-                    {lang === 'ar' ? 'ع' : lang === 'he' ? 'ע' : 'EN'}
+                  <Text style={[styles.langBtnText, language === lang && styles.langBtnTextActive]}>
+                    {lang === 'ar' ? 'العربية' : lang === 'he' ? 'עברית' : 'English'}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
-          </View>
 
-          <View style={[styles.companyInfo, isLargeScreen && styles.companyInfoLarge]}>
-            {isLargeScreen && (
-              <Text style={styles.currencyIconLeft}>💵</Text>
-            )}
-            <View style={styles.companyInfoText}>
-              <Text style={[styles.companyName, isLargeScreen && styles.companyNameLarge]}>
-                {companyInfo ? (
-                  language === 'ar' ? companyInfo.name_ar :
-                  language === 'he' ? companyInfo.name_he :
-                  companyInfo.name_en
-                ) : (
-                  language === 'ar' ? 'نعامنة للصرافة' :
-                  language === 'he' ? 'נעאמנה להמרות' :
-                  'Naamneh Exchange'
-                )}
-              </Text>
-              <View style={styles.companyDetailsContainer}>
-                <TouchableOpacity
-                  onPress={() => openMapsOptions()}
-                  activeOpacity={0.7}
-                  style={styles.addressButton}
-                >
-                  <Text style={[styles.companyAddress, isLargeScreen && styles.companyAddressLarge]}>
-                    📍 {companyInfo ? (
-                      language === 'ar' ? companyInfo.address_ar :
-                      language === 'he' ? companyInfo.address_he :
-                      companyInfo.address_en
-                    ) : (
-                      language === 'ar' ? 'عرابة الشارع الرئيسي' :
-                      language === 'he' ? 'ערבה הרחוב הראשי' :
-                      'Arraba Main Street'
-                    )}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => openWhatsApp()}
-                  activeOpacity={0.7}
-                  style={styles.phoneButton}
-                >
-                  <Text style={[styles.companyPhone, isLargeScreen && styles.companyPhoneLarge]}>
-                    📞 {companyInfo?.phone1 || '0526000841'}
-                    {companyInfo?.phone2 && ` | ${companyInfo.phone2}`}
-                    {companyInfo?.phone3 && ` | ${companyInfo.phone3}`}
-                  </Text>
-                </TouchableOpacity>
-              </View>
+            <View style={styles.headerClock}>
+              <Text style={styles.clockTime}>{timeStr}</Text>
+              <Text style={styles.clockDate}>{dayStr} {dateStr}</Text>
             </View>
-            {isLargeScreen && (
-              <Text style={styles.currencyIconRight}>💶</Text>
-            )}
-          </View>
-        </LinearGradient>
 
-        {/* Last Update Time */}
-        {lastUpdateTime && (
-          <View style={styles.updateTimeContainer}>
-            <Text style={styles.updateTimeText}>
-              {language === 'ar' && `⏰ آخر تحديث: ${lastUpdateTime}`}
-              {language === 'he' && `⏰ עדכון אחרון: ${lastUpdateTime}`}
-              {language === 'en' && `⏰ Last Update: ${lastUpdateTime}`}
+            <TouchableOpacity style={styles.logoArea} onPress={navigateToSettings}>
+              <View style={styles.logoIcon}>
+                <Text style={styles.logoEmoji}>💱</Text>
+              </View>
+              <View style={styles.logoText}>
+                <Text style={styles.companyNameHeader}>{companyName}</Text>
+                <Text style={styles.companySubHeader}>
+                  {language === 'ar' ? 'لصرافة والتحويلات المالية' : language === 'he' ? 'המרת מטבע והעברות' : 'Exchange & Money Transfer'}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* ===== TRENDING BAR ===== */}
+        {trendingCurrencies.length > 0 && (
+          <View style={styles.trendingBar}>
+            <View style={styles.trendingTitleRow}>
+              <Text style={styles.trendingIcon}>📊</Text>
+              <Text style={styles.trendingTitle}>
+                {language === 'ar' ? 'العملات الأكثر تداولاً اليوم' : language === 'he' ? 'המטבעות הנסחרים ביותר היום' : "Today's Most Traded"}
+              </Text>
+            </View>
+            <View style={styles.trendingCurrencies}>
+              {trendingCurrencies.map((c) => (
+                <TouchableOpacity
+                  key={c.id}
+                  style={styles.trendingItem}
+                  onPress={() => openCalculator(c.code, 'sell')}
+                >
+                  <Text style={styles.trendingFlag}>{getCurrencyFlag(c.code)}</Text>
+                  <Text style={styles.trendingCode}>{c.code}</Text>
+                  <Text style={styles.trendingRate}>{c.current_rate?.toFixed(2)}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* ===== RATES SECTION TITLE ===== */}
+        <View style={styles.sectionTitleRow}>
+          <Text style={styles.sectionIcon}>🔄</Text>
+          <Text style={styles.sectionTitle}>
+            {language === 'ar' ? 'أسعار صرف العملات' : language === 'he' ? 'שערי חליפין' : 'Exchange Rates'}
+          </Text>
+          <TouchableOpacity style={styles.calcIconBtn} onPress={() => openCalculator()}>
+            <Text style={styles.calcIcon}>🧮</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Instruction hint */}
+        {selectedFirstCurrency ? (
+          <Animated.View style={[styles.hintBar, styles.hintBarSelected, { transform: [{ scale: pulseAnim }] }]}>
+            <Text style={styles.hintText}>
+              {language === 'ar' ? '✓ اختر عملة ثانية من الجدول' : language === 'he' ? '✓ בחר מטבע שני' : '✓ Select second currency'}
+            </Text>
+          </Animated.View>
+        ) : (
+          <View style={styles.hintBar}>
+            <Text style={styles.hintText}>
+              {language === 'ar' ? '👇 اضغط على سعر بيع أو شراء لفتح الحاسبة' : language === 'he' ? '👇 לחץ על שער לחישוב' : '👇 Tap a rate to open calculator'}
             </Text>
           </View>
         )}
 
-        {/* Advertisement Carousel - Above Table (Only on small screens) */}
-        {currentAd && !isLargeScreen && (
-          <View style={styles.advertisementContainer}>
-            <View style={styles.advertisementCard}>
+        {/* ===== CURRENCY GRID ===== */}
+        <View style={styles.currencyGrid}>
+          {allCurrencies.map((currency) => (
+            <View
+              key={currency.id}
+              style={[
+                styles.currencyCard,
+                !currency.is_active && styles.currencyCardUnavailable,
+                selectedFirstCurrency === currency.code && styles.currencyCardSelected,
+              ]}
+            >
+              {!currency.is_active && (
+                <TouchableOpacity
+                  style={styles.unavailableOverlay}
+                  onPress={() => {
+                    const name = language === 'ar' ? currency.name_ar : language === 'he' ? (currency.name_he || currency.name_ar) : currency.name_en;
+                    sendWhatsAppMessage(name);
+                  }}
+                >
+                  <Text style={styles.unavailableOverlayText}>
+                    {language === 'ar' ? '⚠️ غير متوفر' : language === 'he' ? '⚠️ לא זמין' : '⚠️ Unavailable'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              {/* Card header: flag + code + name */}
+              <TouchableOpacity
+                style={styles.cardTop}
+                onPress={() => currency.is_active && handleCurrencyNameClick(currency.code)}
+                disabled={!currency.is_active}
+              >
+                <Text style={styles.cardFlag}>{getCurrencyFlag(currency.code)}</Text>
+                <Text style={[styles.cardCode, !currency.is_active && styles.textFaded]}>
+                  {currency.code}
+                </Text>
+                <Text style={[styles.cardName, !currency.is_active && styles.textFaded]}>
+                  {language === 'ar' ? currency.name_ar : language === 'he' ? (currency.name_he || currency.name_ar) : currency.name_en}
+                </Text>
+                {selectedFirstCurrency === currency.code && (
+                  <View style={styles.selectedBadge}><Text style={styles.selectedBadgeText}>✓</Text></View>
+                )}
+              </TouchableOpacity>
+
+              {/* Rates row: buy / sell */}
+              <View style={styles.cardRates}>
+                <TouchableOpacity
+                  style={[styles.rateBox, styles.rateBoxBuy]}
+                  onPress={() => currency.is_active && openCalculator(currency.code, 'buy')}
+                  disabled={!currency.is_active}
+                >
+                  <Text style={styles.rateLabel}>
+                    {language === 'ar' ? 'شراء' : language === 'he' ? 'קנייה' : 'Buy'}
+                  </Text>
+                  <Text style={[styles.rateValue, styles.rateValueBuy, !currency.is_active && styles.textFaded]}>
+                    {currency.buy_rate?.toFixed(2) ?? 'N/A'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.rateBox, styles.rateBoxSell]}
+                  onPress={() => currency.is_active && openCalculator(currency.code, 'sell')}
+                  disabled={!currency.is_active}
+                >
+                  <Text style={styles.rateLabel}>
+                    {language === 'ar' ? 'بيع' : language === 'he' ? 'מכירה' : 'Sell'}
+                  </Text>
+                  <Text style={[styles.rateValue, styles.rateValueSell, !currency.is_active && styles.textFaded]}>
+                    {currency.sell_rate?.toFixed(2) ?? 'N/A'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Status dot */}
+              <View style={styles.cardFooter}>
+                <View style={[styles.statusDot, currency.is_active ? styles.statusDotActive : styles.statusDotInactive]} />
+                <Text style={[styles.cardStatusText, currency.is_active ? styles.cardStatusTextActive : styles.cardStatusTextInactive]}>
+                  {currency.is_active
+                    ? (language === 'ar' ? 'متوفر' : language === 'he' ? 'זמין' : 'Available')
+                    : (language === 'ar' ? 'تواصل معنا' : language === 'he' ? 'צור קשר' : 'Contact us')}
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        {/* ===== INFO BAR ===== */}
+        <View style={styles.infoBar}>
+          <Text style={styles.infoBarIcon}>🔔</Text>
+          <Text style={styles.infoBarText}>
+            {language === 'ar' ? 'يرجى إبراز الهوية عند العمليات' : language === 'he' ? 'נדרש זיהוי בעת עסקאות' : 'ID required for transactions'}
+          </Text>
+          {lastUpdateTime ? (
+            <Text style={styles.infoBarUpdate}>
+              {language === 'ar' ? `آخر تحديث: ${lastUpdateTime}` : language === 'he' ? `עדכון אחרון: ${lastUpdateTime}` : `Last update: ${lastUpdateTime}`}
+            </Text>
+          ) : null}
+        </View>
+
+        {/* ===== ADVERTISEMENT SECTION ===== */}
+        {currentAd && (
+          <View style={styles.adSection}>
+            <View style={styles.adCard}>
               <Image
                 source={typeof currentAd.image_url === 'string' ? { uri: currentAd.image_url } : currentAd.image_url}
                 style={styles.adImage}
                 resizeMode="contain"
               />
-              <View style={styles.adContent}>
-                <Text style={styles.adTitle}>{currentAd.title}</Text>
-                <Text style={styles.adDescription}>{currentAd.description}</Text>
-              </View>
             </View>
-
-            {/* Advertisement Indicators */}
             {advertisements.length > 1 && (
-              <View style={styles.adIndicators}>
-                {advertisements.map((_, index) => (
+              <View style={styles.adDots}>
+                {advertisements.map((_, i) => (
                   <TouchableOpacity
-                    key={index}
-                    style={[
-                      styles.adIndicator,
-                      index === currentAdIndex && styles.activeAdIndicator
-                    ]}
-                    onPress={() => setCurrentAdIndex(index)}
+                    key={i}
+                    style={[styles.adDot, i === currentAdIndex && styles.adDotActive]}
+                    onPress={() => setCurrentAdIndex(i)}
                   />
                 ))}
               </View>
@@ -1098,1359 +774,599 @@ export default function PricesScreen() {
           </View>
         )}
 
-        {/* Main Content Area */}
-        <View style={isLargeScreen ? styles.mainContentLarge : styles.mainContentSmall}>
-          {/* Center Content */}
-          <View style={styles.centerContent}>
-            {/* Exchange Rates Table */}
-            <View style={styles.tableContainer}>
-              <View style={[styles.tableHeader, isLargeScreen && styles.tableHeaderLarge]}>
-                <View style={[styles.tableHeaderContent, isLargeScreen && styles.tableHeaderContentLarge]}>
-                  <Text style={styles.tableTitle}>
-                    {language === 'ar' && 'أسعار الصرف اليوم'}
-                    {language === 'he' && 'שערי החליפין היום'}
-                    {language === 'en' && "Today's Exchange Rates"}
-                  </Text>
-                  {!isLargeScreen && (
-                    <TouchableOpacity style={styles.calculatorButton} onPress={() => openCalculator()}>
-                      <Text style={styles.calculatorButtonText}>🧮</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-                {isLargeScreen && (
-                  <TouchableOpacity
-                    style={styles.calculatorButtonLarge}
-                    onPress={() => openCalculator()}
-                  >
-                    <Text style={styles.calculatorButtonText}>🧮</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              {/* Instruction Message */}
-              {!selectedFirstCurrency ? (
-                <View style={styles.instructionWrapper}>
-                  <Animated.View
-                    style={[
-                      styles.instructionContainer,
-                      styles.instructionBox1,
-                      {
-                        transform: [{ scale: pulseAnim1 }],
-                      }
-                    ]}
-                  >
-                    <Text style={styles.instructionText}>
-                      {language === 'ar' && '👇 اضغط على سعر شراء أو بيع عملة أجنبية في الجدول'}
-                      {language === 'he' && '👇 לחץ על שער קנייה או מכירה של מטבע זר בטבלה'}
-                      {language === 'en' && '👇 Click on buy or sell rate of a foreign currency in the table'}
-                    </Text>
-                  </Animated.View>
-
-                  <Animated.View
-                    style={[
-                      styles.instructionContainer,
-                      styles.instructionBox2,
-                      {
-                        transform: [{ scale: pulseAnim2 }],
-                      }
-                    ]}
-                  >
-                    <Text style={styles.instructionText}>
-                      {language === 'ar' && 'لتبديل بين عملتين أجنبيتين اخترهما من الجدول'}
-                      {language === 'he' && 'להחלפה בין שני מטבעות זרים בחר אותם מהטבלה'}
-                      {language === 'en' && 'To exchange between two foreign currencies select them from the table'}
-                    </Text>
-                  </Animated.View>
-                </View>
-              ) : (
-                <Animated.View
-                  style={[
-                    styles.instructionContainer,
-                    {
-                      transform: [{ scale: pulseAnim }],
-                    }
-                  ]}
-                >
-                  <Text style={styles.instructionText}>
-                    {language === 'ar' && '✓ اختر عملة ثانية للتبديل'}
-                    {language === 'he' && '✓ בחר מטבע שני להמרה'}
-                    {language === 'en' && '✓ Select second currency to exchange'}
-                  </Text>
-                </Animated.View>
-              )}
-
-              <View style={styles.table}>
-                <View style={[styles.tableHeaderRow, isRTL && styles.tableHeaderRowRTL]}>
-                  <View style={styles.currencyHeaderCell}>
-                    <Text style={[styles.headerText, { fontSize: fontSize.headerText }]}>
-                      {language === 'ar' && 'العملة'}
-                      {language === 'he' && 'מטבע'}
-                      {language === 'en' && 'Currency'}
-                    </Text>
-                  </View>
-                  <View style={styles.rateHeaderCell}>
-                    <Text style={[styles.headerText, { fontSize: fontSize.headerText }]}>
-                      {language === 'ar' && 'السعر الحالي'}
-                      {language === 'he' && 'שער נוכחי'}
-                      {language === 'en' && 'Current Rate'}
-                    </Text>
-                  </View>
-                  <View style={styles.rateHeaderCell}>
-                    <Text style={[styles.headerText, { fontSize: fontSize.headerText }]}>
-                      {language === 'ar' && 'نشتري منك'}
-                      {language === 'he' && 'קונים ממך'}
-                      {language === 'en' && 'We Buy from You'}
-                    </Text>
-                  </View>
-                  <View style={styles.rateHeaderCell}>
-                    <Text style={[styles.headerText, { fontSize: fontSize.headerText }]}>
-                      {language === 'ar' && 'نبيع لك'}
-                      {language === 'he' && 'מוכרים לך'}
-                      {language === 'en' && 'We Sell to You'}
-                    </Text>
-                  </View>
-                  <View style={styles.availabilityHeaderCell}>
-                    <Text style={[styles.headerText, { fontSize: fontSize.headerText }]}>
-                      {language === 'ar' && 'الحالة'}
-                      {language === 'he' && 'מצב'}
-                      {language === 'en' && 'Status'}
-                    </Text>
-                  </View>
-                </View>
-
-                {allCurrencies.map((currency, index) => (
-                  <View
-                    key={currency.id}
-                    style={[
-                      styles.tableRow,
-                      { backgroundColor: getCurrencyColor(currency.code) },
-                      !currency.is_active && styles.unavailableRow,
-                      isRTL && styles.tableRowRTL
-                    ]}
-                  >
-                    {!currency.is_active && (
-                      <TouchableOpacity
-                        style={styles.unavailableOverlay}
-                        onPress={() => {
-                          const currencyName = language === 'ar' ? currency.name_ar :
-                                             language === 'he' ? (currency.name_he || currency.name_ar) :
-                                             currency.name_en;
-                          sendWhatsAppMessage(currencyName);
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.unavailableOverlayText}>
-                          {language === 'ar' && '⚠️ غير متوفر - اضغط للاستفسار'}
-                          {language === 'he' && '⚠️ לא זמין - לחץ לבירור'}
-                          {language === 'en' && '⚠️ Unavailable - Click to inquire'}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                    <TouchableOpacity
-                      style={[
-                        styles.currencyCell,
-                        selectedFirstCurrency === currency.code && styles.selectedCurrencyCell
-                      ]}
-                      onPress={() => {
-                        if (currency.is_active) {
-                          handleCurrencyNameClick(currency.code);
-                        }
-                      }}
-                      activeOpacity={0.7}
-                      disabled={!currency.is_active}
-                    >
-                      <Text style={[
-                        styles.currencyCode,
-                        !currency.is_active && styles.unavailableCurrencyCode,
-                        selectedFirstCurrency === currency.code && styles.selectedCurrencyCode,
-                        { fontSize: fontSize.currencyCode }
-                      ]}>
-                        {currency.code}
-                      </Text>
-                      <Text style={[
-                        styles.currencyName,
-                        !currency.is_active && styles.unavailableCurrencyName,
-                        selectedFirstCurrency === currency.code && styles.selectedCurrencyName,
-                        { fontSize: fontSize.currencyName }
-                      ]}>
-                        {language === 'ar' && currency.name_ar}
-                        {language === 'he' && (currency.name_he || currency.name_ar)}
-                        {language === 'en' && currency.name_en}
-                      </Text>
-                      {selectedFirstCurrency === currency.code && (
-                        <Text style={styles.selectedIndicator}>✓</Text>
-                      )}
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.rateCell}
-                      onPress={() => {
-                        if (currency.is_active) {
-                          openCalculator(currency.code, 'current');
-                        }
-                      }}
-                      activeOpacity={0.7}
-                      disabled={!currency.is_active}
-                    >
-                      <Text style={[styles.currentRate, !currency.is_active && styles.unavailableCurrentRate, { fontSize: fontSize.rateValue }]}>
-                        {currency.current_rate?.toFixed(2) || 'N/A'}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.rateCell}
-                      onPress={() => {
-                        if (currency.is_active) {
-                          openCalculator(currency.code, 'buy');
-                        }
-                      }}
-                      activeOpacity={0.7}
-                      disabled={!currency.is_active}
-                    >
-                      <Text style={[styles.buyRate, !currency.is_active && styles.unavailableBuyRate, { fontSize: fontSize.rateValue }]}>
-                        {currency.buy_rate?.toFixed(2) || 'N/A'}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.rateCell}
-                      onPress={() => {
-                        if (currency.is_active) {
-                          openCalculator(currency.code, 'sell');
-                        }
-                      }}
-                      activeOpacity={0.7}
-                      disabled={!currency.is_active}
-                    >
-                      <Text style={[styles.sellRate, !currency.is_active && styles.unavailableSellRate, { fontSize: fontSize.rateValue }]}>
-                        {currency.sell_rate?.toFixed(2) || 'N/A'}
-                      </Text>
-                    </TouchableOpacity>
-                    <View style={styles.availabilityCell}>
-                      <Text
-                        style={[
-                          styles.availabilityIcon,
-                          currency.is_active ? styles.availableIcon : styles.unavailableIcon,
-                          { fontSize: isLargeScreen ? 26 : 16 }
-                        ]}
-                      >
-                        {currency.is_active ? '✅' : '⚠️'}
-                      </Text>
-                      <Text style={[styles.tooltipText, { fontSize: fontSize.tooltipText }]}>
-                        {currency.is_active ? (
-                          language === 'ar' ? 'متوفر' :
-                          language === 'he' ? 'זמין' :
-                          'Available'
-                        ) : (
-                          language === 'ar' ? 'تواصل معنا' :
-                          language === 'he' ? 'דרוש הזמנה' :
-                          'Needs Booking'
-                        )}
-                      </Text>
-                    </View>
-                  </View>
-                ))}
-              </View>
-            </View>
-
-            {/* Working Hours (Small Screens) */}
-            {!isLargeScreen && (
-              <View style={styles.workingHoursContainer}>
-                <Text style={styles.workingHoursTitle}>
-                  {language === 'ar' && 'ساعات العمل'}
-                  {language === 'he' && 'שעות פעילות'}
-                  {language === 'en' && 'Working Hours'}
+        {/* ===== SERVICES SECTION ===== */}
+        <View style={styles.servicesSection}>
+          <View style={styles.sectionDivider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerTitle}>
+              {language === 'ar' ? 'خدماتنا' : language === 'he' ? 'השירותים שלנו' : 'Our Services'}
+            </Text>
+            <View style={styles.dividerLine} />
+          </View>
+          <View style={styles.servicesGrid}>
+            {[
+              { icon: '💸', ar: 'تحويل الأموال', he: 'העברת כסף', en: 'Money Transfer' },
+              { icon: '🔄', ar: 'صرف العملات', he: 'המרת מטבע', en: 'Currency Exchange' },
+              { icon: '🏦', ar: 'حوالات بنكية', he: 'העברות בנקאיות', en: 'Bank Transfers' },
+              { icon: '💳', ar: 'بطاقات الدفع', he: 'כרטיסי תשלום', en: 'Payment Cards' },
+            ].map((service, i) => (
+              <TouchableOpacity key={i} style={styles.serviceCard} onPress={navigateToCustomerInfo}>
+                <Text style={styles.serviceIcon}>{service.icon}</Text>
+                <Text style={styles.serviceLabel}>
+                  {language === 'ar' ? service.ar : language === 'he' ? service.he : service.en}
                 </Text>
-                <View style={styles.workingHoursContent}>
-                  <Text style={styles.workingHoursText}>
-                    🌅 {workingHoursData.morning}
-                  </Text>
-                  <Text style={styles.workingHoursText}>
-                    🌆 {workingHoursData.evening}
-                  </Text>
-                  <Text style={styles.workingDaysText}>
-                    📅 {getWorkingDaysText()}
-                  </Text>
-                  <Text style={styles.holidayText}>
-                    {language === 'ar' && '🌙 الجمعة عطلة'}
-                    {language === 'he' && '🌙 יום שישי חופש'}
-                    {language === 'en' && '🌙 Friday Holiday'}
-                  </Text>
-                </View>
-              </View>
-            )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* ===== CONTACT SECTION ===== */}
+        <View style={styles.contactSection}>
+          <View style={styles.sectionDivider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerTitle}>
+              {language === 'ar' ? 'تواصل معنا' : language === 'he' ? 'צרו קשר' : 'Contact Us'}
+            </Text>
+            <View style={styles.dividerLine} />
           </View>
 
-          {/* Right Side - Working Hours (Large Screens) */}
-          {isLargeScreen && (
-            <View style={styles.workingHoursContainerLarge}>
-              <Text style={styles.workingHoursTitle}>
-                {language === 'ar' && 'ساعات العمل'}
-                {language === 'he' && 'שעות פעילות'}
-                {language === 'en' && 'Working Hours'}
-              </Text>
-              <View style={styles.workingHoursContent}>
-                <Text style={styles.workingHoursText}>
-                  🌅 {workingHoursData.morning}
-                </Text>
-                <Text style={styles.workingHoursText}>
-                  🌆 {workingHoursData.evening}
-                </Text>
-                <Text style={styles.workingDaysText}>
-                  📅 {getWorkingDaysText()}
-                </Text>
-                <Text style={styles.holidayText}>
-                  {language === 'ar' && '🌙 الجمعة عطلة'}
-                  {language === 'he' && '🌙 יום שישי חופש'}
-                  {language === 'en' && '🌙 Friday Holiday'}
-                </Text>
+          <View style={styles.contactGrid}>
+            <TouchableOpacity style={styles.contactCard} onPress={openWhatsApp}>
+              <View style={styles.contactIconWrap}>
+                <Text style={styles.contactIcon}>💬</Text>
               </View>
+              <Text style={styles.contactCardTitle}>WhatsApp</Text>
+              <Text style={styles.contactCardSub}>
+                {language === 'ar' ? 'تواصل معنا' : language === 'he' ? 'דבר איתנו' : 'Chat with us'}
+              </Text>
+              <Text style={styles.contactPhone}>{companyPhone}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.contactCard} onPress={navigateToSettings}>
+              <View style={styles.contactIconWrap}>
+                <Text style={styles.contactIcon}>🌐</Text>
+              </View>
+              <Text style={styles.contactCardTitle}>
+                {language === 'ar' ? 'الموقع الإلكتروني' : language === 'he' ? 'אתר אינטרנט' : 'Website'}
+              </Text>
+              <Text style={styles.contactCardSub}>
+                {language === 'ar' ? 'زيارة موقعنا' : language === 'he' ? 'בקר באתר שלנו' : 'Visit our site'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.contactCard} onPress={openMapsOptions}>
+              <View style={styles.contactIconWrap}>
+                <Text style={styles.contactIcon}>📍</Text>
+              </View>
+              <Text style={styles.contactCardTitle}>
+                {language === 'ar' ? 'الموقع على الخريطة' : language === 'he' ? 'מיקום במפה' : 'Location'}
+              </Text>
+              <Text style={styles.contactCardSub}>{companyAddress}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* ===== WORKING HOURS ===== */}
+        <View style={styles.workingHoursSection}>
+          <View style={styles.sectionDivider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerTitle}>
+              {language === 'ar' ? 'ساعات العمل' : language === 'he' ? 'שעות פעילות' : 'Working Hours'}
+            </Text>
+            <View style={styles.dividerLine} />
+          </View>
+          <View style={styles.whGrid}>
+            <View style={styles.whItem}>
+              <Text style={styles.whIcon}>🌅</Text>
+              <Text style={styles.whLabel}>{language === 'ar' ? 'صباحاً' : language === 'he' ? 'בוקר' : 'Morning'}</Text>
+              <Text style={styles.whValue}>{workingHoursData.morning}</Text>
             </View>
-          )}
+            <View style={styles.whItem}>
+              <Text style={styles.whIcon}>🌆</Text>
+              <Text style={styles.whLabel}>{language === 'ar' ? 'مساءً' : language === 'he' ? 'ערב' : 'Evening'}</Text>
+              <Text style={styles.whValue}>{workingHoursData.evening}</Text>
+            </View>
+            <View style={styles.whItemFull}>
+              <Text style={styles.whIcon}>📅</Text>
+              <Text style={styles.whLabel}>{language === 'ar' ? 'أيام العمل' : language === 'he' ? 'ימי עבודה' : 'Working days'}</Text>
+              <Text style={styles.whValue}>{getWorkingDaysText()}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* ===== FOOTER SLOGAN ===== */}
+        <View style={styles.footer}>
+          <View style={styles.footerDivider} />
+          <Text style={styles.footerSlogan}>
+            {language === 'ar' ? 'ثقتكم هي عملتنا' : language === 'he' ? 'האמון שלכם הוא המטבע שלנו' : 'Your Trust is Our Currency'}
+          </Text>
+          <View style={styles.footerDivider} />
         </View>
 
         {/* Customer Service Button */}
-        <TouchableOpacity style={styles.customerButton} onPress={navigateToCustomerInfo}>
-          <Text style={styles.customerButtonText}>
-            {language === 'ar' && '👤 خدمة الزبائن'}
-            {language === 'he' && '👤 שירות לקוחות'}
-            {language === 'en' && '👤 Customer Service'}
+        <TouchableOpacity style={styles.customerBtn} onPress={navigateToCustomerInfo}>
+          <Text style={styles.customerBtnText}>
+            {language === 'ar' ? '👤 خدمة الزبائن' : language === 'he' ? '👤 שירות לקוחות' : '👤 Customer Service'}
           </Text>
         </TouchableOpacity>
-
-        {/* Calculator Modal */}
-        <Modal
-          visible={showCalculator}
-          transparent={true}
-          animationType="slide"
-          onRequestClose={closeCalculator}
-        >
-          <View 
-            style={styles.modalOverlay}
-            onTouchStart={resetInactivityTimer}
-          >
-            <View style={styles.calculatorModal}>
-              <View style={styles.calculatorHeader}>
-                <Text style={styles.calculatorTitle}>
-                  {language === 'ar' && 'آلة حاسبة العملات'}
-                  {language === 'he' && 'מחשבון מטבעות'}
-                  {language === 'en' && 'Currency Calculator'}
-                </Text>
-                <TouchableOpacity style={styles.closeButton} onPress={closeCalculator}>
-                  <Text style={styles.closeButtonText}>✕</Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.calculatorContent}>
-                <ScrollView 
-                  showsVerticalScrollIndicator={true} 
-                  style={{ flex: 1 }}
-                  contentContainerStyle={{ paddingBottom: 20 }}
-                  onTouchStart={resetInactivityTimer}
-                >
-                  <View style={styles.currencySection}>
-                    <Text style={styles.sectionLabel}>
-                      {language === 'ar' && 'اختيار العملات'}
-                      {language === 'he' && 'בחירת מטבעות'}
-                      {language === 'en' && 'Select Currencies'}
-                    </Text>
-                    <View style={styles.currencySelectionRow}>
-                      <TouchableOpacity 
-                        style={styles.currencyButton}
-                        onPress={() => {
-                          cycleCurrency(fromCurrency, true);
-                          resetInactivityTimer();
-                        }}
-                      >
-                        <Text style={styles.currencyButtonCode}>{fromCurrency}</Text>
-                        <Text style={styles.currencyButtonName}>
-                          {fromCurrency === 'ILS' ? (
-                            language === 'ar' ? 'شيقل إسرائيلي' :
-                            language === 'he' ? 'שקל ישראלי' :
-                            'Israeli Shekel'
-                          ) : (
-                            language === 'ar' ? allCurrencies.find(c => c.code === fromCurrency)?.name_ar :
-                            language === 'he' ? allCurrencies.find(c => c.code === fromCurrency)?.name_he :
-                            allCurrencies.find(c => c.code === fromCurrency)?.name_en
-                          ) || fromCurrency}
-                        </Text>
-                        <Text style={styles.tapHint}>
-                          {language === 'ar' && 'اضغط للتبديل'}
-                          {language === 'he' && 'לחץ להחלפה'}
-                          {language === 'en' && 'Tap to switch'}
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity 
-                        style={styles.swapButton} 
-                        onPress={() => {
-                          swapCurrencies();
-                          resetInactivityTimer();
-                        }}
-                      >
-                        <Text style={styles.swapButtonText}>⇅</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity 
-                        style={styles.currencyButton}
-                        onPress={() => {
-                          cycleCurrency(toCurrency, false);
-                          resetInactivityTimer();
-                        }}
-                      >
-                        <Text style={styles.currencyButtonCode}>{toCurrency}</Text>
-                        <Text style={styles.currencyButtonName}>
-                          {toCurrency === 'ILS' ? (
-                            language === 'ar' ? 'شيقل إسرائيلي' :
-                            language === 'he' ? 'שקל ישראלי' :
-                            'Israeli Shekel'
-                          ) : (
-                            language === 'ar' ? allCurrencies.find(c => c.code === toCurrency)?.name_ar :
-                            language === 'he' ? allCurrencies.find(c => c.code === toCurrency)?.name_he :
-                            allCurrencies.find(c => c.code === toCurrency)?.name_en
-                          ) || toCurrency}
-                        </Text>
-                        <Text style={styles.tapHint}>
-                          {language === 'ar' && 'اضغط للتبديل'}
-                          {language === 'he' && 'לחץ להחלפה'}
-                          {language === 'en' && 'Tap to switch'}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-
-                  <View style={styles.currencySection}>
-                    <Text style={styles.sectionLabel}>
-                      {language === 'ar' && 'المبالغ'}
-                      {language === 'he' && 'סכומים'}
-                      {language === 'en' && 'Amounts'}
-                    </Text>
-                    <View style={styles.amountInputRow}>
-                      <View style={{ flex: 1, alignItems: 'center' }}>
-                        <Text style={styles.currencyLabel}>{fromCurrency}</Text>
-                        <TextInput
-                          style={styles.amountInput}
-                          value={fromAmount}
-                          onChangeText={handleFromAmountChange}
-                          onFocus={resetInactivityTimer}
-                          onKeyPress={resetInactivityTimer}
-                          placeholder="0.00"
-                          keyboardType="decimal-pad"
-                        />
-                      </View>
-                      <View style={{ flex: 1, alignItems: 'center' }}>
-                        <Text style={styles.currencyLabel}>{toCurrency}</Text>
-                        <TextInput
-                          style={styles.amountInput}
-                          value={toAmount}
-                          onChangeText={handleToAmountChange}
-                          onFocus={resetInactivityTimer}
-                          onKeyPress={resetInactivityTimer}
-                          placeholder="0.00"
-                          keyboardType="decimal-pad"
-                        />
-                      </View>
-                    </View>
-                  </View>
-
-                  {calculationDetails && (
-                    <View style={styles.calculationDetails}>
-                      <Text style={styles.calculationText}>{calculationDetails}</Text>
-                    </View>
-                  )}
-
-                  <View style={styles.ratesInfo}>
-                    {fromCurrency !== 'ILS' && (
-                      <Text style={styles.rateInfoText}>
-                        {fromCurrency}: {language === 'ar' ? 'شراء' : language === 'he' ? 'קנייה' : 'Buy'} {allCurrencies.find(c => c.code === fromCurrency)?.buy_rate?.toFixed(2) || 'N/A'} | 
-                        <Text>{language === 'ar' ? 'بيع' : language === 'he' ? 'מכירה' : 'Sell'} {allCurrencies.find(c => c.code === fromCurrency)?.sell_rate?.toFixed(2) || 'N/A'}</Text>
-                      </Text>
-                    )}
-                    {toCurrency !== 'ILS' && (
-                      <Text style={styles.rateInfoText}>
-                        {toCurrency}: {language === 'ar' ? 'شراء' : language === 'he' ? 'קנייה' : 'Buy'} {allCurrencies.find(c => c.code === toCurrency)?.buy_rate?.toFixed(2) || 'N/A'} | 
-                        <Text>{language === 'ar' ? 'بيع' : language === 'he' ? 'מכירה' : 'Sell'} {allCurrencies.find(c => c.code === toCurrency)?.sell_rate?.toFixed(2) || 'N/A'}</Text>
-                      </Text>
-                    )}
-                  </View>
-
-                  {fromAmount && toAmount && (
-                    <TouchableOpacity 
-                      style={styles.proceedButton} 
-                      onPress={() => {
-                        handleProceedToTransaction();
-                        resetInactivityTimer();
-                      }}
-                    >
-                      <Text style={styles.proceedButtonText}>
-                        {language === 'ar' && 'المتابعة للمعاملة'}
-                        {language === 'he' && 'המשך לעסקה'}
-                        {language === 'en' && 'Proceed to Transaction'}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </ScrollView>
-              </View>
-            </View>
-          </View>
-        </Modal>
       </ScrollView>
+
+      {/* ===== CALCULATOR MODAL ===== */}
+      <Modal visible={showCalculator} transparent animationType="slide" onRequestClose={closeCalculator}>
+        <View style={styles.modalOverlay} onTouchStart={resetInactivityTimer}>
+          <View style={styles.calcModal}>
+            <View style={styles.calcModalHeader}>
+              <Text style={styles.calcModalTitle}>
+                {language === 'ar' ? 'آلة حاسبة العملات' : language === 'he' ? 'מחשבון מטבעות' : 'Currency Calculator'}
+              </Text>
+              <TouchableOpacity style={styles.calcClose} onPress={closeCalculator}>
+                <Text style={styles.calcCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator contentContainerStyle={{ paddingBottom: 20 }} onTouchStart={resetInactivityTimer}>
+              <View style={styles.calcSection}>
+                <Text style={styles.calcSectionLabel}>
+                  {language === 'ar' ? 'اختيار العملات' : language === 'he' ? 'בחירת מטבעות' : 'Select Currencies'}
+                </Text>
+                <View style={styles.calcCurrencyRow}>
+                  <TouchableOpacity style={styles.calcCurrencyBtn} onPress={() => { cycleCurrency(fromCurrency, true); resetInactivityTimer(); }}>
+                    <Text style={styles.calcCurrencyCode}>{fromCurrency}</Text>
+                    <Text style={styles.calcCurrencyName}>
+                      {fromCurrency === 'ILS' ? (language === 'ar' ? 'شيقل' : language === 'he' ? 'שקל' : 'Shekel') :
+                        (language === 'ar' ? allCurrencies.find(c => c.code === fromCurrency)?.name_ar :
+                         language === 'he' ? allCurrencies.find(c => c.code === fromCurrency)?.name_he :
+                         allCurrencies.find(c => c.code === fromCurrency)?.name_en) || fromCurrency}
+                    </Text>
+                    <Text style={styles.calcTapHint}>{language === 'ar' ? 'اضغط للتبديل' : language === 'he' ? 'לחץ להחלפה' : 'Tap to switch'}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.calcSwapBtn} onPress={() => { swapCurrencies(); resetInactivityTimer(); }}>
+                    <Text style={styles.calcSwapText}>⇅</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.calcCurrencyBtn} onPress={() => { cycleCurrency(toCurrency, false); resetInactivityTimer(); }}>
+                    <Text style={styles.calcCurrencyCode}>{toCurrency}</Text>
+                    <Text style={styles.calcCurrencyName}>
+                      {toCurrency === 'ILS' ? (language === 'ar' ? 'شيقل' : language === 'he' ? 'שקל' : 'Shekel') :
+                        (language === 'ar' ? allCurrencies.find(c => c.code === toCurrency)?.name_ar :
+                         language === 'he' ? allCurrencies.find(c => c.code === toCurrency)?.name_he :
+                         allCurrencies.find(c => c.code === toCurrency)?.name_en) || toCurrency}
+                    </Text>
+                    <Text style={styles.calcTapHint}>{language === 'ar' ? 'اضغط للتبديل' : language === 'he' ? 'לחץ להחלפה' : 'Tap to switch'}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={styles.calcSection}>
+                <Text style={styles.calcSectionLabel}>
+                  {language === 'ar' ? 'المبالغ' : language === 'he' ? 'סכומים' : 'Amounts'}
+                </Text>
+                <View style={styles.calcAmountRow}>
+                  <View style={{ flex: 1, alignItems: 'center' }}>
+                    <Text style={styles.calcAmountLabel}>{fromCurrency}</Text>
+                    <TextInput
+                      style={styles.calcAmountInput}
+                      value={fromAmount}
+                      onChangeText={handleFromAmountChange}
+                      onFocus={resetInactivityTimer}
+                      placeholder="0.00"
+                      keyboardType="decimal-pad"
+                    />
+                  </View>
+                  <View style={{ flex: 1, alignItems: 'center' }}>
+                    <Text style={styles.calcAmountLabel}>{toCurrency}</Text>
+                    <TextInput
+                      style={styles.calcAmountInput}
+                      value={toAmount}
+                      onChangeText={handleToAmountChange}
+                      onFocus={resetInactivityTimer}
+                      placeholder="0.00"
+                      keyboardType="decimal-pad"
+                    />
+                  </View>
+                </View>
+              </View>
+
+              {calculationDetails ? (
+                <View style={styles.calcDetails}>
+                  <Text style={styles.calcDetailsText}>{calculationDetails}</Text>
+                </View>
+              ) : null}
+
+              {fromAmount && toAmount ? (
+                <TouchableOpacity style={styles.calcProceedBtn} onPress={() => { handleProceedToTransaction(); resetInactivityTimer(); }}>
+                  <Text style={styles.calcProceedText}>
+                    {language === 'ar' ? 'المتابعة للمعاملة' : language === 'he' ? 'המשך לעסקה' : 'Proceed to Transaction'}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
+const DARK_GREEN = '#0D3B2A';
+const MID_GREEN = '#1A5C3E';
+const GOLD = '#C8A84B';
+const GOLD_LIGHT = '#E8C96A';
+const WHITE = '#FFFFFF';
+const CARD_SHADOW = { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 4 };
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F0FDF4',
-  },
-  scrollContainer: {
-    flex: 1,
-  },
-  centerContent: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 18,
-    color: '#6B7280',
-  },
+  container: { flex: 1, backgroundColor: DARK_GREEN },
+  scrollContainer: { flex: 1 },
+  loadingContainer: { flex: 1, backgroundColor: DARK_GREEN, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { color: GOLD, fontSize: 18, fontWeight: '600' },
+
+  /* HEADER */
   header: {
-    paddingHorizontal: 20,
+    backgroundColor: DARK_GREEN,
+    paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 12,
-    borderBottomWidth: 3,
-    borderBottomColor: '#047857',
-    shadowColor: '#059669',
-    shadowOffset: {
-      width: 0,
-      height: 6,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  headerLarge: {
-    paddingTop: 30,
-    paddingBottom: 30,
+    borderBottomWidth: 2,
+    borderBottomColor: GOLD + '60',
   },
   headerTop: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
   },
-  settingsButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
-  },
-  settingsButtonText: {
-    fontSize: 20,
-  },
-  languageSelector: {
+  langRow: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 20,
-    padding: 2,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
-  },
-  langButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 18,
-  },
-  activeLangButton: {
-    backgroundColor: '#FFFFFF',
-  },
-  langButtonText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  activeLangButtonText: {
-    color: '#059669',
-  },
-  companyInfo: {
-    alignItems: 'center',
-  },
-  companyInfoLarge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 30,
-  },
-  companyInfoText: {
-    alignItems: 'center',
-  },
-  currencyIconLeft: {
-    fontSize: 60,
-  },
-  currencyIconRight: {
-    fontSize: 60,
-  },
-  companyName: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    marginBottom: 12,
-    textAlign: 'center',
-    letterSpacing: 1.5,
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 6,
-  },
-  companyNameLarge: {
-    fontSize: 42,
-    marginBottom: 16,
-    letterSpacing: 2,
-  },
-  companyDetailsContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
     gap: 4,
-  },
-  companyAddress: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontWeight: '600',
-    marginBottom: 4,
-    textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-  },
-  companyAddressLarge: {
-    fontSize: 22,
-    marginBottom: 6,
-  },
-  addressButton: {
-    borderRadius: 8,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-  },
-  phoneButton: {
-    borderRadius: 8,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-  },
-  companyPhone: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontWeight: '700',
-    textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-  },
-  companyPhoneLarge: {
-    fontSize: 20,
-  },
-  updateTimeContainer: {
-    backgroundColor: '#D1FAE5',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderBottomWidth: 2,
-    borderBottomColor: '#10B981',
-    justifyContent: 'center',
     alignItems: 'center',
   },
-  updateTimeText: {
-    fontSize: 14,
-    color: '#047857',
-    fontWeight: '900',
-    textShadowColor: 'rgba(0, 0, 0, 0.1)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-  },
-  // Advertisement Carousel Styles
-  advertisementContainer: {
-    marginVertical: 8,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-  },
-  advertisementCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    width: '100%',
-    maxWidth: 420,
-    shadowColor: '#059669',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 6,
-    overflow: 'hidden',
+  langBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#D1FAE5',
+    borderColor: GOLD + '50',
   },
-  adImage: {
-    width: '100%',
-    height: 180,
+  langBtnActive: {
+    backgroundColor: GOLD,
+    borderColor: GOLD,
   },
-  adContent: {
-    padding: 10,
-  },
-  adTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 3,
-    textAlign: 'center',
-  },
-  adDescription: {
-    fontSize: 12,
-    color: '#6B7280',
-    lineHeight: 16,
-    textAlign: 'center',
-  },
-  adIndicators: {
-    flexDirection: 'row',
+  langBtnText: { color: GOLD + 'CC', fontSize: 11, fontWeight: '600' },
+  langBtnTextActive: { color: DARK_GREEN, fontSize: 11, fontWeight: '700' },
+  headerClock: { alignItems: 'center' },
+  clockTime: { color: WHITE, fontSize: 22, fontWeight: '700', letterSpacing: 1 },
+  clockDate: { color: GOLD, fontSize: 12, fontWeight: '500', marginTop: 2 },
+  logoArea: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  logoIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: GOLD,
+    alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 10,
+  },
+  logoEmoji: { fontSize: 22 },
+  logoText: { alignItems: 'flex-end' },
+  companyNameHeader: { color: WHITE, fontSize: 16, fontWeight: '800', textAlign: 'right' },
+  companySubHeader: { color: GOLD, fontSize: 10, fontWeight: '500', textAlign: 'right', marginTop: 2 },
+
+  /* TRENDING BAR */
+  trendingBar: {
+    backgroundColor: MID_GREEN,
+    marginHorizontal: 12,
+    marginTop: 12,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: GOLD + '50',
+    ...CARD_SHADOW,
+  },
+  trendingTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 6, justifyContent: 'center' },
+  trendingIcon: { fontSize: 16 },
+  trendingTitle: { color: GOLD, fontSize: 14, fontWeight: '700', textAlign: 'center' },
+  trendingCurrencies: { flexDirection: 'row', justifyContent: 'space-around' },
+  trendingItem: { alignItems: 'center', gap: 2 },
+  trendingFlag: { fontSize: 22 },
+  trendingCode: { color: WHITE, fontSize: 13, fontWeight: '700' },
+  trendingRate: { color: GOLD_LIGHT, fontSize: 12, fontWeight: '600' },
+
+  /* SECTION TITLE */
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    marginHorizontal: 12,
     gap: 8,
   },
-  adIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#D1D5DB',
+  sectionIcon: { fontSize: 18 },
+  sectionTitle: { color: GOLD, fontSize: 18, fontWeight: '700', flex: 1, textAlign: 'center' },
+  calcIconBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: GOLD,
+    alignItems: 'center', justifyContent: 'center',
   },
-  activeAdIndicator: {
-    backgroundColor: '#059669',
+  calcIcon: { fontSize: 18 },
+
+  /* HINT BAR */
+  hintBar: {
+    backgroundColor: MID_GREEN + 'AA',
+    marginHorizontal: 12,
+    marginTop: 8,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: GOLD + '30',
   },
-  // Main Content Layout
-  mainContentLarge: {
+  hintBarSelected: { borderColor: GOLD, backgroundColor: GOLD + '20' },
+  hintText: { color: GOLD_LIGHT, fontSize: 12, textAlign: 'center', fontWeight: '500' },
+
+  /* CURRENCY GRID */
+  currencyGrid: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    gap: 20,
-  },
-  mainContentSmall: {
-    paddingHorizontal: 20,
-  },
-  centerContent: {
-    flex: 1,
-  },
-  // Working Hours Styles
-  workingHoursContainer: {
-    backgroundColor: '#047857',
-    margin: 20,
-    padding: 24,
-    borderRadius: 16,
-    alignItems: 'center',
-    shadowColor: '#059669',
-    shadowOffset: {
-      width: 0,
-      height: 6,
-    },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 10,
-    borderWidth: 3,
-    borderColor: '#10B981',
-  },
-  workingHoursContainerLarge: {
-    backgroundColor: '#047857',
-    width: 280,
-    padding: 24,
-    borderRadius: 16,
-    alignItems: 'center',
-    shadowColor: '#059669',
-    shadowOffset: {
-      width: 0,
-      height: 6,
-    },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 10,
-    borderWidth: 3,
-    borderColor: '#10B981',
-  },
-  workingHoursTitle: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    marginBottom: 16,
-    letterSpacing: 1,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-  },
-  workingHoursContent: {
-    width: '100%',
-    alignItems: 'center',
-  },
-  workingHoursText: {
-    fontSize: 18,
-    color: '#FFFFFF',
-    fontWeight: '700',
-    marginBottom: 10,
-    textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-  },
-  workingDaysText: {
-    fontSize: 16,
-    color: '#D1FAE5',
-    textAlign: 'center',
-    marginTop: 6,
-    fontWeight: '700',
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-  },
-  holidayText: {
-    fontSize: 16,
-    color: '#FEF3C7',
-    textAlign: 'center',
-    marginTop: 10,
-    fontWeight: '800',
-    textShadowColor: 'rgba(0, 0, 0, 0.4)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
+    flexWrap: 'wrap',
+    paddingHorizontal: 8,
     paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.2)',
+    gap: 8,
   },
-  tableContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    shadowColor: '#059669',
-    shadowOffset: {
-      width: 0,
-      height: 6,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 10,
-    marginBottom: 20,
-    borderWidth: 3,
-    borderColor: '#10B981',
-  },
-  tableHeader: {
-    backgroundColor: '#047857',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    borderTopLeftRadius: 15,
-    borderTopRightRadius: 15,
-    borderBottomWidth: 3,
-    borderBottomColor: '#059669',
-  },
-  tableHeaderLarge: {
-    position: 'relative',
-  },
-  tableHeaderContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
-  },
-  tableHeaderContentLarge: {
-    justifyContent: 'center',
-  },
-  tableTitle: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    letterSpacing: 1,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-  },
-  calculatorButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  calculatorButtonLarge: {
-    position: 'absolute',
-    left: 20,
-    top: '50%',
-    transform: [{ translateY: -20 }],
-  },
-  calculatorButtonText: {
-    fontSize: 20,
-  },
-  // Instruction Message
-  instructionWrapper: {
-    flexDirection: 'row',
-    gap: 0,
+  currencyCard: {
+    backgroundColor: WHITE,
+    borderRadius: 14,
+    width: '47%',
+    marginHorizontal: '1%',
+    ...CARD_SHADOW,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
-  instructionContainer: {
-    flex: 1,
-    backgroundColor: '#059669',
-    paddingVertical: 18,
-    paddingHorizontal: 16,
-    borderBottomWidth: 3,
-    borderBottomColor: '#047857',
-    borderTopWidth: 3,
-    borderTopColor: '#10B981',
-    shadowColor: '#10B981',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  instructionBox1: {
-    backgroundColor: '#0891B2',
-    borderRightWidth: 2,
-    borderRightColor: '#FFFFFF',
-    borderTopWidth: 3,
-    borderTopColor: '#06B6D4',
-    borderBottomWidth: 3,
-    borderBottomColor: '#0E7490',
-    borderTopLeftRadius: 0,
-    borderBottomLeftRadius: 0,
-    borderTopRightRadius: 0,
-    borderBottomRightRadius: 0,
-  },
-  instructionBox2: {
-    backgroundColor: '#DC2626',
-    borderLeftWidth: 2,
-    borderLeftColor: '#FFFFFF',
-    borderTopWidth: 3,
-    borderTopColor: '#EF4444',
-    borderBottomWidth: 3,
-    borderBottomColor: '#B91C1C',
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0,
-  },
-  instructionText: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    textAlign: 'center',
-    fontWeight: '900',
-    letterSpacing: 0.3,
-    lineHeight: 20,
-    textShadowColor: 'rgba(0, 0, 0, 0.4)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-  },
-  table: {
-    backgroundColor: '#FFFFFF',
-  },
-  tableHeaderRow: {
-    flexDirection: 'row',
-    backgroundColor: '#D1FAE5',
-    paddingVertical: 16,
-    borderBottomWidth: 3,
-    borderBottomColor: '#059669',
-  },
-  tableHeaderRowRTL: {
-    flexDirection: 'row-reverse',
-  },
-  currencyHeaderCell: {
-    flex: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rateHeaderCell: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  availabilityHeaderCell: {
-    flex: 0.8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerText: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: '#065F46',
-    textAlign: 'center',
-    letterSpacing: 0.3,
-  },
-  tableRow: {
-    flexDirection: 'row',
-    paddingVertical: 16,
-    borderBottomWidth: 2,
-    borderBottomColor: '#D1D5DB',
-    position: 'relative',
-    borderLeftWidth: 4,
-    borderLeftColor: '#059669',
-  },
-  tableRowRTL: {
-    flexDirection: 'row-reverse',
-  },
-  unavailableRow: {
-    opacity: 0.7,
+  currencyCardUnavailable: { opacity: 0.6 },
+  currencyCardSelected: {
+    borderColor: GOLD,
+    borderWidth: 2,
+    backgroundColor: '#FFFBF0',
   },
   unavailableOverlay: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    zIndex: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 10,
-    borderWidth: 2,
-    borderColor: '#F59E0B',
-    borderStyle: 'dashed',
+    borderRadius: 14,
   },
   unavailableOverlayText: {
-    fontSize: 14,
-    fontWeight: '900',
-    color: '#DC2626',
-    textAlign: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    paddingHorizontal: 16,
+    color: WHITE, fontSize: 11, fontWeight: '700', textAlign: 'center', padding: 8,
+  },
+  cardTop: {
+    alignItems: 'center',
+    paddingTop: 12,
+    paddingBottom: 8,
+    paddingHorizontal: 8,
+    backgroundColor: '#F9FAFB',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  cardFlag: { fontSize: 28, marginBottom: 4 },
+  cardCode: { color: DARK_GREEN, fontSize: 18, fontWeight: '800', letterSpacing: 0.5 },
+  cardName: { color: '#6B7280', fontSize: 11, textAlign: 'center', marginTop: 2 },
+  selectedBadge: {
+    position: 'absolute', top: 6, right: 6,
+    backgroundColor: GOLD, borderRadius: 10, width: 20, height: 20,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  selectedBadgeText: { color: WHITE, fontSize: 11, fontWeight: '700' },
+  cardRates: {
+    flexDirection: 'row',
+    paddingHorizontal: 6,
     paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#F59E0B',
-    shadowColor: '#DC2626',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
-    letterSpacing: 0.5,
+    gap: 4,
   },
-  currencyCell: {
-    flex: 1.5,
+  rateBox: {
+    flex: 1, alignItems: 'center', borderRadius: 8, paddingVertical: 6,
+  },
+  rateBoxBuy: { backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0' },
+  rateBoxSell: { backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA' },
+  rateLabel: { fontSize: 10, fontWeight: '600', color: '#6B7280', marginBottom: 2 },
+  rateValue: { fontSize: 17, fontWeight: '800' },
+  rateValueBuy: { color: '#059669' },
+  rateValueSell: { color: '#DC2626' },
+  cardFooter: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
+    gap: 4,
+    paddingBottom: 8,
   },
-  selectedCurrencyCell: {
-    backgroundColor: '#D1FAE5',
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#059669',
-  },
-  currencyCode: {
-    fontSize: 17,
-    fontWeight: '900',
-    color: '#047857',
-    textShadowColor: 'rgba(0, 0, 0, 0.1)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-  },
-  selectedCurrencyCode: {
-    color: '#065F46',
-    fontWeight: '900',
-  },
-  currencyName: {
-    fontSize: 12,
-    color: '#374151',
-    marginTop: 2,
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  selectedCurrencyName: {
-    color: '#065F46',
-    fontWeight: 'bold',
-  },
-  selectedIndicator: {
-    position: 'absolute',
-    top: 2,
-    right: 2,
-    fontSize: 16,
-    color: '#059669',
-    fontWeight: 'bold',
-  },
-  unavailableText: {
-    color: '#6B7280',
-    opacity: 0.8,
-  },
-  unavailableCurrencyCode: {
-    color: '#059669',
-    opacity: 0.8,
-  },
-  unavailableCurrencyName: {
-    color: '#059669',
-    opacity: 0.8,
-  },
-  unavailableCurrentRate: {
-    color: '#0891B2',
-    opacity: 0.8,
-  },
-  unavailableBuyRate: {
-    color: '#DC2626',
-    opacity: 0.8,
-  },
-  unavailableSellRate: {
-    color: '#059669',
-    opacity: 0.8,
-  },
-  rateCell: {
-    flex: 1,
+  statusDot: { width: 7, height: 7, borderRadius: 4 },
+  statusDotActive: { backgroundColor: '#10B981' },
+  statusDotInactive: { backgroundColor: '#F59E0B' },
+  cardStatusText: { fontSize: 10, fontWeight: '600' },
+  cardStatusTextActive: { color: '#059669' },
+  cardStatusTextInactive: { color: '#D97706' },
+  textFaded: { color: '#9CA3AF' },
+
+  /* INFO BAR */
+  infoBar: {
+    backgroundColor: GOLD,
+    marginHorizontal: 12,
+    marginTop: 12,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
   },
-  currentRate: {
-    fontSize: 15,
-    fontWeight: '900',
-    color: '#0891B2',
-    textShadowColor: 'rgba(8, 145, 178, 0.3)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-  },
-  buyRate: {
-    fontSize: 15,
-    fontWeight: '900',
-    color: '#DC2626',
-    textShadowColor: 'rgba(220, 38, 38, 0.3)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-  },
-  sellRate: {
-    fontSize: 15,
-    fontWeight: '900',
-    color: '#059669',
-    textShadowColor: 'rgba(5, 150, 105, 0.3)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-  },
-  availabilityCell: {
-    flex: 0.8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 5,
-  },
-  availabilityIcon: {
-    fontSize: 16,
-    marginBottom: 2,
-  },
-  availableIcon: {
-    color: '#059669',
-  },
-  unavailableIcon: {
-    color: '#F59E0B',
-  },
-  tooltipText: {
-    fontSize: 8,
-    color: '#6B7280',
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  customerButton: {
-    backgroundColor: '#047857',
-    margin: 20,
-    marginTop: 10,
-    padding: 24,
-    borderRadius: 16,
-    alignItems: 'center',
-    shadowColor: '#059669',
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 12,
-    borderWidth: 3,
-    borderColor: '#10B981',
-  },
-  customerButtonText: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    letterSpacing: 1,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
-  },
-  // Calculator Modal Styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  calculatorModal: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+  infoBarIcon: { fontSize: 16 },
+  infoBarText: { color: DARK_GREEN, fontSize: 12, fontWeight: '700', flex: 1 },
+  infoBarUpdate: { color: DARK_GREEN + 'AA', fontSize: 11, fontWeight: '600', textAlign: 'right' },
+
+  /* ADVERTISEMENT */
+  adSection: { marginHorizontal: 12, marginTop: 14, alignItems: 'center' },
+  adCard: {
+    backgroundColor: WHITE,
+    borderRadius: 14,
     width: '100%',
-    maxWidth: 400,
-    maxHeight: '90%',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 10,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: GOLD + '40',
+    ...CARD_SHADOW,
   },
-  calculatorHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  adImage: { width: '100%', height: 160 },
+  adDots: { flexDirection: 'row', gap: 6, marginTop: 8 },
+  adDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: GOLD + '40' },
+  adDotActive: { backgroundColor: GOLD, width: 20 },
+
+  /* SERVICES */
+  servicesSection: { marginTop: 16, paddingHorizontal: 12 },
+  sectionDivider: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: GOLD + '40' },
+  dividerTitle: { color: GOLD, fontSize: 15, fontWeight: '700' },
+  servicesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  serviceCard: {
+    backgroundColor: MID_GREEN,
+    borderRadius: 12,
+    width: '22%',
     alignItems: 'center',
-    backgroundColor: '#059669',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-  },
-  calculatorTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  closeButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  calculatorContent: {
-    flex: 1,
-    padding: 15,
-  },
-  currencySection: {
-    marginBottom: 15,
-  },
-  sectionLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#374151',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  currencySelectionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
-    gap: 15,
-  },
-  currencyButton: {
-    flex: 1,
-    borderWidth: 2,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    backgroundColor: '#F9FAFB',
-    paddingHorizontal: 10,
     paddingVertical: 12,
+    paddingHorizontal: 4,
+    borderWidth: 1,
+    borderColor: GOLD + '40',
+    ...CARD_SHADOW,
+  },
+  serviceIcon: { fontSize: 24, marginBottom: 6 },
+  serviceLabel: { color: WHITE, fontSize: 10, fontWeight: '600', textAlign: 'center' },
+
+  /* CONTACT */
+  contactSection: { marginTop: 16, paddingHorizontal: 12 },
+  contactGrid: { flexDirection: 'row', gap: 8 },
+  contactCard: {
+    backgroundColor: MID_GREEN,
+    borderRadius: 12,
+    flex: 1,
     alignItems: 'center',
-    minHeight: 70,
-    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderColor: GOLD + '50',
+    ...CARD_SHADOW,
   },
-  currencyButtonCode: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#059669',
-    marginBottom: 2,
+  contactIconWrap: {
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: DARK_GREEN,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 6,
+    borderWidth: 1, borderColor: GOLD + '60',
   },
-  currencyButtonName: {
-    fontSize: 11,
-    color: '#6B7280',
-    textAlign: 'center',
-    marginBottom: 2,
+  contactIcon: { fontSize: 22 },
+  contactCardTitle: { color: GOLD, fontSize: 11, fontWeight: '700', textAlign: 'center' },
+  contactCardSub: { color: '#A0C4B0', fontSize: 10, textAlign: 'center', marginTop: 2 },
+  contactPhone: { color: WHITE, fontSize: 11, fontWeight: '600', marginTop: 4, textAlign: 'center' },
+
+  /* WORKING HOURS */
+  workingHoursSection: { marginTop: 16, paddingHorizontal: 12 },
+  whGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  whItem: {
+    backgroundColor: MID_GREEN, borderRadius: 10, flex: 1,
+    alignItems: 'center', paddingVertical: 12, paddingHorizontal: 8,
+    borderWidth: 1, borderColor: GOLD + '40',
   },
-  tapHint: {
-    fontSize: 9,
-    color: '#9CA3AF',
-    textAlign: 'center',
-    fontStyle: 'italic',
+  whItemFull: {
+    backgroundColor: MID_GREEN, borderRadius: 10, width: '100%',
+    alignItems: 'center', paddingVertical: 10, paddingHorizontal: 8,
+    borderWidth: 1, borderColor: GOLD + '40',
   },
-  amountInputRow: {
+  whIcon: { fontSize: 20, marginBottom: 4 },
+  whLabel: { color: GOLD, fontSize: 11, fontWeight: '600', marginBottom: 4 },
+  whValue: { color: WHITE, fontSize: 12, fontWeight: '700', textAlign: 'center' },
+
+  /* FOOTER */
+  footer: {
+    marginTop: 20,
+    marginHorizontal: 12,
+    alignItems: 'center',
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
     gap: 10,
-    paddingHorizontal: 10,
   },
-  currencyLabel: {
-    fontSize: 13,
-    fontWeight: 'bold',
-    color: '#374151',
-    marginBottom: 5,
-    textAlign: 'center',
-  },
-  amountInput: {
-    borderWidth: 2,
-    borderColor: '#D1D5DB',
-    padding: 10,
-    fontSize: 16,
-    borderRadius: 8,
-    backgroundColor: '#F9FAFB',
-    fontWeight: 'bold',
-    textAlign: 'center',
-    width: 120,
-    height: 45,
-  },
-  swapContainer: {
+  footerDivider: { flex: 1, height: 1, backgroundColor: GOLD + '60' },
+  footerSlogan: { color: GOLD, fontSize: 15, fontWeight: '700', textAlign: 'center' },
+
+  /* CUSTOMER BUTTON */
+  customerBtn: {
+    backgroundColor: GOLD,
+    marginHorizontal: 12,
+    marginTop: 16,
+    marginBottom: 24,
+    borderRadius: 14,
+    paddingVertical: 16,
     alignItems: 'center',
-    marginVertical: 15,
+    ...CARD_SHADOW,
   },
-  swapButton: {
-    width: 45,
-    height: 45,
-    borderRadius: 22,
-    backgroundColor: '#059669',
+  customerBtnText: { color: DARK_GREEN, fontSize: 17, fontWeight: '800' },
+
+  /* CALCULATOR MODAL */
+  modalOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'flex-end',
+  },
+  calcModal: {
+    backgroundColor: WHITE,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '85%',
+    paddingTop: 16,
+  },
+  calcModalHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
-  swapButtonText: {
-    fontSize: 20,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-  },
-  calculationDetails: {
-    backgroundColor: '#EFF6FF',
-    padding: 15,
-    borderRadius: 8,
-    marginVertical: 15,
-    borderLeftWidth: 4,
-    borderLeftColor: '#3B82F6',
-  },
-  calculationText: {
-    fontSize: 14,
-    color: '#1E40AF',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  ratesInfo: {
+  calcModalTitle: { color: DARK_GREEN, fontSize: 18, fontWeight: '800' },
+  calcClose: {
+    width: 32, height: 32, borderRadius: 16,
     backgroundColor: '#F3F4F6',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 20,
+    alignItems: 'center', justifyContent: 'center',
   },
-  rateInfoText: {
-    fontSize: 12,
-    color: '#6B7280',
-    textAlign: 'center',
-    marginBottom: 5,
+  calcCloseText: { color: '#374151', fontSize: 16, fontWeight: '700' },
+  calcSection: { paddingHorizontal: 20, paddingTop: 16 },
+  calcSectionLabel: { color: '#6B7280', fontSize: 13, fontWeight: '600', marginBottom: 10, textAlign: 'center' },
+  calcCurrencyRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  calcCurrencyBtn: {
+    flex: 1, backgroundColor: '#F3F4F6', borderRadius: 12,
+    alignItems: 'center', paddingVertical: 12,
   },
-  proceedButton: {
-    backgroundColor: '#059669',
-    padding: 15,
-    borderRadius: 8,
+  calcCurrencyCode: { color: DARK_GREEN, fontSize: 20, fontWeight: '800' },
+  calcCurrencyName: { color: '#6B7280', fontSize: 11, marginTop: 2, textAlign: 'center' },
+  calcTapHint: { color: '#9CA3AF', fontSize: 10, marginTop: 4 },
+  calcSwapBtn: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: GOLD,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  calcSwapText: { color: WHITE, fontSize: 20, fontWeight: '700' },
+  calcAmountRow: { flexDirection: 'row', gap: 12 },
+  calcAmountLabel: { color: '#374151', fontSize: 14, fontWeight: '700', marginBottom: 6 },
+  calcAmountInput: {
+    borderWidth: 2, borderColor: '#D1D5DB', borderRadius: 10,
+    padding: 12, fontSize: 22, fontWeight: '700', color: DARK_GREEN,
+    textAlign: 'center', width: '100%',
+  },
+  calcDetails: {
+    marginHorizontal: 20, marginTop: 12,
+    backgroundColor: '#F3F4F6', borderRadius: 8, padding: 10,
+  },
+  calcDetailsText: { color: '#374151', fontSize: 12, textAlign: 'center' },
+  calcProceedBtn: {
+    backgroundColor: DARK_GREEN,
+    marginHorizontal: 20, marginTop: 16,
+    borderRadius: 14, paddingVertical: 16,
     alignItems: 'center',
   },
-  proceedButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  calcProceedText: { color: WHITE, fontSize: 16, fontWeight: '800' },
 });
