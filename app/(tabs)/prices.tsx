@@ -601,31 +601,6 @@ export default function PricesScreen() {
           </View>
         </View>
 
-        {/* ===== TRENDING BAR ===== */}
-        {trendingCurrencies.length > 0 && (
-          <View style={styles.trendingBar}>
-            <View style={styles.trendingTitleRow}>
-              <Text style={styles.trendingIcon}>📊</Text>
-              <Text style={styles.trendingTitle}>
-                {language === 'ar' ? 'العملات الأكثر تداولاً اليوم' : language === 'he' ? 'המטבעות הנסחרים ביותר היום' : "Today's Most Traded"}
-              </Text>
-            </View>
-            <View style={styles.trendingCurrencies}>
-              {trendingCurrencies.map((c) => (
-                <TouchableOpacity
-                  key={c.id}
-                  style={styles.trendingItem}
-                  onPress={() => openCalculator(c.code, 'sell')}
-                >
-                  <Text style={styles.trendingFlag}>{getCurrencyFlag(c.code)}</Text>
-                  <Text style={styles.trendingCode}>{c.code}</Text>
-                  <Text style={styles.trendingRate}>{c.current_rate?.toFixed(2)}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        )}
-
         {/* ===== RATES SECTION TITLE ===== */}
         <View style={styles.sectionTitleRow}>
           <Text style={styles.sectionIcon}>🔄</Text>
@@ -654,11 +629,16 @@ export default function PricesScreen() {
 
         {/* ===== CURRENCY GRID ===== */}
         <View style={styles.currencyGrid}>
-          {allCurrencies.map((currency) => (
+          {allCurrencies.map((currency) => {
+            const cardWidth = isLargeScreen
+              ? (screenData.width - 60) / 4
+              : (screenData.width - 36) / 2;
+            return (
             <View
               key={currency.id}
               style={[
                 styles.currencyCard,
+                { width: cardWidth },
                 !currency.is_active && styles.currencyCardUnavailable,
                 selectedFirstCurrency === currency.code && styles.currencyCardSelected,
               ]}
@@ -683,7 +663,9 @@ export default function PricesScreen() {
                 onPress={() => currency.is_active && handleCurrencyNameClick(currency.code)}
                 disabled={!currency.is_active}
               >
-                <Text style={styles.cardFlag}>{getCurrencyFlag(currency.code)}</Text>
+                <View style={styles.flagCircle}>
+                  <Text style={styles.cardFlag}>{getCurrencyFlag(currency.code)}</Text>
+                </View>
                 <Text style={[styles.cardCode, !currency.is_active && styles.textFaded]}>
                   {currency.code}
                 </Text>
@@ -734,7 +716,8 @@ export default function PricesScreen() {
                 </Text>
               </View>
             </View>
-          ))}
+            );
+          })}
         </View>
 
         {/* ===== INFO BAR ===== */}
@@ -749,30 +732,6 @@ export default function PricesScreen() {
             </Text>
           ) : null}
         </View>
-
-        {/* ===== ADVERTISEMENT SECTION ===== */}
-        {currentAd && (
-          <View style={styles.adSection}>
-            <View style={styles.adCard}>
-              <Image
-                source={typeof currentAd.image_url === 'string' ? { uri: currentAd.image_url } : currentAd.image_url}
-                style={styles.adImage}
-                resizeMode="contain"
-              />
-            </View>
-            {advertisements.length > 1 && (
-              <View style={styles.adDots}>
-                {advertisements.map((_, i) => (
-                  <TouchableOpacity
-                    key={i}
-                    style={[styles.adDot, i === currentAdIndex && styles.adDotActive]}
-                    onPress={() => setCurrentAdIndex(i)}
-                  />
-                ))}
-              </View>
-            )}
-          </View>
-        )}
 
         {/* ===== SERVICES SECTION ===== */}
         <View style={styles.servicesSection}>
@@ -797,52 +756,6 @@ export default function PricesScreen() {
                 </Text>
               </TouchableOpacity>
             ))}
-          </View>
-        </View>
-
-        {/* ===== CONTACT SECTION ===== */}
-        <View style={styles.contactSection}>
-          <View style={styles.sectionDivider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerTitle}>
-              {language === 'ar' ? 'تواصل معنا' : language === 'he' ? 'צרו קשר' : 'Contact Us'}
-            </Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <View style={styles.contactGrid}>
-            <TouchableOpacity style={styles.contactCard} onPress={openWhatsApp}>
-              <View style={styles.contactIconWrap}>
-                <Text style={styles.contactIcon}>💬</Text>
-              </View>
-              <Text style={styles.contactCardTitle}>WhatsApp</Text>
-              <Text style={styles.contactCardSub}>
-                {language === 'ar' ? 'تواصل معنا' : language === 'he' ? 'דבר איתנו' : 'Chat with us'}
-              </Text>
-              <Text style={styles.contactPhone}>{companyPhone}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.contactCard} onPress={navigateToSettings}>
-              <View style={styles.contactIconWrap}>
-                <Text style={styles.contactIcon}>🌐</Text>
-              </View>
-              <Text style={styles.contactCardTitle}>
-                {language === 'ar' ? 'الموقع الإلكتروني' : language === 'he' ? 'אתר אינטרנט' : 'Website'}
-              </Text>
-              <Text style={styles.contactCardSub}>
-                {language === 'ar' ? 'زيارة موقعنا' : language === 'he' ? 'בקר באתר שלנו' : 'Visit our site'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.contactCard} onPress={openMapsOptions}>
-              <View style={styles.contactIconWrap}>
-                <Text style={styles.contactIcon}>📍</Text>
-              </View>
-              <Text style={styles.contactCardTitle}>
-                {language === 'ar' ? 'الموقع على الخريطة' : language === 'he' ? 'מיקום במפה' : 'Location'}
-              </Text>
-              <Text style={styles.contactCardSub}>{companyAddress}</Text>
-            </TouchableOpacity>
           </View>
         </View>
 
@@ -987,12 +900,12 @@ export default function PricesScreen() {
   );
 }
 
-const DARK_GREEN = '#0D3B2A';
-const MID_GREEN = '#1A5C3E';
-const GOLD = '#C8A84B';
+const DARK_GREEN = '#0B3D28';
+const MID_GREEN = '#165A3C';
+const GOLD = '#C9A84C';
 const GOLD_LIGHT = '#E8C96A';
 const WHITE = '#FFFFFF';
-const CARD_SHADOW = { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 4 };
+const CARD_SHADOW = { shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.18, shadowRadius: 8, elevation: 6 };
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: DARK_GREEN },
@@ -1109,12 +1022,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingTop: 8,
     gap: 8,
+    justifyContent: 'flex-start',
   },
   currencyCard: {
     backgroundColor: WHITE,
-    borderRadius: 14,
-    width: '47%',
-    marginHorizontal: '1%',
+    borderRadius: 16,
     ...CARD_SHADOW,
     overflow: 'hidden',
     borderWidth: 1,
@@ -1140,16 +1052,32 @@ const styles = StyleSheet.create({
   },
   cardTop: {
     alignItems: 'center',
-    paddingTop: 12,
-    paddingBottom: 8,
+    paddingTop: 14,
+    paddingBottom: 10,
     paddingHorizontal: 8,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F4F9F6',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
-  cardFlag: { fontSize: 28, marginBottom: 4 },
+  flagCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: WHITE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  cardFlag: { fontSize: 32 },
   cardCode: { color: DARK_GREEN, fontSize: 18, fontWeight: '800', letterSpacing: 0.5 },
-  cardName: { color: '#6B7280', fontSize: 11, textAlign: 'center', marginTop: 2 },
+  cardName: { color: '#6B7280', fontSize: 11, textAlign: 'center', marginTop: 3 },
   selectedBadge: {
     position: 'absolute', top: 6, right: 6,
     backgroundColor: GOLD, borderRadius: 10, width: 20, height: 20,
