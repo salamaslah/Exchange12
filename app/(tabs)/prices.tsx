@@ -530,11 +530,11 @@ export default function PricesScreen() {
                 !currency.is_active && s.cardInactive,
               ]}
             >
-              {/* Unavailable overlay */}
+              {/* Unavailable badge */}
               {!currency.is_active && (
-                <View style={s.unavailOverlay}>
-                  <Text style={[s.unavailText, isLargeScreen && { fontSize: 32, lineHeight: 42 }]}>
-                    {language === 'ar' ? '⚠️ غير متوفر' : language === 'he' ? '⚠️ לא זמין' : '⚠️ Unavailable'}
+                <View style={s.unavailBadge}>
+                  <Text style={[s.unavailText, isLargeScreen && { fontSize: 20, paddingHorizontal: 14, paddingVertical: 5 }]}>
+                    {language === 'ar' ? 'غير متوفر' : language === 'he' ? 'לא זמין' : 'Unavailable'}
                   </Text>
                 </View>
               )}
@@ -552,10 +552,10 @@ export default function PricesScreen() {
                     <Text style={[s.flagEmoji, isLargeScreen && s.flagEmojiLg]}>{FLAG_EMOJI[currency.code] || '💱'}</Text>
                   )}
                 </View>
-                <Text style={[s.cardCode, !currency.is_active && s.dimText, isLargeScreen && s.cardCodeLg]}>
+                <Text style={[s.cardCode, isLargeScreen && s.cardCodeLg]}>
                   {currency.code}
                 </Text>
-                <Text style={[s.cardName, !currency.is_active && s.dimText, isLargeScreen && s.cardNameLg]}>
+                <Text style={[s.cardName, isLargeScreen && s.cardNameLg]}>
                   {language === 'ar' ? currency.name_ar : language === 'he' ? (currency.name_he || currency.name_ar) : currency.name_en}
                 </Text>
               </View>
@@ -571,7 +571,7 @@ export default function PricesScreen() {
                   <Text style={[s.rateLbl, s.rateLblBuy, isLargeScreen && s.rateLblLg]}>
                     {language === 'ar' ? 'شراء' : language === 'he' ? 'קנייה' : 'Buy'}
                   </Text>
-                  <Text style={[s.buyVal, !currency.is_active && s.dimText, isLargeScreen && s.buyValLg]}>
+                  <Text style={[s.buyVal, isLargeScreen && s.buyValLg]}>
                     {currency.buy_rate?.toFixed(2) ?? '—'}
                   </Text>
                 </TouchableOpacity>
@@ -582,7 +582,7 @@ export default function PricesScreen() {
                   <Text style={[s.currentLbl, isLargeScreen && s.currentLblLg]}>
                     {language === 'ar' ? 'الحالي' : language === 'he' ? 'נוכחי' : 'Rate'}
                   </Text>
-                  <Text style={[s.currentVal, !currency.is_active && s.dimText, isLargeScreen && s.currentValLg]}>
+                  <Text style={[s.currentVal, isLargeScreen && s.currentValLg]}>
                     {currency.current_rate?.toFixed(2) ?? '—'}
                   </Text>
                 </View>
@@ -595,7 +595,7 @@ export default function PricesScreen() {
                   <Text style={[s.rateLbl, s.rateLblSell, isLargeScreen && s.rateLblLg]}>
                     {language === 'ar' ? 'بيع' : language === 'he' ? 'מכירה' : 'Sell'}
                   </Text>
-                  <Text style={[s.sellVal, !currency.is_active && s.dimText, isLargeScreen && s.sellValLg]}>
+                  <Text style={[s.sellVal, isLargeScreen && s.sellValLg]}>
                     {currency.sell_rate?.toFixed(2) ?? '—'}
                   </Text>
                 </TouchableOpacity>
@@ -924,13 +924,17 @@ const s = StyleSheet.create({
   cardSelected: { borderWidth: 2, borderColor: GOLD },
   cardInactive: {},
 
-  unavailOverlay: {
-    position: 'absolute', inset: 0, zIndex: 10,
-    backgroundColor: 'rgba(255,255,255,0.88)',
-    justifyContent: 'center', alignItems: 'center',
-    borderRadius: 14,
+  unavailBadge: {
+    position: 'absolute',
+    alignSelf: 'center',
+    top: '40%',
+    zIndex: 10,
+    backgroundColor: '#6B7280',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
-  unavailText: { color: '#CC2222', fontSize: 16, fontWeight: '900', textAlign: 'center', lineHeight: 22, letterSpacing: 0.5 },
+  unavailText: { color: WHITE, fontSize: 13, fontWeight: '800', textAlign: 'center' },
 
   cardFlagArea: {
     alignItems: 'center',
