@@ -454,103 +454,8 @@ export default function PricesScreen() {
           <View style={s.goldHLine} />
         </View>
 
-        {/* Selection hint */}
-        {selectedFirstCurrency ? (
-          <Animated.View style={[s.hintBar, s.hintBarActive, { transform: [{ scale: pulseAnim }] }]}>
-            <Text style={s.hintText}>
-              {language === 'ar' ? '✓ اختر عملة ثانية' : language === 'he' ? '✓ בחר מטבע שני' : '✓ Select 2nd currency'}
-            </Text>
-          </Animated.View>
-        ) : (
-          <View style={s.hintBar}>
-            <Text style={s.hintText}>
-              {language === 'ar' ? 'اضغط على السعر لفتح الحاسبة' : language === 'he' ? 'לחץ על שער לחישוב' : 'Tap a rate to calculate'}
-            </Text>
-          </View>
-        )}
-
         {/* ════════════════════════════════
-            CURRENCY GRID
-        ════════════════════════════════ */}
-        <View style={s.grid}>
-          {allCurrencies.map(currency => (
-            <View
-              key={currency.id}
-              style={[
-                s.card,
-                { width: cardWidth },
-                selectedFirstCurrency === currency.code && s.cardSelected,
-                !currency.is_active && s.cardInactive,
-              ]}
-            >
-              {/* Unavailable overlay */}
-              {!currency.is_active && (
-                <TouchableOpacity style={s.unavailOverlay}
-                  onPress={() => sendWhatsAppMessage(language === 'ar' ? currency.name_ar : currency.name_en)}>
-                  <Text style={s.unavailText}>
-                    {language === 'ar' ? '⚠️ غير متوفر\nاضغط للاستفسار' : '⚠️ Unavailable\nTap to inquire'}
-                  </Text>
-                </TouchableOpacity>
-              )}
-
-              {/* Flag */}
-              <TouchableOpacity style={s.cardFlagArea}
-                onPress={() => currency.is_active && handleCurrencyNameClick(currency.code)}
-                disabled={!currency.is_active} activeOpacity={0.8}>
-                {selectedFirstCurrency === currency.code && (
-                  <View style={s.checkBadge}><Text style={s.checkText}>✓</Text></View>
-                )}
-                <View style={s.flagRing}>
-                  {getFlagUrl(currency.code) ? (
-                    <Image source={{ uri: getFlagUrl(currency.code) }}
-                      style={s.flagImg} resizeMode="cover" />
-                  ) : (
-                    <Text style={s.flagEmoji}>{FLAG_EMOJI[currency.code] || '💱'}</Text>
-                  )}
-                </View>
-                <Text style={[s.cardCode, !currency.is_active && s.dimText]}>
-                  {currency.code}
-                </Text>
-                <Text style={[s.cardName, !currency.is_active && s.dimText]}>
-                  {language === 'ar' ? currency.name_ar : language === 'he' ? (currency.name_he || currency.name_ar) : currency.name_en}
-                </Text>
-              </TouchableOpacity>
-
-              {/* Gold divider */}
-              <View style={s.cardGoldLine} />
-
-              {/* Rates */}
-              <View style={s.cardRatesRow}>
-                <TouchableOpacity style={s.rateHalf}
-                  onPress={() => currency.is_active && openCalculator(currency.code, 'buy')}
-                  disabled={!currency.is_active} activeOpacity={0.7}>
-                  <Text style={s.rateLbl}>
-                    {language === 'ar' ? 'شراء' : language === 'he' ? 'קנייה' : 'Buy'}
-                  </Text>
-                  <Text style={[s.buyVal, !currency.is_active && s.dimText]}>
-                    {currency.buy_rate?.toFixed(2) ?? '—'}
-                  </Text>
-                </TouchableOpacity>
-
-                <View style={s.rateVLine} />
-
-                <TouchableOpacity style={s.rateHalf}
-                  onPress={() => currency.is_active && openCalculator(currency.code, 'sell')}
-                  disabled={!currency.is_active} activeOpacity={0.7}>
-                  <Text style={s.rateLbl}>
-                    {language === 'ar' ? 'بيع' : language === 'he' ? 'מכירה' : 'Sell'}
-                  </Text>
-                  <Text style={[s.sellVal, !currency.is_active && s.dimText]}>
-                    {currency.sell_rate?.toFixed(2) ?? '—'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
-        </View>
-
-        {/* ════════════════════════════════
-            INFO BAR
+            INFO BAR (above grid)
         ════════════════════════════════ */}
         <View style={s.infoBar}>
           <View style={s.infoBarInner}>
@@ -579,6 +484,100 @@ export default function PricesScreen() {
               </Text>
             </View>
           </View>
+        </View>
+
+        {/* Selection hint */}
+        {selectedFirstCurrency ? (
+          <Animated.View style={[s.hintBar, s.hintBarActive, { transform: [{ scale: pulseAnim }] }]}>
+            <Text style={s.hintTextBig}>
+              {language === 'ar' ? '✓ اختر عملة ثانية للمقارنة' : language === 'he' ? '✓ בחר מטבע שני' : '✓ Select 2nd currency'}
+            </Text>
+          </Animated.View>
+        ) : (
+          <View style={s.hintBar}>
+            <Text style={s.hintTextBig}>
+              {language === 'ar' ? '👆 اضغط على أي سعر لفتح الحاسبة' : language === 'he' ? '👆 לחץ על שער לחשב' : '👆 Tap any rate to open calculator'}
+            </Text>
+          </View>
+        )}
+
+        {/* ════════════════════════════════
+            CURRENCY GRID
+        ════════════════════════════════ */}
+        <View style={s.grid}>
+          {[...allCurrencies.filter(c => c.is_active), ...allCurrencies.filter(c => !c.is_active)].map(currency => (
+            <TouchableOpacity
+              key={currency.id}
+              activeOpacity={currency.is_active ? 0.75 : 1}
+              onPress={() => currency.is_active && handleCurrencyNameClick(currency.code)}
+              style={[
+                s.card,
+                { width: cardWidth },
+                selectedFirstCurrency === currency.code && s.cardSelected,
+                !currency.is_active && s.cardInactive,
+              ]}
+            >
+              {/* Unavailable overlay */}
+              {!currency.is_active && (
+                <View style={s.unavailOverlay}>
+                  <Text style={s.unavailText}>
+                    {language === 'ar' ? '⚠️ غير متوفر' : language === 'he' ? '⚠️ לא זמין' : '⚠️ Unavailable'}
+                  </Text>
+                </View>
+              )}
+
+              {/* Flag */}
+              <View style={s.cardFlagArea}>
+                {selectedFirstCurrency === currency.code && (
+                  <View style={s.checkBadge}><Text style={s.checkText}>✓</Text></View>
+                )}
+                <View style={[s.flagRing, currency.is_active && s.flagRingActive]}>
+                  {getFlagUrl(currency.code) ? (
+                    <Image source={{ uri: getFlagUrl(currency.code) }}
+                      style={s.flagImg} resizeMode="cover" />
+                  ) : (
+                    <Text style={s.flagEmoji}>{FLAG_EMOJI[currency.code] || '💱'}</Text>
+                  )}
+                </View>
+                <Text style={[s.cardCode, !currency.is_active && s.dimText]}>
+                  {currency.code}
+                </Text>
+                <Text style={[s.cardName, !currency.is_active && s.dimText]}>
+                  {language === 'ar' ? currency.name_ar : language === 'he' ? (currency.name_he || currency.name_ar) : currency.name_en}
+                </Text>
+              </View>
+
+              {/* Gold divider */}
+              <View style={s.cardGoldLine} />
+
+              {/* Rates */}
+              <View style={s.cardRatesRow}>
+                <TouchableOpacity style={[s.rateHalf, currency.is_active && s.rateHalfActive]}
+                  onPress={(e) => { e.stopPropagation?.(); currency.is_active && openCalculator(currency.code, 'buy'); }}
+                  disabled={!currency.is_active} activeOpacity={0.65}>
+                  <Text style={[s.rateLbl, currency.is_active && s.rateLblActive]}>
+                    {language === 'ar' ? 'شراء' : language === 'he' ? 'קנייה' : 'Buy'}
+                  </Text>
+                  <Text style={[s.buyVal, !currency.is_active && s.dimText]}>
+                    {currency.buy_rate?.toFixed(2) ?? '—'}
+                  </Text>
+                </TouchableOpacity>
+
+                <View style={s.rateVLine} />
+
+                <TouchableOpacity style={[s.rateHalf, currency.is_active && s.rateHalfActive]}
+                  onPress={(e) => { e.stopPropagation?.(); currency.is_active && openCalculator(currency.code, 'sell'); }}
+                  disabled={!currency.is_active} activeOpacity={0.65}>
+                  <Text style={[s.rateLbl, currency.is_active && s.rateLblActive]}>
+                    {language === 'ar' ? 'بيع' : language === 'he' ? 'מכירה' : 'Sell'}
+                  </Text>
+                  <Text style={[s.sellVal, !currency.is_active && s.dimText]}>
+                    {currency.sell_rate?.toFixed(2) ?? '—'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          ))}
         </View>
 
         {/* ════════════════════════════════
@@ -861,6 +860,7 @@ const s = StyleSheet.create({
   },
   hintBarActive: { borderColor: GOLD, backgroundColor: GOLD + '15' },
   hintText: { color: GOLD2, fontSize: 11, fontWeight: '500', textAlign: 'center' },
+  hintTextBig: { color: GOLD2, fontSize: 13, fontWeight: '700', textAlign: 'center' },
 
   /* ── CURRENCY GRID ── */
   grid: {
@@ -907,6 +907,7 @@ const s = StyleSheet.create({
     marginBottom: 7,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 4, elevation: 3,
   },
+  flagRingActive: { borderColor: GOLD + '80' },
   flagImg: { width: '100%', height: '100%' },
   flagEmoji: { fontSize: 30, lineHeight: 52, textAlign: 'center' },
   cardCode: { color: DARK, fontSize: 16, fontWeight: '800', letterSpacing: 0.3 },
@@ -920,27 +921,29 @@ const s = StyleSheet.create({
     paddingVertical: 10, paddingHorizontal: 6,
     backgroundColor: WHITE,
   },
-  rateHalf: { flex: 1, alignItems: 'center', gap: 3 },
+  rateHalf: { flex: 1, alignItems: 'center', gap: 3, paddingVertical: 4, borderRadius: 8 },
+  rateHalfActive: { backgroundColor: '#F5F8FA' },
   rateVLine: { width: 1, height: 32, backgroundColor: '#E2EBF0', marginHorizontal: 4 },
   rateLbl: { fontSize: 10, color: GRAY, fontWeight: '600' },
+  rateLblActive: { color: '#4A6572', fontWeight: '700' },
   buyVal: { fontSize: 17, fontWeight: '700', color: DARK },
   sellVal: { fontSize: 18, fontWeight: '800', color: RED },
 
   /* ── INFO BAR ── */
   infoBar: {
     backgroundColor: BG2,
-    marginTop: 10,
+    marginTop: 0,
     borderTopWidth: 1.5,
     borderBottomWidth: 1.5,
     borderColor: GOLD + '60',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
   },
-  infoBarInner: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 },
-  infoSegment: { flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1, minWidth: 120 },
-  infoSep: { width: 1, height: 22, backgroundColor: GOLD + '60' },
-  infoIcon: { fontSize: 13 },
-  infoText: { color: GOLD2, fontSize: 10, fontWeight: '600', flex: 1 },
+  infoBarInner: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
+  infoSegment: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, minWidth: 110 },
+  infoSep: { width: 1.5, height: 24, backgroundColor: GOLD + '70' },
+  infoIcon: { fontSize: 15 },
+  infoText: { color: WHITE, fontSize: 12, fontWeight: '700', flex: 1, opacity: 0.95 },
 
   /* ── SECTIONS ── */
   section: { paddingHorizontal: 12, paddingTop: 16, paddingBottom: 4 },
