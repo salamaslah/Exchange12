@@ -77,6 +77,18 @@ const getCurrencyFlag = (code: string): string => {
   return flags[code] || '💱';
 };
 
+const getFlagUrl = (code: string): string => {
+  const mapping: { [key: string]: string } = {
+    'USD': 'us', 'EUR': 'eu', 'GBP': 'gb', 'JPY': 'jp',
+    'AUD': 'au', 'CAD': 'ca', 'CHF': 'ch', 'CNY': 'cn',
+    'SEK': 'se', 'NZD': 'nz', 'JOD': 'jo', 'EGP': 'eg',
+    'AED': 'ae', 'SAR': 'sa', 'KWD': 'kw', 'TRY': 'tr',
+    'ILS': 'il',
+  };
+  const cc = mapping[code];
+  return cc ? `https://flagcdn.com/w80/${cc}.png` : '';
+};
+
 export default function PricesScreen() {
   const [allCurrencies, setAllCurrencies] = useState<Currency[]>([]);
   const [loading, setLoading] = useState(true);
@@ -657,14 +669,26 @@ export default function PricesScreen() {
                 </TouchableOpacity>
               )}
 
-              {/* Card header: flag + code + name */}
+              {/* Flag + Code + Name */}
               <TouchableOpacity
                 style={styles.cardTop}
                 onPress={() => currency.is_active && handleCurrencyNameClick(currency.code)}
                 disabled={!currency.is_active}
+                activeOpacity={0.7}
               >
+                {selectedFirstCurrency === currency.code && (
+                  <View style={styles.selectedBadge}><Text style={styles.selectedBadgeText}>✓</Text></View>
+                )}
                 <View style={styles.flagCircle}>
-                  <Text style={styles.cardFlag}>{getCurrencyFlag(currency.code)}</Text>
+                  {getFlagUrl(currency.code) ? (
+                    <Image
+                      source={{ uri: getFlagUrl(currency.code) }}
+                      style={styles.flagImage}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <Text style={styles.flagEmojiFallback}>{getCurrencyFlag(currency.code)}</Text>
+                  )}
                 </View>
                 <Text style={[styles.cardCode, !currency.is_active && styles.textFaded]}>
                   {currency.code}
@@ -672,49 +696,52 @@ export default function PricesScreen() {
                 <Text style={[styles.cardName, !currency.is_active && styles.textFaded]}>
                   {language === 'ar' ? currency.name_ar : language === 'he' ? (currency.name_he || currency.name_ar) : currency.name_en}
                 </Text>
-                {selectedFirstCurrency === currency.code && (
-                  <View style={styles.selectedBadge}><Text style={styles.selectedBadgeText}>✓</Text></View>
-                )}
               </TouchableOpacity>
 
-              {/* Rates row: buy / sell */}
+              {/* Divider */}
+              <View style={styles.cardDivider} />
+
+              {/* Rates: شراء | بيع */}
               <View style={styles.cardRates}>
                 <TouchableOpacity
-                  style={[styles.rateBox, styles.rateBoxBuy]}
+                  style={styles.rateCol}
                   onPress={() => currency.is_active && openCalculator(currency.code, 'buy')}
                   disabled={!currency.is_active}
+                  activeOpacity={0.7}
                 >
                   <Text style={styles.rateLabel}>
                     {language === 'ar' ? 'شراء' : language === 'he' ? 'קנייה' : 'Buy'}
                   </Text>
-                  <Text style={[styles.rateValue, styles.rateValueBuy, !currency.is_active && styles.textFaded]}>
+                  <Text style={[styles.buyRateValue, !currency.is_active && styles.textFaded]}>
                     {currency.buy_rate?.toFixed(2) ?? 'N/A'}
                   </Text>
                 </TouchableOpacity>
 
+                <View style={styles.rateVerticalDivider} />
+
                 <TouchableOpacity
-                  style={[styles.rateBox, styles.rateBoxSell]}
+                  style={styles.rateCol}
                   onPress={() => currency.is_active && openCalculator(currency.code, 'sell')}
                   disabled={!currency.is_active}
+                  activeOpacity={0.7}
                 >
                   <Text style={styles.rateLabel}>
                     {language === 'ar' ? 'بيع' : language === 'he' ? 'מכירה' : 'Sell'}
                   </Text>
-                  <Text style={[styles.rateValue, styles.rateValueSell, !currency.is_active && styles.textFaded]}>
+                  <Text style={[styles.sellRateValue, !currency.is_active && styles.textFaded]}>
                     {currency.sell_rate?.toFixed(2) ?? 'N/A'}
                   </Text>
                 </TouchableOpacity>
               </View>
 
-              {/* Status dot */}
-              <View style={styles.cardFooter}>
-                <View style={[styles.statusDot, currency.is_active ? styles.statusDotActive : styles.statusDotInactive]} />
-                <Text style={[styles.cardStatusText, currency.is_active ? styles.cardStatusTextActive : styles.cardStatusTextInactive]}>
-                  {currency.is_active
-                    ? (language === 'ar' ? 'متوفر' : language === 'he' ? 'זמין' : 'Available')
-                    : (language === 'ar' ? 'تواصل معنا' : language === 'he' ? 'צור קשר' : 'Contact us')}
-                </Text>
-              </View>
+              {/* Status indicator */}
+              {!currency.is_active && (
+                <View style={styles.cardStatusBar}>
+                  <Text style={styles.cardStatusInactive}>
+                    {language === 'ar' ? 'تواصل معنا' : language === 'he' ? 'צור קשר' : 'Contact us'}
+                  </Text>
+                </View>
+              )}
             </View>
             );
           })}
@@ -1052,67 +1079,74 @@ const styles = StyleSheet.create({
   },
   cardTop: {
     alignItems: 'center',
-    paddingTop: 14,
-    paddingBottom: 10,
+    paddingTop: 16,
+    paddingBottom: 12,
     paddingHorizontal: 8,
-    backgroundColor: '#F4F9F6',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    backgroundColor: WHITE,
   },
   flagCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: WHITE,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 6,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    overflow: 'hidden',
+    marginBottom: 8,
+    borderWidth: 2,
+    borderColor: '#E8EDF0',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    elevation: 4,
   },
-  cardFlag: { fontSize: 32 },
-  cardCode: { color: DARK_GREEN, fontSize: 18, fontWeight: '800', letterSpacing: 0.5 },
-  cardName: { color: '#6B7280', fontSize: 11, textAlign: 'center', marginTop: 3 },
+  flagImage: {
+    width: '100%',
+    height: '100%',
+  },
+  flagEmojiFallback: { fontSize: 34 },
+  cardCode: { color: DARK_GREEN, fontSize: 17, fontWeight: '800', letterSpacing: 0.5, marginBottom: 2 },
+  cardName: { color: '#8A9BB0', fontSize: 10, textAlign: 'center' },
   selectedBadge: {
     position: 'absolute', top: 6, right: 6,
     backgroundColor: GOLD, borderRadius: 10, width: 20, height: 20,
     alignItems: 'center', justifyContent: 'center',
   },
   selectedBadgeText: { color: WHITE, fontSize: 11, fontWeight: '700' },
+  cardDivider: {
+    height: 1,
+    backgroundColor: '#EEF2F5',
+    marginHorizontal: 0,
+  },
   cardRates: {
     flexDirection: 'row',
+    paddingTop: 10,
+    paddingBottom: 12,
     paddingHorizontal: 6,
-    paddingVertical: 8,
-    gap: 4,
-  },
-  rateBox: {
-    flex: 1, alignItems: 'center', borderRadius: 8, paddingVertical: 6,
-  },
-  rateBoxBuy: { backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: '#BBF7D0' },
-  rateBoxSell: { backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA' },
-  rateLabel: { fontSize: 10, fontWeight: '600', color: '#6B7280', marginBottom: 2 },
-  rateValue: { fontSize: 17, fontWeight: '800' },
-  rateValueBuy: { color: '#059669' },
-  rateValueSell: { color: '#DC2626' },
-  cardFooter: {
-    flexDirection: 'row',
+    backgroundColor: WHITE,
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    paddingBottom: 8,
   },
-  statusDot: { width: 7, height: 7, borderRadius: 4 },
-  statusDotActive: { backgroundColor: '#10B981' },
-  statusDotInactive: { backgroundColor: '#F59E0B' },
-  cardStatusText: { fontSize: 10, fontWeight: '600' },
-  cardStatusTextActive: { color: '#059669' },
-  cardStatusTextInactive: { color: '#D97706' },
-  textFaded: { color: '#9CA3AF' },
+  rateCol: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 3,
+  },
+  rateVerticalDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: '#EEF2F5',
+    marginHorizontal: 4,
+  },
+  rateLabel: { fontSize: 10, fontWeight: '600', color: '#8A9BB0' },
+  buyRateValue: { color: '#1A2E3B', fontSize: 18, fontWeight: '700' },
+  sellRateValue: { color: '#D0302F', fontSize: 20, fontWeight: '800' },
+  cardStatusBar: {
+    backgroundColor: '#FFF8E6',
+    paddingVertical: 5,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#FDEBC8',
+  },
+  cardStatusInactive: { color: '#B45309', fontSize: 10, fontWeight: '600' },
+  textFaded: { color: '#C0CBDA' },
 
   /* INFO BAR */
   infoBar: {
