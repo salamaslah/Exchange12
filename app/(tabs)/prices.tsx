@@ -551,27 +551,27 @@ export default function PricesScreen() {
               <View style={s.cardGoldLine} />
 
               {/* Rates */}
-              <View style={s.cardRatesRow}>
-                <TouchableOpacity style={[s.rateHalf, currency.is_active && s.rateHalfActive]}
+              <View style={[s.cardRatesRow, isLargeScreen && s.cardRatesRowLg]}>
+                <TouchableOpacity style={[s.rateHalf, currency.is_active && s.rateHalfActive, isLargeScreen && s.rateHalfLg]}
                   onPress={(e) => { e.stopPropagation?.(); currency.is_active && openCalculator(currency.code, 'buy'); }}
                   disabled={!currency.is_active} activeOpacity={0.65}>
-                  <Text style={[s.rateLbl, currency.is_active && s.rateLblActive]}>
+                  <Text style={[s.rateLbl, currency.is_active && s.rateLblActive, isLargeScreen && s.rateLblLg]}>
                     {language === 'ar' ? 'شراء' : language === 'he' ? 'קנייה' : 'Buy'}
                   </Text>
-                  <Text style={[s.buyVal, !currency.is_active && s.dimText]}>
+                  <Text style={[s.buyVal, !currency.is_active && s.dimText, isLargeScreen && s.buyValLg]}>
                     {currency.buy_rate?.toFixed(2) ?? '—'}
                   </Text>
                 </TouchableOpacity>
 
-                <View style={s.rateVLine} />
+                <View style={[s.rateVLine, isLargeScreen && s.rateVLineLg]} />
 
-                <TouchableOpacity style={[s.rateHalf, currency.is_active && s.rateHalfActive]}
+                <TouchableOpacity style={[s.rateHalf, currency.is_active && s.rateHalfActive, isLargeScreen && s.rateHalfLg]}
                   onPress={(e) => { e.stopPropagation?.(); currency.is_active && openCalculator(currency.code, 'sell'); }}
                   disabled={!currency.is_active} activeOpacity={0.65}>
-                  <Text style={[s.rateLbl, currency.is_active && s.rateLblActive]}>
+                  <Text style={[s.rateLbl, currency.is_active && s.rateLblActive, isLargeScreen && s.rateLblLg]}>
                     {language === 'ar' ? 'بيع' : language === 'he' ? 'מכירה' : 'Sell'}
                   </Text>
-                  <Text style={[s.sellVal, !currency.is_active && s.dimText]}>
+                  <Text style={[s.sellVal, !currency.is_active && s.dimText, isLargeScreen && s.sellValLg]}>
                     {currency.sell_rate?.toFixed(2) ?? '—'}
                   </Text>
                 </TouchableOpacity>
@@ -928,6 +928,14 @@ const s = StyleSheet.create({
   rateLblActive: { color: '#4A6572', fontWeight: '700' },
   buyVal: { fontSize: 17, fontWeight: '700', color: DARK },
   sellVal: { fontSize: 18, fontWeight: '800', color: RED },
+
+  /* Large screen rate overrides */
+  rateLblLg: { fontSize: 22, fontWeight: '700' },
+  buyValLg:  { fontSize: 44, fontWeight: '800', letterSpacing: -0.5 },
+  sellValLg: { fontSize: 46, fontWeight: '900', letterSpacing: -0.5 },
+  rateHalfLg: { paddingVertical: 10 },
+  rateVLineLg: { height: 72 },
+  cardRatesRowLg: { paddingVertical: 18, paddingHorizontal: 10 },
 
   /* ── INFO BAR ── */
   infoBar: {
