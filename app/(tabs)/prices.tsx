@@ -399,23 +399,23 @@ export default function PricesScreen() {
         {/* ════════════════════════════════
             HEADER
         ════════════════════════════════ */}
-        <View style={s.header}>
+        <View style={[s.header, isLargeScreen && s.headerLarge]}>
           {/* Left: Clock + Date */}
-          <View style={s.headerLeft}>
+          <View style={[s.headerLeft, isLargeScreen && s.headerLeftLarge]}>
             <View style={s.clockRow}>
-              <Text style={s.clockIcon}>🕐</Text>
-              <Text style={s.clockTime}>{timeStr}</Text>
+              <Text style={[s.clockIcon, isLargeScreen && s.clockIconLarge]}>🕐</Text>
+              <Text style={[s.clockTime, isLargeScreen && s.clockTimeLarge]}>{timeStr}</Text>
             </View>
-            <Text style={s.clockDate}>{dayStr}</Text>
-            <Text style={s.clockDate}>{dateStr}</Text>
+            <Text style={[s.clockDate, isLargeScreen && s.clockDateLarge]}>{dayStr}</Text>
+            <Text style={[s.clockDate, isLargeScreen && s.clockDateLarge]}>{dateStr}</Text>
           </View>
 
           {/* Center: Company name + Slogan */}
-          <View style={s.headerCenter}>
-            <Text style={s.companyBigName}>{companyName}</Text>
+          <View style={[s.headerCenter, isLargeScreen && s.headerCenterLarge]}>
+            <Text style={[s.companyBigName, isLargeScreen && s.companyBigNameLarge]}>{companyName}</Text>
             <View style={s.sloganRow}>
               <View style={s.sloganLine} />
-              <Text style={s.sloganText}>
+              <Text style={[s.sloganText, isLargeScreen && s.sloganTextLarge]}>
                 {language === 'ar' ? 'ثقتكم هي عملتنا' : language === 'he' ? 'האמון שלכם הוא המטבע שלנו' : 'Your Trust Is Our Currency'}
               </Text>
               <View style={s.sloganLine} />
@@ -423,15 +423,15 @@ export default function PricesScreen() {
           </View>
 
           {/* Right: Logo + Lang switcher */}
-          <View style={s.headerRight}>
-            <TouchableOpacity style={s.logoCircle} onPress={() => router.push('/login')}>
-              <Text style={s.logoSymbol}>€$</Text>
+          <View style={[s.headerRight, isLargeScreen && s.headerRightLarge]}>
+            <TouchableOpacity style={[s.logoCircle, isLargeScreen && s.logoCircleLarge]} onPress={() => router.push('/login')}>
+              <Text style={[s.logoSymbol, isLargeScreen && s.logoSymbolLarge]}>€$</Text>
             </TouchableOpacity>
-            <View style={s.langRow}>
+            <View style={[s.langRow, isLargeScreen && s.langRowLarge]}>
               {(['ar','he','en'] as const).map(l => (
                 <TouchableOpacity key={l} onPress={() => setLanguage(l)}
-                  style={[s.langBtn, language === l && s.langBtnActive]}>
-                  <Text style={[s.langBtnText, language === l && s.langBtnTextActive]}>
+                  style={[s.langBtn, language === l && s.langBtnActive, isLargeScreen && s.langBtnLarge]}>
+                  <Text style={[s.langBtnText, language === l && s.langBtnTextActive, isLargeScreen && s.langBtnTextLarge]}>
                     {l === 'ar' ? 'ع' : l === 'he' ? 'ע' : 'EN'}
                   </Text>
                 </TouchableOpacity>
@@ -622,21 +622,27 @@ export default function PricesScreen() {
             </Text>
             <View style={s.goldHLine} />
           </View>
-          <View style={s.whRow}>
-            <View style={s.whCard}>
-              <Text style={s.whIcon}>🌅</Text>
-              <Text style={s.whLabel}>{language === 'ar' ? 'صباحاً' : language === 'he' ? 'בוקר' : 'Morning'}</Text>
-              <Text style={s.whVal}>{wh.morning}</Text>
-            </View>
-            <View style={s.whCard}>
-              <Text style={s.whIcon}>🌆</Text>
-              <Text style={s.whLabel}>{language === 'ar' ? 'مساءً' : language === 'he' ? 'ערב' : 'Evening'}</Text>
-              <Text style={s.whVal}>{wh.evening}</Text>
-            </View>
-            <View style={[s.whCard, s.whCardFull]}>
-              <Text style={s.whIcon}>📅</Text>
-              <Text style={s.whLabel}>{language === 'ar' ? 'أيام العمل' : language === 'he' ? 'ימי עבודה' : 'Working days'}</Text>
-              <Text style={s.whVal}>{getWorkingDaysText()}</Text>
+          <View style={s.whCompact}>
+            <View style={s.whCompactCard}>
+              <View style={s.whCompactRow}>
+                <View style={s.whCompactItem}>
+                  <Text style={s.whCompactIcon}>🌅</Text>
+                  <Text style={s.whCompactLabel}>{language === 'ar' ? 'صباحاً' : language === 'he' ? 'בוקר' : 'Morning'}</Text>
+                  <Text style={s.whCompactVal}>{wh.morning}</Text>
+                </View>
+                <View style={s.whCompactSep} />
+                <View style={s.whCompactItem}>
+                  <Text style={s.whCompactIcon}>🌆</Text>
+                  <Text style={s.whCompactLabel}>{language === 'ar' ? 'مساءً' : language === 'he' ? 'ערב' : 'Evening'}</Text>
+                  <Text style={s.whCompactVal}>{wh.evening}</Text>
+                </View>
+              </View>
+              <View style={s.whCompactDivider} />
+              <View style={s.whDaysRow}>
+                <Text style={s.whCompactIcon}>📅</Text>
+                <Text style={s.whCompactLabel}>{language === 'ar' ? 'أيام العمل: ' : language === 'he' ? 'ימי עבודה: ' : 'Days: '}</Text>
+                <Text style={s.whCompactVal}>{getWorkingDaysText()}</Text>
+              </View>
             </View>
           </View>
         </View>
@@ -651,13 +657,6 @@ export default function PricesScreen() {
           </Text>
           <View style={s.goldHLine} />
         </View>
-
-        {/* Customer Service */}
-        <TouchableOpacity style={s.custBtn} onPress={navigateToCustomerInfo}>
-          <Text style={s.custBtnText}>
-            {language === 'ar' ? '👤 خدمة الزبائن' : language === 'he' ? '👤 שירות לקוחות' : '👤 Customer Service'}
-          </Text>
-        </TouchableOpacity>
 
       </ScrollView>
 
@@ -799,7 +798,43 @@ const s = StyleSheet.create({
   langBtnText: { color: GOLD, fontSize: 10, fontWeight: '600' },
   langBtnTextActive: { color: BG, fontWeight: '700' },
 
-  /* ── RATES TITLE BAR ── */
+  /* Large screen header overrides */
+  headerLarge: { paddingHorizontal: 28, paddingTop: 20, paddingBottom: 22 },
+  headerLeftLarge: { gap: 4 },
+  clockIconLarge: { fontSize: 18 },
+  clockTimeLarge: { fontSize: 24, fontWeight: '800' },
+  clockDateLarge: { fontSize: 14, fontWeight: '600' },
+  headerCenterLarge: { gap: 8 },
+  companyBigNameLarge: { fontSize: 32 },
+  sloganTextLarge: { fontSize: 14 },
+  headerRightLarge: { gap: 12 },
+  logoCircleLarge: { width: 62, height: 62, borderRadius: 31 },
+  logoSymbolLarge: { fontSize: 22 },
+  langRowLarge: { gap: 6 },
+  langBtnLarge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
+  langBtnTextLarge: { fontSize: 13 },
+
+  /* Working hours compact */
+  whCompact: { alignItems: 'center', paddingHorizontal: 12 },
+  whCompactCard: {
+    backgroundColor: BG2,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: GOLD + '40',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
+  },
+  whCompactRow: { flexDirection: 'row', alignItems: 'center' },
+  whCompactItem: { flex: 1, alignItems: 'center', gap: 4 },
+  whCompactSep: { width: 1, height: 40, backgroundColor: GOLD + '50', marginHorizontal: 8 },
+  whCompactIcon: { fontSize: 18 },
+  whCompactLabel: { color: GOLD, fontSize: 10, fontWeight: '600' },
+  whCompactVal: { color: WHITE, fontSize: 13, fontWeight: '700', textAlign: 'center' },
+  whCompactDivider: { height: 1, backgroundColor: GOLD + '30', marginVertical: 10 },
+  whDaysRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, flexWrap: 'wrap' },
   ratesTitleBar: {
     backgroundColor: BG,
     paddingVertical: 14,
