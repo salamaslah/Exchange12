@@ -568,7 +568,7 @@ export default function PricesScreen() {
                 <TouchableOpacity style={[s.rateHalf, currency.is_active && s.rateHalfActive, isLargeScreen && s.rateHalfLg]}
                   onPress={(e) => { e.stopPropagation?.(); currency.is_active && openCalculator(currency.code, 'buy'); }}
                   disabled={!currency.is_active} activeOpacity={0.65}>
-                  <Text style={[s.rateLbl, currency.is_active && s.rateLblActive, isLargeScreen && s.rateLblLg]}>
+                  <Text style={[s.rateLbl, s.rateLblBuy, isLargeScreen && s.rateLblLg]}>
                     {language === 'ar' ? 'شراء' : language === 'he' ? 'קנייה' : 'Buy'}
                   </Text>
                   <Text style={[s.buyVal, !currency.is_active && s.dimText, isLargeScreen && s.buyValLg]}>
@@ -578,10 +578,21 @@ export default function PricesScreen() {
 
                 <View style={[s.rateVLine, isLargeScreen && s.rateVLineLg]} />
 
+                <View style={[s.rateHalf, isLargeScreen && s.rateHalfLg, { gap: 2 }]}>
+                  <Text style={[s.currentLbl, isLargeScreen && s.currentLblLg]}>
+                    {language === 'ar' ? 'الحالي' : language === 'he' ? 'נוכחי' : 'Rate'}
+                  </Text>
+                  <Text style={[s.currentVal, !currency.is_active && s.dimText, isLargeScreen && s.currentValLg]}>
+                    {currency.current_rate?.toFixed(2) ?? '—'}
+                  </Text>
+                </View>
+
+                <View style={[s.rateVLine, isLargeScreen && s.rateVLineLg]} />
+
                 <TouchableOpacity style={[s.rateHalf, currency.is_active && s.rateHalfActive, isLargeScreen && s.rateHalfLg]}
                   onPress={(e) => { e.stopPropagation?.(); currency.is_active && openCalculator(currency.code, 'sell'); }}
                   disabled={!currency.is_active} activeOpacity={0.65}>
-                  <Text style={[s.rateLbl, currency.is_active && s.rateLblActive, isLargeScreen && s.rateLblLg]}>
+                  <Text style={[s.rateLbl, s.rateLblSell, isLargeScreen && s.rateLblLg]}>
                     {language === 'ar' ? 'بيع' : language === 'he' ? 'מכירה' : 'Sell'}
                   </Text>
                   <Text style={[s.sellVal, !currency.is_active && s.dimText, isLargeScreen && s.sellValLg]}>
@@ -765,6 +776,7 @@ const GOLD    = '#C9A84C';   // gold accent
 const GOLD2   = '#E8C96A';   // lighter gold
 const WHITE   = '#FFFFFF';
 const RED     = '#D0302F';
+const GREEN   = '#1A9A52';
 const DARK    = '#1A2730';
 const GRAY    = '#8A9BB0';
 const SHADOW  = { shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 6 };
@@ -963,13 +975,19 @@ const s = StyleSheet.create({
   rateVLine: { width: 1, height: 32, backgroundColor: '#E2EBF0', marginHorizontal: 4 },
   rateLbl: { fontSize: 10, color: GRAY, fontWeight: '600' },
   rateLblActive: { color: '#4A6572', fontWeight: '700' },
-  buyVal: { fontSize: 17, fontWeight: '700', color: DARK },
-  sellVal: { fontSize: 18, fontWeight: '800', color: RED },
+  rateLblBuy:  { color: RED },
+  rateLblSell: { color: GREEN },
+  buyVal:  { fontSize: 17, fontWeight: '700', color: RED },
+  sellVal: { fontSize: 18, fontWeight: '800', color: GREEN },
+  currentVal: { fontSize: 13, fontWeight: '700', color: DARK },
+  currentLbl: { fontSize: 9, color: GRAY, fontWeight: '600' },
 
   /* Large screen rate overrides */
   rateLblLg: { fontSize: 22, fontWeight: '700' },
   buyValLg:  { fontSize: 44, fontWeight: '800', letterSpacing: -0.5 },
   sellValLg: { fontSize: 46, fontWeight: '900', letterSpacing: -0.5 },
+  currentValLg: { fontSize: 26, fontWeight: '700' },
+  currentLblLg: { fontSize: 18, fontWeight: '700' },
   rateHalfLg: { paddingVertical: 10 },
   rateVLineLg: { height: 72 },
   cardRatesRowLg: { paddingVertical: 18, paddingHorizontal: 10 },
