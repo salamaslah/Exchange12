@@ -210,14 +210,13 @@ export default function PricesScreen() {
   };
 
   const getWorkingDaysText = () => {
+    const allExceptFriday = DAYS_OF_WEEK.filter(d => d.key !== 'friday');
     if (!workingHours?.length) {
-      return language === 'he' ? 'ראשון - חמישי, שבת' : language === 'en' ? 'Sun - Thu, Sat' : 'الأحد - الخميس، السبت';
+      return allExceptFriday.map(d => language === 'he' ? d.he : language === 'en' ? d.en : d.ar).join(' - ');
     }
-    const days = workingHours.filter(wh => wh.is_working_day === true || (wh.is_working_day as any) === 'true').map(wh => wh.day_of_week);
-    if (!days.length) return language === 'ar' ? 'الأحد - الخميس، السبت' : language === 'he' ? 'ראשון - חמישי, שבת' : 'Sun - Thu, Sat';
-    return DAYS_OF_WEEK.filter(d => days.includes(d.key))
-      .map(d => language === 'he' ? d.he : language === 'en' ? d.en : d.ar)
-      .join(' - ');
+    const activeDays = workingHours.filter(wh => wh.is_working_day === true || (wh.is_working_day as any) === 'true').map(wh => wh.day_of_week);
+    const filtered = allExceptFriday.filter(d => activeDays.length === 0 || activeDays.includes(d.key));
+    return filtered.map(d => language === 'he' ? d.he : language === 'en' ? d.en : d.ar).join(' - ');
   };
 
   const getWorkingHoursText = () => {
@@ -422,12 +421,13 @@ export default function PricesScreen() {
             </View>
             {isLargeScreen && (
               <View style={s.whInHeader}>
+                <Text style={s.whInHeaderDaysLine}>
+                  📅 {getWorkingDaysText()}
+                </Text>
                 <View style={s.whInHeaderRow}>
                   <Text style={s.whInHeaderItem}>🌅 {language === 'ar' ? 'صباحاً' : language === 'he' ? 'בוקר' : 'Morning'}: <Text style={s.whInHeaderVal}>{wh.morning}</Text></Text>
                   <View style={s.whInHeaderSep} />
                   <Text style={s.whInHeaderItem}>🌆 {language === 'ar' ? 'مساءً' : language === 'he' ? 'ערב' : 'Evening'}: <Text style={s.whInHeaderVal}>{wh.evening}</Text></Text>
-                  <View style={s.whInHeaderSep} />
-                  <Text style={s.whInHeaderItem}>📅 {language === 'ar' ? 'أيام العمل' : language === 'he' ? 'ימי עבודה' : 'Days'}: <Text style={s.whInHeaderVal}>{getWorkingDaysText()}</Text></Text>
                 </View>
               </View>
             )}
@@ -648,6 +648,12 @@ export default function PricesScreen() {
           </View>
           <View style={s.whCompact}>
             <View style={s.whCompactCard}>
+              <View style={s.whDaysRow}>
+                <Text style={s.whCompactIcon}>📅</Text>
+                <Text style={s.whCompactLabel}>{language === 'ar' ? 'أيام العمل: ' : language === 'he' ? 'ימי עבודה: ' : 'Days: '}</Text>
+                <Text style={s.whCompactVal}>{getWorkingDaysText()}</Text>
+              </View>
+              <View style={s.whCompactDivider} />
               <View style={s.whCompactRow}>
                 <View style={s.whCompactItem}>
                   <Text style={s.whCompactIcon}>🌅</Text>
@@ -660,12 +666,6 @@ export default function PricesScreen() {
                   <Text style={s.whCompactLabel}>{language === 'ar' ? 'مساءً' : language === 'he' ? 'ערב' : 'Evening'}</Text>
                   <Text style={s.whCompactVal}>{wh.evening}</Text>
                 </View>
-              </View>
-              <View style={s.whCompactDivider} />
-              <View style={s.whDaysRow}>
-                <Text style={s.whCompactIcon}>📅</Text>
-                <Text style={s.whCompactLabel}>{language === 'ar' ? 'أيام العمل: ' : language === 'he' ? 'ימי עבודה: ' : 'Days: '}</Text>
-                <Text style={s.whCompactVal}>{getWorkingDaysText()}</Text>
               </View>
             </View>
           </View>
@@ -872,10 +872,11 @@ const s = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
   },
-  whInHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' },
-  whInHeaderItem: { color: GOLD2, fontSize: 13, fontWeight: '600' },
-  whInHeaderVal: { color: WHITE, fontWeight: '800' },
-  whInHeaderSep: { width: 1, height: 16, backgroundColor: GOLD + '60' },
+  whInHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginTop: 6 },
+  whInHeaderDaysLine: { color: WHITE, fontSize: 26, fontWeight: '800', textAlign: 'center' },
+  whInHeaderItem: { color: GOLD2, fontSize: 26, fontWeight: '600' },
+  whInHeaderVal: { color: WHITE, fontWeight: '800', fontSize: 26 },
+  whInHeaderSep: { width: 1, height: 28, backgroundColor: GOLD + '60' },
   ratesTitleBar: {
     backgroundColor: BG,
     paddingVertical: 14,
