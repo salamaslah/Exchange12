@@ -527,22 +527,22 @@ export default function PricesScreen() {
               )}
 
               {/* Flag */}
-              <View style={s.cardFlagArea}>
+              <View style={[s.cardFlagArea, isLargeScreen && s.cardFlagAreaLg]}>
                 {selectedFirstCurrency === currency.code && (
                   <View style={s.checkBadge}><Text style={s.checkText}>✓</Text></View>
                 )}
-                <View style={[s.flagRing, currency.is_active && s.flagRingActive]}>
+                <View style={[s.flagRing, currency.is_active && s.flagRingActive, isLargeScreen && s.flagRingLg]}>
                   {getFlagUrl(currency.code) ? (
                     <Image source={{ uri: getFlagUrl(currency.code) }}
                       style={s.flagImg} resizeMode="cover" />
                   ) : (
-                    <Text style={s.flagEmoji}>{FLAG_EMOJI[currency.code] || '💱'}</Text>
+                    <Text style={[s.flagEmoji, isLargeScreen && s.flagEmojiLg]}>{FLAG_EMOJI[currency.code] || '💱'}</Text>
                   )}
                 </View>
-                <Text style={[s.cardCode, !currency.is_active && s.dimText]}>
+                <Text style={[s.cardCode, !currency.is_active && s.dimText, isLargeScreen && s.cardCodeLg]}>
                   {currency.code}
                 </Text>
-                <Text style={[s.cardName, !currency.is_active && s.dimText]}>
+                <Text style={[s.cardName, !currency.is_active && s.dimText, isLargeScreen && s.cardNameLg]}>
                   {language === 'ar' ? currency.name_ar : language === 'he' ? (currency.name_he || currency.name_ar) : currency.name_en}
                 </Text>
               </View>
@@ -913,6 +913,13 @@ const s = StyleSheet.create({
   cardCode: { color: DARK, fontSize: 16, fontWeight: '800', letterSpacing: 0.3 },
   cardName: { color: GRAY, fontSize: 10, textAlign: 'center', marginTop: 2 },
   dimText: { color: '#C0CBD5' },
+
+  /* Large screen card name overrides */
+  cardCodeLg: { fontSize: 32, letterSpacing: 0.5 },
+  cardNameLg: { fontSize: 20, marginTop: 4 },
+  cardFlagAreaLg: { paddingTop: 22, paddingBottom: 16 },
+  flagRingLg: { width: 80, height: 80, borderRadius: 40 },
+  flagEmojiLg: { fontSize: 48, lineHeight: 80 },
 
   cardGoldLine: { height: 1.5, backgroundColor: GOLD + '50', marginHorizontal: 8 },
 
