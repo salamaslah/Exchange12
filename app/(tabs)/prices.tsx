@@ -410,7 +410,7 @@ export default function PricesScreen() {
             <Text style={[s.clockDate, isLargeScreen && s.clockDateLarge]}>{dateStr}</Text>
           </View>
 
-          {/* Center: Company name + Slogan */}
+          {/* Center: Company name + Slogan + (large: working hours) */}
           <View style={[s.headerCenter, isLargeScreen && s.headerCenterLarge]}>
             <Text style={[s.companyBigName, isLargeScreen && s.companyBigNameLarge]}>{companyName}</Text>
             <View style={s.sloganRow}>
@@ -420,6 +420,17 @@ export default function PricesScreen() {
               </Text>
               <View style={s.sloganLine} />
             </View>
+            {isLargeScreen && (
+              <View style={s.whInHeader}>
+                <View style={s.whInHeaderRow}>
+                  <Text style={s.whInHeaderItem}>🌅 {language === 'ar' ? 'صباحاً' : language === 'he' ? 'בוקר' : 'Morning'}: <Text style={s.whInHeaderVal}>{wh.morning}</Text></Text>
+                  <View style={s.whInHeaderSep} />
+                  <Text style={s.whInHeaderItem}>🌆 {language === 'ar' ? 'مساءً' : language === 'he' ? 'ערב' : 'Evening'}: <Text style={s.whInHeaderVal}>{wh.evening}</Text></Text>
+                  <View style={s.whInHeaderSep} />
+                  <Text style={s.whInHeaderItem}>📅 {language === 'ar' ? 'أيام العمل' : language === 'he' ? 'ימי עבודה' : 'Days'}: <Text style={s.whInHeaderVal}>{getWorkingDaysText()}</Text></Text>
+                </View>
+              </View>
+            )}
           </View>
 
           {/* Right: Logo + Lang switcher */}
@@ -441,18 +452,20 @@ export default function PricesScreen() {
         </View>
 
         {/* ════════════════════════════════
-            RATES TITLE
+            RATES TITLE — small screens only
         ════════════════════════════════ */}
-        <View style={s.ratesTitleBar}>
-          <View style={s.goldHLine} />
-          <TouchableOpacity style={s.ratesTitleContent} onPress={() => openCalculator()}>
-            <Text style={s.ratesTitleText}>
-              {language === 'ar' ? 'أسعار صرف العملات' : language === 'he' ? 'שערי חליפין' : 'Exchange Rates'}
-            </Text>
-            <Text style={s.calcHint}>🧮</Text>
-          </TouchableOpacity>
-          <View style={s.goldHLine} />
-        </View>
+        {!isLargeScreen && (
+          <View style={s.ratesTitleBar}>
+            <View style={s.goldHLine} />
+            <TouchableOpacity style={s.ratesTitleContent} onPress={() => openCalculator()}>
+              <Text style={s.ratesTitleText}>
+                {language === 'ar' ? 'أسعار صرف العملات' : language === 'he' ? 'שערי חליפין' : 'Exchange Rates'}
+              </Text>
+              <Text style={s.calcHint}>🧮</Text>
+            </TouchableOpacity>
+            <View style={s.goldHLine} />
+          </View>
+        )}
 
         {/* ════════════════════════════════
             INFO BAR (above grid)
@@ -611,8 +624,9 @@ export default function PricesScreen() {
         </View>
 
         {/* ════════════════════════════════
-            WORKING HOURS
+            WORKING HOURS — small screens only
         ════════════════════════════════ */}
+        {!isLargeScreen && (
         <View style={s.section}>
           <View style={s.sectionTitle}>
             <View style={s.goldHLine} />
@@ -645,6 +659,7 @@ export default function PricesScreen() {
             </View>
           </View>
         </View>
+        )}
 
         {/* ════════════════════════════════
             FOOTER
@@ -834,6 +849,21 @@ const s = StyleSheet.create({
   whCompactVal: { color: WHITE, fontSize: 13, fontWeight: '700', textAlign: 'center' },
   whCompactDivider: { height: 1, backgroundColor: GOLD + '30', marginVertical: 10 },
   whDaysRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, flexWrap: 'wrap' },
+
+  /* Working hours in header (large screens) */
+  whInHeader: {
+    marginTop: 10,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: GOLD + '50',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  whInHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' },
+  whInHeaderItem: { color: GOLD2, fontSize: 13, fontWeight: '600' },
+  whInHeaderVal: { color: WHITE, fontWeight: '800' },
+  whInHeaderSep: { width: 1, height: 16, backgroundColor: GOLD + '60' },
   ratesTitleBar: {
     backgroundColor: BG,
     paddingVertical: 14,
