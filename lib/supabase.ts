@@ -857,6 +857,106 @@ export const customerService = {
     }
   }
 };
+// Coupon service
+export const couponService = {
+  generateCode(type: 'currency_exchange' | 'bank_transfer'): string {
+    const prefix = type === 'currency_exchange' ? 'EX' : 'BNK';
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+      code += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return `${prefix}-${code}`;
+  },
+
+  async getAll() {
+    try {
+      if (isSupabaseConfigured()) {
+        const { data, error } = await supabase!
+          .from('coupons')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        return data || [];
+      }
+      return [];
+    } catch (error) {
+      console.error('خطأ في جلب الكوبونات:', error);
+      return [];
+    }
+  },
+
+  async getByCode(code: string) {
+    try {
+      if (isSupabaseConfigured()) {
+        const { data, error } = await supabase!
+          .from('coupons')
+          .select('*')
+          .eq('code', code.toUpperCase().trim())
+          .maybeSingle();
+        if (error) throw error;
+        return data;
+      }
+      return null;
+    } catch (error) {
+      console.error('خطأ في جلب الكوبون:', error);
+      return null;
+    }
+  },
+
+  async create(coupon: {
+    code: string;
+    type: 'currency_exchange' | 'bank_transfer';
+    currency_code?: string;
+    discounted_buy_rate?: number;
+    discounted_sell_rate?: number;
+    discount_percentage?: number;
+    expires_at?: string;
+    notes?: string;
+  }) {
+    if (isSupabaseConfigured()) {
+      const { data, error } = await supabase!
+        .from('coupons')
+        .insert({ ...coupon, code: coupon.code.toUpperCase().trim() })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    }
+    throw new Error('Supabase not configured');
+  },
+
+  async markUsed(id: string) {
+    if (isSupabaseConfigured()) {
+      const { error } = await supabase!
+        .from('coupons')
+        .update({ is_used: true, used_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+    }
+  },
+
+  async toggleActive(id: string, is_active: boolean) {
+    if (isSupabaseConfigured()) {
+      const { error } = await supabase!
+        .from('coupons')
+        .update({ is_active })
+        .eq('id', id);
+      if (error) throw error;
+    }
+  },
+
+  async delete(id: string) {
+    if (isSupabaseConfigured()) {
+      const { error } = await supabase!
+        .from('coupons')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    }
+  }
+};
+
 // Currency Update Log service
 export const currencyUpdateLogService = {
   async getAutoUpdateStatus() {

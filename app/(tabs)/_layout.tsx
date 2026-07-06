@@ -72,6 +72,12 @@ export default function TabLayout() {
           href: null, // إخفاء من التبويب
         }}
       />
+      <Tabs.Screen
+        name="coupons"
+        options={{
+          href: null, // إخفاء من التبويب
+        }}
+      />
     </Tabs>
   );
 }

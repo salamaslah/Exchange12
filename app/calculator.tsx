@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { currencyService } from '@/lib/supabase';
+import { currencyService, couponService } from '@/lib/supabase';
 import { useInactivityTimer } from '@/hooks/useInactivityTimer';
 
 export default function CalculatorScreen() {
@@ -14,6 +14,10 @@ export default function CalculatorScreen() {
   const [calculationDetails, setCalculationDetails] = useState('');
   const [language, setLanguage] = useState<'ar' | 'he' | 'en'>('ar');
   const [loading, setLoading] = useState(true);
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [couponError, setCouponError] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
   const router = useRouter();
   const { resetTimer } = useInactivityTimer();
 
@@ -77,8 +81,8 @@ export default function CalculatorScreen() {
     let result = 0;
     let details = '';
 
-    const fromCurrencyData = allCurrencies.find(c => c.code === fromCurrency);
-    const toCurrencyData = allCurrencies.find(c => c.code === toCurrency);
+    const fromCurrencyData = getEffectiveRates(fromCurrency);
+    const toCurrencyData = getEffectiveRates(toCurrency);
 
     if ((fromCurrency !== 'ILS' && !fromCurrencyData) || (toCurrency !== 'ILS' && !toCurrencyData)) {
       setCalculationDetails('عملة غير موجودة');
@@ -190,10 +194,67 @@ export default function CalculatorScreen() {
     resetTimer();
   };
 
+  // Get effective rates (overridden by coupon if applicable)
+  const getEffectiveRates = (code: string) => {
+    const base = allCurrencies.find(c => c.code === code);
+    if (!base) return base;
+    if (
+      appliedCoupon &&
+      appliedCoupon.type === 'currency_exchange' &&
+      appliedCoupon.currency_code === code
+    ) {
+      return {
+        ...base,
+        buy_rate: appliedCoupon.discounted_buy_rate ?? base.buy_rate,
+        sell_rate: appliedCoupon.discounted_sell_rate ?? base.sell_rate,
+      };
+    }
+    return base;
+  };
+
+  const applyCoupon = async () => {
+    const code = couponCode.trim().toUpperCase();
+    if (!code) return;
+    setCouponLoading(true);
+    setCouponError('');
+    try {
+      const coupon = await couponService.getByCode(code);
+      if (!coupon) {
+        setCouponError(language === 'ar' ? 'رمز الكوبون غير صحيح' : language === 'he' ? 'קוד קופון שגוי' : 'Invalid coupon code');
+        return;
+      }
+      if (coupon.is_used) {
+        setCouponError(language === 'ar' ? 'هذا الكوبون مستخدم مسبقاً' : 'Coupon already used');
+        return;
+      }
+      if (!coupon.is_active) {
+        setCouponError(language === 'ar' ? 'هذا الكوبون غير فعّال' : 'Coupon is not active');
+        return;
+      }
+      if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
+        setCouponError(language === 'ar' ? 'انتهت صلاحية هذا الكوبون' : 'Coupon has expired');
+        return;
+      }
+      setAppliedCoupon(coupon);
+      // Recalculate with new rates
+      if (fromAmount) calculateConversion(fromAmount, 'left');
+    } catch (e) {
+      setCouponError(language === 'ar' ? 'خطأ في التحقق من الكوبون' : 'Error verifying coupon');
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode('');
+    setCouponError('');
+    if (fromAmount) calculateConversion(fromAmount, 'left');
+  };
+
   const handleProceedToTransaction = async () => {
     try {
       console.log('🔄 بدء عملية المتابعة للمعاملة...');
-      console.log('📊 بيانات الآلة الحاسبة:', { fromCurrency, toCurrency, fromAmount, toAmount });
 
       const calculatorTransactionData = {
         fromCurrency,
@@ -202,12 +263,19 @@ export default function CalculatorScreen() {
         toAmount,
         calculationDetails,
         timestamp: new Date().toISOString(),
-        isFromCalculator: true
+        isFromCalculator: true,
+        couponCode: appliedCoupon?.code ?? null,
+        couponId: appliedCoupon?.id ?? null,
       };
 
       await AsyncStorage.setItem('fromCalculator', 'true');
       await AsyncStorage.setItem('calculatorData', JSON.stringify(calculatorTransactionData));
       await AsyncStorage.setItem('calculatorTransactionReady', 'true');
+
+      // Mark coupon as used
+      if (appliedCoupon?.id) {
+        await couponService.markUsed(appliedCoupon.id);
+      }
 
       console.log('✅ تم حفظ بيانات الآلة الحاسبة:', calculatorTransactionData);
 
@@ -379,29 +447,76 @@ export default function CalculatorScreen() {
         <View style={styles.ratesInfo}>
           {fromCurrency !== 'ILS' && (
             <Text style={styles.rateInfoText}>
-              {fromCurrency}: {language === 'ar' ? 'شراء' : language === 'he' ? 'קנייה' : 'Buy'} {allCurrencies.find(c => c.code === fromCurrency)?.buy_rate?.toFixed(2) || 'N/A'} |
-              <Text>{language === 'ar' ? 'بيع' : language === 'he' ? 'מכירה' : 'Sell'} {allCurrencies.find(c => c.code === fromCurrency)?.sell_rate?.toFixed(2) || 'N/A'}</Text>
+              {fromCurrency}: {language === 'ar' ? 'شراء' : language === 'he' ? 'קנייה' : 'Buy'} {getEffectiveRates(fromCurrency)?.buy_rate?.toFixed(2) || 'N/A'} |
+              <Text>{language === 'ar' ? 'بيع' : language === 'he' ? 'מכירה' : 'Sell'} {getEffectiveRates(fromCurrency)?.sell_rate?.toFixed(2) || 'N/A'}</Text>
             </Text>
           )}
           {toCurrency !== 'ILS' && (
             <Text style={styles.rateInfoText}>
-              {toCurrency}: {language === 'ar' ? 'شراء' : language === 'he' ? 'קנייה' : 'Buy'} {allCurrencies.find(c => c.code === toCurrency)?.buy_rate?.toFixed(2) || 'N/A'} |
-              <Text>{language === 'ar' ? 'بيع' : language === 'he' ? 'מכירה' : 'Sell'} {allCurrencies.find(c => c.code === toCurrency)?.sell_rate?.toFixed(2) || 'N/A'}</Text>
+              {toCurrency}: {language === 'ar' ? 'شراء' : language === 'he' ? 'קנייה' : 'Buy'} {getEffectiveRates(toCurrency)?.buy_rate?.toFixed(2) || 'N/A'} |
+              <Text>{language === 'ar' ? 'بيع' : language === 'he' ? 'מכירה' : 'Sell'} {getEffectiveRates(toCurrency)?.sell_rate?.toFixed(2) || 'N/A'}</Text>
             </Text>
           )}
         </View>
 
         {fromAmount && toAmount && (
-          <TouchableOpacity
-            style={styles.proceedButton}
-            onPress={handleProceedToTransaction}
-          >
-            <Text style={styles.proceedButtonText}>
-              {language === 'ar' && 'المتابعة للمعاملة'}
-              {language === 'he' && 'המשך לעסקה'}
-              {language === 'en' && 'Proceed to Transaction'}
-            </Text>
-          </TouchableOpacity>
+          <>
+            {/* Coupon section */}
+            <View style={styles.couponSection}>
+              <Text style={styles.couponSectionTitle}>
+                {language === 'ar' ? '🎟️ لديك كوبون خصم؟' : language === 'he' ? '🎟️ יש לך קופון?' : '🎟️ Have a coupon?'}
+              </Text>
+
+              {appliedCoupon ? (
+                <View style={styles.couponApplied}>
+                  <View style={styles.couponAppliedLeft}>
+                    <Text style={styles.couponAppliedCode}>{appliedCoupon.code}</Text>
+                    <Text style={styles.couponAppliedDesc}>
+                      {appliedCoupon.type === 'currency_exchange'
+                        ? (language === 'ar' ? `سعر مخصوص على ${appliedCoupon.currency_code}` : `Special rate for ${appliedCoupon.currency_code}`)
+                        : (language === 'ar' ? `خصم ${appliedCoupon.discount_percentage}% على التحويل` : `${appliedCoupon.discount_percentage}% transfer discount`)}
+                    </Text>
+                  </View>
+                  <TouchableOpacity onPress={removeCoupon} style={styles.couponRemoveBtn}>
+                    <Text style={styles.couponRemoveTxt}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.couponInputRow}>
+                  <TextInput
+                    style={styles.couponInput}
+                    value={couponCode}
+                    onChangeText={text => { setCouponCode(text); setCouponError(''); }}
+                    placeholder={language === 'ar' ? 'أدخل رمز الكوبون' : language === 'he' ? 'הכנס קוד קופון' : 'Enter coupon code'}
+                    placeholderTextColor="#9CA3AF"
+                    autoCapitalize="characters"
+                  />
+                  <TouchableOpacity
+                    style={[styles.couponApplyBtn, couponLoading && { opacity: 0.6 }]}
+                    onPress={applyCoupon}
+                    disabled={couponLoading}
+                  >
+                    <Text style={styles.couponApplyTxt}>
+                      {couponLoading ? '...' : (language === 'ar' ? 'تطبيق' : language === 'he' ? 'החל' : 'Apply')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {couponError ? <Text style={styles.couponError}>{couponError}</Text> : null}
+            </View>
+
+            <TouchableOpacity
+              style={styles.proceedButton}
+              onPress={handleProceedToTransaction}
+            >
+              <Text style={styles.proceedButtonText}>
+                {language === 'ar' && 'المتابعة للمعاملة'}
+                {language === 'he' && 'המשך לעסקה'}
+                {language === 'en' && 'Proceed to Transaction'}
+              </Text>
+            </TouchableOpacity>
+          </>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -630,5 +745,91 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  couponSection: {
+    backgroundColor: '#FFFBEB',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  couponSectionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#92400E',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  couponInputRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  couponInput: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1F2937',
+    letterSpacing: 1,
+  },
+  couponApplyBtn: {
+    backgroundColor: '#C8A84B',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  couponApplyTxt: {
+    color: '#1A2332',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  couponApplied: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#D1FAE5',
+    borderRadius: 10,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#6EE7B7',
+  },
+  couponAppliedLeft: { flex: 1 },
+  couponAppliedCode: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#065F46',
+    letterSpacing: 1,
+  },
+  couponAppliedDesc: {
+    fontSize: 12,
+    color: '#047857',
+    marginTop: 2,
+    fontWeight: '600',
+  },
+  couponRemoveBtn: {
+    backgroundColor: '#FCA5A5',
+    borderRadius: 16,
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  couponRemoveTxt: {
+    color: '#991B1B',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  couponError: {
+    color: '#DC2626',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 6,
+    textAlign: 'center',
   },
 });

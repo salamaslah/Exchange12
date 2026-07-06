@@ -132,6 +132,20 @@ export default function AccountingScreen() {
               <Text style={styles.buttonArrow}>←</Text>
             </View>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.settingButton}
+            onPress={() => router.push('/(tabs)/coupons')}
+          >
+            <View style={styles.buttonContent}>
+              <Text style={styles.buttonIcon}>🎟️</Text>
+              <View style={styles.buttonTextContainer}>
+                <Text style={styles.buttonTitle}>إدارة الكوبونات</Text>
+                <Text style={styles.buttonDescription}>إنشاء كوبونات خصم للزبائن</Text>
+              </View>
+              <Text style={styles.buttonArrow}>←</Text>
+            </View>
+          </TouchableOpacity>
         </View>
       </View>
     </ScrollView>
