@@ -533,7 +533,7 @@ export default function PricesScreen() {
               {/* Unavailable overlay */}
               {!currency.is_active && (
                 <View style={s.unavailOverlay}>
-                  <Text style={s.unavailText}>
+                  <Text style={[s.unavailText, isLargeScreen && { fontSize: 32, lineHeight: 42 }]}>
                     {language === 'ar' ? '⚠️ غير متوفر' : language === 'he' ? '⚠️ לא זמין' : '⚠️ Unavailable'}
                   </Text>
                 </View>
@@ -922,15 +922,15 @@ const s = StyleSheet.create({
     borderColor: '#E2EBF0',
   },
   cardSelected: { borderWidth: 2, borderColor: GOLD },
-  cardInactive: { opacity: 0.55 },
+  cardInactive: { opacity: 0.35 },
 
   unavailOverlay: {
     position: 'absolute', inset: 0, zIndex: 10,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.72)',
     justifyContent: 'center', alignItems: 'center',
     borderRadius: 14,
   },
-  unavailText: { color: WHITE, fontSize: 11, fontWeight: '700', textAlign: 'center', lineHeight: 18 },
+  unavailText: { color: '#FF5555', fontSize: 16, fontWeight: '900', textAlign: 'center', lineHeight: 22, letterSpacing: 0.5 },
 
   cardFlagArea: {
     alignItems: 'center',
@@ -1018,18 +1018,18 @@ const s = StyleSheet.create({
   servicesRow: { flexDirection: 'row', gap: 8 },
   serviceCard: {
     flex: 1, alignItems: 'center',
-    backgroundColor: BG2, borderRadius: 12, paddingVertical: 14,
+    backgroundColor: BG2, borderRadius: 12, paddingVertical: 28,
     borderWidth: 1, borderColor: GOLD + '40',
     ...SHADOW,
   },
   serviceIconWrap: {
-    width: 44, height: 44, borderRadius: 22,
+    width: 88, height: 88, borderRadius: 44,
     backgroundColor: WHITE + '15',
     alignItems: 'center', justifyContent: 'center',
-    marginBottom: 6,
+    marginBottom: 12,
   },
-  serviceIcon: { fontSize: 22 },
-  serviceLabel: { color: WHITE, fontSize: 10, fontWeight: '600', textAlign: 'center' },
+  serviceIcon: { fontSize: 44 },
+  serviceLabel: { color: WHITE, fontSize: 20, fontWeight: '600', textAlign: 'center' },
 
   /* Working hours */
   whRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
