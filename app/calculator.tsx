@@ -236,8 +236,6 @@ export default function CalculatorScreen() {
         return;
       }
       setAppliedCoupon(coupon);
-      // Recalculate with new rates
-      if (fromAmount) calculateConversion(fromAmount, 'left');
     } catch (e) {
       setCouponError(language === 'ar' ? 'خطأ في التحقق من الكوبون' : 'Error verifying coupon');
     } finally {
@@ -249,8 +247,11 @@ export default function CalculatorScreen() {
     setAppliedCoupon(null);
     setCouponCode('');
     setCouponError('');
-    if (fromAmount) calculateConversion(fromAmount, 'left');
   };
+
+  useEffect(() => {
+    if (fromAmount) calculateConversion(fromAmount, 'left');
+  }, [appliedCoupon]);
 
   const handleProceedToTransaction = async () => {
     try {
@@ -459,64 +460,64 @@ export default function CalculatorScreen() {
           )}
         </View>
 
-        {fromAmount && toAmount && (
-          <>
-            {/* Coupon section */}
-            <View style={styles.couponSection}>
-              <Text style={styles.couponSectionTitle}>
-                {language === 'ar' ? '🎟️ لديك كوبون خصم؟' : language === 'he' ? '🎟️ יש לך קופון?' : '🎟️ Have a coupon?'}
-              </Text>
+        {/* Coupon section - always visible */}
+        <View style={styles.couponSection}>
+          <Text style={styles.couponSectionTitle}>
+            {language === 'ar' ? '🎟️ لديك كوبون خصم؟' : language === 'he' ? '🎟️ יש לך קופון?' : '🎟️ Have a coupon?'}
+          </Text>
 
-              {appliedCoupon ? (
-                <View style={styles.couponApplied}>
-                  <View style={styles.couponAppliedLeft}>
-                    <Text style={styles.couponAppliedCode}>{appliedCoupon.code}</Text>
-                    <Text style={styles.couponAppliedDesc}>
-                      {appliedCoupon.type === 'currency_exchange'
-                        ? (language === 'ar' ? `سعر مخصوص على ${appliedCoupon.currency_code}` : `Special rate for ${appliedCoupon.currency_code}`)
-                        : (language === 'ar' ? `خصم ${appliedCoupon.discount_percentage}% على التحويل` : `${appliedCoupon.discount_percentage}% transfer discount`)}
-                    </Text>
-                  </View>
-                  <TouchableOpacity onPress={removeCoupon} style={styles.couponRemoveBtn}>
-                    <Text style={styles.couponRemoveTxt}>✕</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <View style={styles.couponInputRow}>
-                  <TextInput
-                    style={styles.couponInput}
-                    value={couponCode}
-                    onChangeText={text => { setCouponCode(text); setCouponError(''); }}
-                    placeholder={language === 'ar' ? 'أدخل رمز الكوبون' : language === 'he' ? 'הכנס קוד קופון' : 'Enter coupon code'}
-                    placeholderTextColor="#9CA3AF"
-                    autoCapitalize="characters"
-                  />
-                  <TouchableOpacity
-                    style={[styles.couponApplyBtn, couponLoading && { opacity: 0.6 }]}
-                    onPress={applyCoupon}
-                    disabled={couponLoading}
-                  >
-                    <Text style={styles.couponApplyTxt}>
-                      {couponLoading ? '...' : (language === 'ar' ? 'تطبيق' : language === 'he' ? 'החל' : 'Apply')}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-
-              {couponError ? <Text style={styles.couponError}>{couponError}</Text> : null}
+          {appliedCoupon ? (
+            <View style={styles.couponApplied}>
+              <View style={styles.couponAppliedLeft}>
+                <Text style={styles.couponAppliedCode}>{appliedCoupon.code}</Text>
+                <Text style={styles.couponAppliedDesc}>
+                  {appliedCoupon.type === 'currency_exchange'
+                    ? (language === 'ar'
+                        ? `سعر مخصوص على ${appliedCoupon.currency_code}${appliedCoupon.discounted_buy_rate ? ` — شراء: ${appliedCoupon.discounted_buy_rate.toFixed(4)}` : ''}${appliedCoupon.discounted_sell_rate ? ` | بيع: ${appliedCoupon.discounted_sell_rate.toFixed(4)}` : ''}`
+                        : `Special rate for ${appliedCoupon.currency_code}${appliedCoupon.discounted_buy_rate ? ` — Buy: ${appliedCoupon.discounted_buy_rate.toFixed(4)}` : ''}${appliedCoupon.discounted_sell_rate ? ` | Sell: ${appliedCoupon.discounted_sell_rate.toFixed(4)}` : ''}`)
+                    : (language === 'ar' ? `خصم ${appliedCoupon.discount_percentage}% على التحويل` : `${appliedCoupon.discount_percentage}% transfer discount`)}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={removeCoupon} style={styles.couponRemoveBtn}>
+                <Text style={styles.couponRemoveTxt}>✕</Text>
+              </TouchableOpacity>
             </View>
+          ) : (
+            <View style={styles.couponInputRow}>
+              <TextInput
+                style={styles.couponInput}
+                value={couponCode}
+                onChangeText={text => { setCouponCode(text); setCouponError(''); }}
+                placeholder={language === 'ar' ? 'أدخل رمز الكوبون' : language === 'he' ? 'הכנס קוד קופון' : 'Enter coupon code'}
+                placeholderTextColor="#9CA3AF"
+                autoCapitalize="characters"
+              />
+              <TouchableOpacity
+                style={[styles.couponApplyBtn, couponLoading && { opacity: 0.6 }]}
+                onPress={applyCoupon}
+                disabled={couponLoading}
+              >
+                <Text style={styles.couponApplyTxt}>
+                  {couponLoading ? '...' : (language === 'ar' ? 'تطبيق' : language === 'he' ? 'החל' : 'Apply')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
-            <TouchableOpacity
-              style={styles.proceedButton}
-              onPress={handleProceedToTransaction}
-            >
-              <Text style={styles.proceedButtonText}>
-                {language === 'ar' && 'المتابعة للمعاملة'}
-                {language === 'he' && 'המשך לעסקה'}
-                {language === 'en' && 'Proceed to Transaction'}
-              </Text>
-            </TouchableOpacity>
-          </>
+          {couponError ? <Text style={styles.couponError}>{couponError}</Text> : null}
+        </View>
+
+        {fromAmount && toAmount && (
+          <TouchableOpacity
+            style={styles.proceedButton}
+            onPress={handleProceedToTransaction}
+          >
+            <Text style={styles.proceedButtonText}>
+              {language === 'ar' && 'المتابعة للمعاملة'}
+              {language === 'he' && 'המשך לעסקה'}
+              {language === 'en' && 'Proceed to Transaction'}
+            </Text>
+          </TouchableOpacity>
         )}
       </ScrollView>
     </SafeAreaView>
