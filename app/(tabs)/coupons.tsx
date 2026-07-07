@@ -3,6 +3,17 @@ import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
   TextInput, Modal, SafeAreaView, Alert, Dimensions, Platform,
 } from 'react-native';
+
+const confirmAction = (title: string, message: string, onConfirm: () => void) => {
+  if (Platform.OS === 'web') {
+    if (window.confirm(`${title}\n${message}`)) onConfirm();
+  } else {
+    Alert.alert(title, message, [
+      { text: 'إلغاء', style: 'cancel' },
+      { text: 'حذف', style: 'destructive', onPress: onConfirm },
+    ]);
+  }
+};
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { couponService, currencyService } from '@/lib/supabase';
@@ -177,20 +188,16 @@ export default function CouponsScreen() {
   };
 
   const handleDelete = (coupon: Coupon) => {
-    Alert.alert(
-      language === 'ar' ? 'حذف الكوبون' : 'Delete Coupon',
-      language === 'ar' ? `هل تريد حذف الكوبون ${coupon.code}؟` : `Delete coupon ${coupon.code}?`,
-      [
-        { text: language === 'ar' ? 'إلغاء' : 'Cancel', style: 'cancel' },
-        {
-          text: language === 'ar' ? 'حذف' : 'Delete', style: 'destructive',
-          onPress: async () => {
-            await couponService.delete(coupon.id);
-            await loadData();
-          }
-        }
-      ]
-    );
+    const title = language === 'ar' ? 'حذف الكوبون' : 'Delete Coupon';
+    const message = language === 'ar' ? `هل تريد حذف الكوبون ${coupon.code}؟` : `Delete coupon ${coupon.code}?`;
+    confirmAction(title, message, async () => {
+      try {
+        await couponService.delete(coupon.id);
+        await loadData();
+      } catch (e) {
+        console.error(e);
+      }
+    });
   };
 
   const statusLabel = (c: Coupon) => {
