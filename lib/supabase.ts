@@ -32,22 +32,24 @@ export const currencyService = {
     try {
       console.log('🔄 جلب جميع العملات من قاعدة البيانات...');
 
-      // جلب العمولات الخاصة بالمحل من جدول العمولات
-      let shopCommissions: { [code: string]: { buy: number; sell: number } } = {};
+      // جلب العمولات والأسعار الخاصة بالمحل من جدول العمولات
+      let shopCommissions: { [code: string]: { buy: number; sell: number; buy_rate: number | null; sell_rate: number | null } } = {};
       const effectiveShop = shopUsername || 'admin';
       if (isSupabaseConfigured()) {
         const { data: commData, error: commError } = await supabase!
           .from('commissions')
-          .select('currency_code, buy_commission, sell_commission')
+          .select('currency_code, buy_commission, sell_commission, buy_rate, sell_rate')
           .eq('shop_username', effectiveShop);
         if (!commError && commData) {
           commData.forEach((c: any) => {
             shopCommissions[c.currency_code] = {
               buy: c.buy_commission,
               sell: c.sell_commission,
+              buy_rate: c.buy_rate,
+              sell_rate: c.sell_rate,
             };
           });
-          console.log(`✅ تم جلب عمولات للمحل: ${effectiveShop} (${commData.length} عملة)`);
+          console.log(`✅ تم جلب عمولات وأسعار للمحل: ${effectiveShop} (${commData.length} عملة)`);
         }
       }
       
@@ -69,10 +71,11 @@ export const currencyService = {
           if (currency.current_rate && currency.current_rate > 0) {
             const buyCommissionShekel = buyComm / 100;
             const sellCommissionShekel = sellComm / 100;
-            
-            const buyRate = currency.current_rate - buyCommissionShekel;
-            const sellRate = currency.current_rate + sellCommissionShekel;
-            
+
+            // استخدام الأسعار المخزنة في جدول العمولات إن وجدت، وإلا حسابها
+            const buyRate = shopComm?.buy_rate != null ? shopComm.buy_rate : currency.current_rate - buyCommissionShekel;
+            const sellRate = shopComm?.sell_rate != null ? shopComm.sell_rate : currency.current_rate + sellCommissionShekel;
+
             return {
               ...currency,
               buy_commission: buyComm,
@@ -153,8 +156,6 @@ export const currencyService = {
       const newCurrency = {
         ...currency,
         id: Date.now().toString(),
-        buy_rate: currency.buy_rate || 3.18,
-        sell_rate: currency.sell_rate || 3.30,
         is_active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -204,12 +205,41 @@ export const currencyService = {
       console.log(`🔄 تحديث العملة ${id} في جدول currencies`);
       console.log('📊 البيانات المرسلة:', currency);
       
+      // فصل حقول الأسعار (buy_rate/sell_rate) عن باقي الحقول
+      // buy_rate و sell_rate ينتقلان إلى جدول العمولات
+      const { buy_rate, sell_rate, ...currencyFields } = currency;
+      
       if (isSupabaseConfigured()) {
-        const { data, error } = await supabase!
-          .from('currencies')
-          .update(currency)
-          .eq('id', id);
-        if (error) throw error;
+        // تحديث جدول العملات بالحقول العادية فقط
+        if (Object.keys(currencyFields).length > 0) {
+          const { data, error } = await supabase!
+            .from('currencies')
+            .update(currencyFields)
+            .eq('id', id);
+          if (error) throw error;
+        }
+
+        // تحديث أسعار الشراء والبيع في جدول العمولات
+        if (buy_rate !== undefined || sell_rate !== undefined) {
+          // جلب رمز العملة من جدول العملات
+          const { data: curData } = await supabase!
+            .from('currencies')
+            .select('code')
+            .eq('id', id)
+            .single();
+          if (curData) {
+            const { data: commData } = await supabase!
+              .from('commissions')
+              .select('buy_commission, sell_commission')
+              .eq('shop_username', 'admin')
+              .eq('currency_code', curData.code)
+              .maybeSingle();
+            const buyComm = commData?.buy_commission ?? 6;
+            const sellComm = commData?.sell_commission ?? 6;
+            await commissionService.upsert('admin', curData.code, buyComm, sellComm, buy_rate, sell_rate);
+            console.log(`✅ تم تحديث buy_rate/sell_rate في جدول العمولات للعملة ${curData.code}`);
+          }
+        }
       }
       
       if (currency.is_active !== undefined) {
@@ -217,12 +247,6 @@ export const currencyService = {
       }
       if (currency.current_rate !== undefined) {
         console.log(`✅ تم تحديث عمود current_rate إلى ${currency.current_rate} في جدول currencies للعملة ${id}`);
-      }
-      if (currency.buy_rate !== undefined) {
-        console.log(`✅ تم تحديث عمود buy_rate إلى ${currency.buy_rate} في جدول currencies للعملة ${id}`);
-      }
-      if (currency.sell_rate !== undefined) {
-        console.log(`✅ تم تحديث عمود sell_rate إلى ${currency.sell_rate} في جدول currencies للعملة ${id}`);
       }
       
       // تحديث التخزين المحلي
@@ -1095,20 +1119,20 @@ export const commissionService = {
     }
   },
 
-  async upsert(shopUsername: string, currencyCode: string, buyCommission: number, sellCommission: number) {
+  async upsert(shopUsername: string, currencyCode: string, buyCommission: number, sellCommission: number, buyRate?: number, sellRate?: number) {
     if (isSupabaseConfigured()) {
+      const payload: any = {
+        shop_username: shopUsername,
+        currency_code: currencyCode,
+        buy_commission: buyCommission,
+        sell_commission: sellCommission,
+        updated_at: new Date().toISOString(),
+      };
+      if (buyRate !== undefined) payload.buy_rate = buyRate;
+      if (sellRate !== undefined) payload.sell_rate = sellRate;
       const { data, error } = await supabase!
         .from('commissions')
-        .upsert(
-          {
-            shop_username: shopUsername,
-            currency_code: currencyCode,
-            buy_commission: buyCommission,
-            sell_commission: sellCommission,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'shop_username,currency_code' }
-        )
+        .upsert(payload, { onConflict: 'shop_username,currency_code' })
         .select()
         .single();
       if (error) throw error;

@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { currencyService, supabase } from './supabase';
+import { currencyService, commissionService, supabase } from './supabase';
 
 // ExchangeRate-API service
 export class ExchangeRateAPIService {
@@ -261,10 +261,10 @@ export class ExchangeRateAPIService {
           // تحديث العملة في قاعدة البيانات
           await currencyService.update(currency.id, {
             current_rate: roundedRate,
-            buy_rate: buyRate,
-            sell_rate: sellRate,
             updated_at: new Date().toISOString()
           });
+          // تحديث أسعار الشراء والبيع في جدول العمولات
+          await commissionService.upsert('admin', currency.code, currency.buy_commission ?? 6, currency.sell_commission ?? 6, buyRate, sellRate);
 
           updatedCount++;
           console.log(`✅ تم تحديث ${currency.name_ar} (${currency.code}): ${roundedRate.toFixed(2)}`);

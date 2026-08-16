@@ -365,10 +365,10 @@ export default function CurrencyManagementScreen() {
 
       await currencyService.update(editingRateCurrency.id, {
         current_rate: newRate,
-        buy_rate: buyRate,
-        sell_rate: sellRate,
         updated_at: new Date().toISOString()
       });
+      // تحديث أسعار الشراء والبيع في جدول العمولات
+      await commissionService.upsert('admin', editingRateCurrency.code, editingRateCurrency.buy_commission ?? 6, editingRateCurrency.sell_commission ?? 6, buyRate, sellRate);
 
       await loadCurrencies();
       setShowEditRateModal(false);
