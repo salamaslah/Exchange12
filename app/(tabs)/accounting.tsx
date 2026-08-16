@@ -28,6 +28,8 @@ export default function AccountingScreen() {
     await AsyncStorage.removeItem('isAdminLoggedIn');
     await AsyncStorage.removeItem('adminLoginTime');
     await AsyncStorage.removeItem('adminUsername');
+    await AsyncStorage.removeItem('savedAdminUsername');
+    await AsyncStorage.removeItem('savedAdminPassword');
     router.replace('/');
   };
 

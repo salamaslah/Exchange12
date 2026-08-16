@@ -31,6 +31,8 @@ export default function LoginScreen() {
         await AsyncStorage.setItem('shopNameAr', result.shop.shop_name_ar || '');
         await AsyncStorage.setItem('shopNameHe', result.shop.shop_name_he || '');
         await AsyncStorage.setItem('shopNameEn', result.shop.shop_name_en || '');
+        await AsyncStorage.setItem('savedShopUsername', username.trim());
+        await AsyncStorage.setItem('savedShopPassword', password);
 
         router.replace('/(tabs)/prices');
       } else {

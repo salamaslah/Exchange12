@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -7,9 +7,32 @@ import { exchangeShopService } from '@/lib/supabase';
 export default function AdminLoginScreen() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const savedUsername = await AsyncStorage.getItem('savedAdminUsername');
+        const savedPassword = await AsyncStorage.getItem('savedAdminPassword');
+        if (savedUsername && savedPassword) {
+          const result = await exchangeShopService.login(savedUsername, savedPassword);
+          if (result.success && result.shop) {
+            await AsyncStorage.setItem('isAdminLoggedIn', 'true');
+            await AsyncStorage.setItem('adminLoginTime', new Date().toISOString());
+            await AsyncStorage.setItem('adminUsername', result.shop.username);
+            router.replace('/(tabs)/accounting');
+            return;
+          }
+        }
+      } catch {
+        // ignore and show login form
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   const handleLogin = async () => {
     if (!username.trim() || !password.trim()) {
@@ -27,6 +50,8 @@ export default function AdminLoginScreen() {
         await AsyncStorage.setItem('isAdminLoggedIn', 'true');
         await AsyncStorage.setItem('adminLoginTime', new Date().toISOString());
         await AsyncStorage.setItem('adminUsername', result.shop.username);
+        await AsyncStorage.setItem('savedAdminUsername', username.trim());
+        await AsyncStorage.setItem('savedAdminPassword', password);
 
         router.replace('/(tabs)/accounting');
       } else {
