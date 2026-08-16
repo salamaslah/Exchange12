@@ -28,14 +28,14 @@ export default function TreasuryScreen() {
 
   const checkLoginStatus = async () => {
     try {
-      const isLoggedIn = await AsyncStorage.getItem('isLoggedIn');
-      if (!isLoggedIn || isLoggedIn !== 'true') {
-        router.replace('/login');
+      const isAdminLoggedIn = await AsyncStorage.getItem('isAdminLoggedIn');
+      if (!isAdminLoggedIn || isAdminLoggedIn !== 'true') {
+        router.replace('/admin-login');
         return;
       }
     } catch (error) {
       console.log('Error checking login status:', error);
-      router.replace('/login');
+      router.replace('/admin-login');
     }
   };
 
@@ -188,9 +188,10 @@ export default function TreasuryScreen() {
   };
 
   const handleLogout = async () => {
-    await AsyncStorage.removeItem('isLoggedIn');
-    await AsyncStorage.removeItem('loginTime');
-    router.replace('/');
+    await AsyncStorage.removeItem('isAdminLoggedIn');
+    await AsyncStorage.removeItem('adminLoginTime');
+    await AsyncStorage.removeItem('adminUsername');
+    router.replace('/admin-login');
   };
 
   const getTotalValue = () => {

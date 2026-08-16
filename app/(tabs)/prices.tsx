@@ -445,7 +445,7 @@ export default function PricesScreen() {
 
           {/* Right: Logo + Lang switcher */}
           <View style={[s.headerRight, isLargeScreen && s.headerRightLarge]}>
-            <TouchableOpacity style={[s.logoCircle, isLargeScreen && s.logoCircleLarge]} onPress={() => router.push('/login')}>
+            <TouchableOpacity style={[s.logoCircle, isLargeScreen && s.logoCircleLarge]} onPress={() => router.push('/admin-login')}>
               <Text style={[s.logoSymbol, isLargeScreen && s.logoSymbolLarge]}>€$</Text>
             </TouchableOpacity>
             <View style={[s.langRow, isLargeScreen && s.langRowLarge]}>

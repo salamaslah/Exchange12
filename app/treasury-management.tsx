@@ -49,15 +49,15 @@ export default function TreasuryManagement() {
 
   const checkAuth = async () => {
     try {
-      const isLoggedIn = await AsyncStorage.getItem('isLoggedIn');
-      if (!isLoggedIn || isLoggedIn !== 'true') {
-        router.replace('/login');
+      const isAdminLoggedIn = await AsyncStorage.getItem('isAdminLoggedIn');
+      if (!isAdminLoggedIn || isAdminLoggedIn !== 'true') {
+        router.replace('/admin-login');
         return;
       }
       fetchBalances();
     } catch (error) {
       console.error('Error checking auth:', error);
-      router.replace('/login');
+      router.replace('/admin-login');
     }
   };
 
@@ -184,9 +184,10 @@ export default function TreasuryManagement() {
   };
 
   const handleLogout = async () => {
-    await AsyncStorage.removeItem('isLoggedIn');
-    await AsyncStorage.removeItem('loginTime');
-    router.replace('/login');
+    await AsyncStorage.removeItem('isAdminLoggedIn');
+    await AsyncStorage.removeItem('adminLoginTime');
+    await AsyncStorage.removeItem('adminUsername');
+    router.replace('/admin-login');
   };
 
   const handleCloseTreasury = () => {

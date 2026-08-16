@@ -12,21 +12,22 @@ export default function AccountingScreen() {
 
   const checkLoginStatus = async () => {
     try {
-      const isLoggedIn = await AsyncStorage.getItem('isLoggedIn');
-      if (!isLoggedIn || isLoggedIn !== 'true') {
-        // إذا لم يكن مسجل دخول، توجيه لصفحة تسجيل الدخول
-        router.replace('/login');
+      const isAdminLoggedIn = await AsyncStorage.getItem('isAdminLoggedIn');
+      if (!isAdminLoggedIn || isAdminLoggedIn !== 'true') {
+        // إذا لم يكن مسجل دخول كمدير، توجيه لصفحة تسجيل دخول الإدارة
+        router.replace('/admin-login');
         return;
       }
     } catch (error) {
       console.log('Error checking login status:', error);
-      router.replace('/login');
+      router.replace('/admin-login');
     }
   };
 
   const handleLogout = async () => {
-    await AsyncStorage.removeItem('isLoggedIn');
-    await AsyncStorage.removeItem('loginTime');
+    await AsyncStorage.removeItem('isAdminLoggedIn');
+    await AsyncStorage.removeItem('adminLoginTime');
+    await AsyncStorage.removeItem('adminUsername');
     router.replace('/');
   };
 
