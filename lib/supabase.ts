@@ -32,13 +32,14 @@ export const currencyService = {
     try {
       console.log('🔄 جلب جميع العملات من قاعدة البيانات...');
 
-      // جلب العمولات الخاصة بالمحل إذا تم تمرير اسم المستخدم
+      // جلب العمولات الخاصة بالمحل من جدول العمولات
       let shopCommissions: { [code: string]: { buy: number; sell: number } } = {};
-      if (shopUsername && isSupabaseConfigured()) {
+      const effectiveShop = shopUsername || 'admin';
+      if (isSupabaseConfigured()) {
         const { data: commData, error: commError } = await supabase!
           .from('commissions')
           .select('currency_code, buy_commission, sell_commission')
-          .eq('shop_username', shopUsername);
+          .eq('shop_username', effectiveShop);
         if (!commError && commData) {
           commData.forEach((c: any) => {
             shopCommissions[c.currency_code] = {
@@ -46,7 +47,7 @@ export const currencyService = {
               sell: c.sell_commission,
             };
           });
-          console.log(`✅ تم جلب عمولات خاصة للمحل: ${shopUsername} (${commData.length} عملة)`);
+          console.log(`✅ تم جلب عمولات للمحل: ${effectiveShop} (${commData.length} عملة)`);
         }
       }
       
@@ -59,19 +60,16 @@ export const currencyService = {
         if (error) throw error;
         console.log(`✅ تم جلب ${data?.length || 0} عملة من قاعدة البيانات Supabase`);
         
-        // حساب أسعار الشراء والبيع من السعر الحالي والعمولات
+        // حساب أسعار الشراء والبيع من السعر الحالي والعمولات من جدول العمولات
         const currenciesWithRates = (data || []).map(currency => {
-          // استخدام عمولة المحل إن وجدت، وإلا العمولة الافتراضية من جدول العملات
           const shopComm = shopCommissions[currency.code];
-          const buyComm = shopComm ? shopComm.buy : (currency.buy_commission || 6);
-          const sellComm = shopComm ? shopComm.sell : (currency.sell_commission || 6);
+          const buyComm = shopComm ? shopComm.buy : 6;
+          const sellComm = shopComm ? shopComm.sell : 6;
 
           if (currency.current_rate && currency.current_rate > 0) {
-            // تحويل العمولة من أجورات إلى شيقل (100 أجورة = 1 شيقل)
             const buyCommissionShekel = buyComm / 100;
             const sellCommissionShekel = sellComm / 100;
             
-            // حساب أسعار الشراء والبيع
             const buyRate = currency.current_rate - buyCommissionShekel;
             const sellRate = currency.current_rate + sellCommissionShekel;
             
@@ -114,8 +112,6 @@ export const currencyService = {
           current_rate: 3.65,
           buy_rate: 3.59,
           sell_rate: 3.71,
-          buy_commission: 6,
-          sell_commission: 6,
           is_active: true,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
@@ -129,8 +125,6 @@ export const currencyService = {
           current_rate: 3.95,
           buy_rate: 3.89,
           sell_rate: 4.01,
-          buy_commission: 6,
-          sell_commission: 6,
           is_active: true,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
@@ -161,8 +155,6 @@ export const currencyService = {
         id: Date.now().toString(),
         buy_rate: currency.buy_rate || 3.18,
         sell_rate: currency.sell_rate || 3.30,
-        buy_commission: currency.buy_commission || 6,
-        sell_commission: currency.sell_commission || 6,
         is_active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -179,11 +171,14 @@ export const currencyService = {
             code: newCurrency.code,
             name_ar: newCurrency.name_ar,
             name_en: newCurrency.name_en,
-            buy_commission: newCurrency.buy_commission,
-            sell_commission: newCurrency.sell_commission,
             is_active: true
           });
         if (error) throw error;
+
+        // إضافة عمولة افتراضية للمحل admin في جدول العمولات
+        if (currency.buy_commission !== undefined && currency.sell_commission !== undefined) {
+          await commissionService.upsert('admin', newCurrency.code, currency.buy_commission, currency.sell_commission);
+        }
       }
       
       console.log(`✅ تم إضافة العملة ${newCurrency.code} في جدول currencies مع is_active = true`);
@@ -219,12 +214,6 @@ export const currencyService = {
       
       if (currency.is_active !== undefined) {
         console.log(`✅ تم تحديث عمود is_active إلى ${currency.is_active} في جدول currencies للعملة ${id}`);
-      }
-      if (currency.buy_commission !== undefined) {
-        console.log(`✅ تم تحديث عمود buy_commission إلى ${currency.buy_commission} في جدول currencies للعملة ${id}`);
-      }
-      if (currency.sell_commission !== undefined) {
-        console.log(`✅ تم تحديث عمود sell_commission إلى ${currency.sell_commission} في جدول currencies للعملة ${id}`);
       }
       if (currency.current_rate !== undefined) {
         console.log(`✅ تم تحديث عمود current_rate إلى ${currency.current_rate} في جدول currencies للعملة ${id}`);

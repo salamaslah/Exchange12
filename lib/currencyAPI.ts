@@ -63,8 +63,8 @@ export const currencyAPI = {
         const currentRate = currentRates[currency.code as keyof typeof currentRates] || 0;
         const rates = this.calculateRatesWithCommission(
           currentRate,
-          currency.buy_commission || 6,
-          currency.sell_commission || 6
+          currency.buy_commission ?? 6,
+          currency.sell_commission ?? 6
         );
         
         return {

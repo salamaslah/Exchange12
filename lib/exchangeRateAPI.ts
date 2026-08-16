@@ -248,8 +248,8 @@ export class ExchangeRateAPIService {
 
         if (apiRate && apiRate > 0) {
           // حساب أسعار الشراء والبيع بناءً على العمولات
-          const buyCommissionShekel = (currency.buy_commission || 6) / 100;
-          const sellCommissionShekel = (currency.sell_commission || 6) / 100;
+          const buyCommissionShekel = (currency.buy_commission ?? 6) / 100;
+          const sellCommissionShekel = (currency.sell_commission ?? 6) / 100;
 
           // تقريب السعر الأساسي لمنزلتين
           const roundedRate = Math.round(apiRate * 100) / 100;

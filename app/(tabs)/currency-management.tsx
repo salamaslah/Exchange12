@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Modal, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { currencyService, currencyUpdateLogService, supabase } from '@/lib/supabase';
+import { currencyService, currencyUpdateLogService, commissionService, supabase } from '@/lib/supabase';
 import { exchangeRateAPI } from '@/lib/exchangeRateAPI';
 
 interface Currency {
@@ -199,8 +199,8 @@ export default function CurrencyManagementScreen() {
       setLoading(true);
       console.log('🔄 تحميل جميع العملات من قاعدة البيانات Supabase...');
       
-      // جلب العملات من قاعدة البيانات
-      const currenciesData = await currencyService.getAll();
+      // جلب العملات مع عمولات المحل admin
+      const currenciesData = await currencyService.getAll('admin');
       console.log(`✅ تم تحميل ${currenciesData.length} عملة من قاعدة البيانات Supabase`);
       
       // ترتيب العملات حسب sort_num تصاعدياً
@@ -401,17 +401,10 @@ export default function CurrencyManagementScreen() {
     try {
       console.log(`🔄 تحديث عمولة ${editType === 'buy' ? 'الشراء' : 'البيع'} للعملة ${editingCurrency.name_ar}`);
       
-      // تحضير البيانات للتحديث
-      const updateData: any = { updated_at: new Date().toISOString() };
-      
-      if (editType === 'buy') {
-        updateData.buy_commission = newCommission;
-      } else {
-        updateData.sell_commission = newCommission;
-      }
-      
-      // تحديث العملة في قاعدة البيانات
-      await currencyService.update(editingCurrency.id, updateData);
+      // تحديث العمولة في جدول العمولات لمحل admin
+      const newBuy = editType === 'buy' ? newCommission : (editingCurrency.buy_commission ?? 6);
+      const newSell = editType === 'sell' ? newCommission : (editingCurrency.sell_commission ?? 6);
+      await commissionService.upsert('admin', editingCurrency.code, newBuy, newSell);
       
       // إعادة تحميل العملات من قاعدة البيانات
       await loadCurrencies();
@@ -445,23 +438,20 @@ export default function CurrencyManagementScreen() {
       }
       
       // إنشاء عملة جديدة في قاعدة البيانات
+      const defaultRate = getDefaultRate(currencyData.code);
       const newCurrencyData = {
         code: currencyData.code,
         name_ar: currencyData.name_ar,
         name_en: currencyData.name_en,
         name_he: currencyData.name_he,
-        current_rate: getDefaultRate(currencyData.code),
-        buy_commission: 6,
-        sell_commission: 6,
+        current_rate: defaultRate,
         is_active: true
       };
       
-      // حساب أسعار الشراء والبيع
-      newCurrencyData.buy_rate = newCurrencyData.current_rate - (newCurrencyData.buy_commission / 100);
-      newCurrencyData.sell_rate = newCurrencyData.current_rate + (newCurrencyData.sell_commission / 100);
-      
       // إضافة العملة إلى قاعدة البيانات
       await currencyService.create(newCurrencyData);
+      // إضافة عمولة افتراضية في جدول العمولات
+      await commissionService.upsert('admin', currencyData.code, 6, 6);
       
       // إعادة تحميل العملات من قاعدة البيانات
       await loadCurrencies();
@@ -498,6 +488,71 @@ export default function CurrencyManagementScreen() {
 
   const handleLogout = async () => {
     router.replace('/(tabs)/accounting');
+  };
+
+  const saveNewCurrency = async () => {
+    if (!newCurrencyForm.code.trim()) {
+      Alert.alert('خطأ', 'يرجى إدخال رمز العملة');
+      return;
+    }
+    if (!newCurrencyForm.name_ar.trim()) {
+      Alert.alert('خطأ', 'يرجى إدخال اسم العملة بالعربية');
+      return;
+    }
+    if (!newCurrencyForm.name_en.trim()) {
+      Alert.alert('خطأ', 'يرجى إدخال اسم العملة بالإنجليزية');
+      return;
+    }
+    if (!newCurrencyForm.current_rate.trim()) {
+      Alert.alert('خطأ', 'يرجى إدخال السعر الحالي');
+      return;
+    }
+
+    const currentRate = parseFloat(newCurrencyForm.current_rate);
+    const buyCommission = parseInt(newCurrencyForm.buy_commission);
+    const sellCommission = parseInt(newCurrencyForm.sell_commission);
+
+    if (isNaN(currentRate) || currentRate <= 0) {
+      Alert.alert('خطأ', 'يرجى إدخال سعر صحيح');
+      return;
+    }
+    if (isNaN(buyCommission) || buyCommission < 0) {
+      Alert.alert('خطأ', 'يرجى إدخال عمولة شراء صحيحة');
+      return;
+    }
+    if (isNaN(sellCommission) || sellCommission < 0) {
+      Alert.alert('خطأ', 'يرجى إدخال عمولة بيع صحيحة');
+      return;
+    }
+
+    const existingCurrency = currencies.find(c => c.code === newCurrencyForm.code);
+    if (existingCurrency) {
+      Alert.alert('تنبيه', `عملة ${newCurrencyForm.code} موجودة بالفعل`);
+      return;
+    }
+
+    try {
+      const newCurrencyData = {
+        code: newCurrencyForm.code,
+        name_ar: newCurrencyForm.name_ar,
+        name_en: newCurrencyForm.name_en,
+        name_he: newCurrencyForm.name_he || newCurrencyForm.name_en,
+        current_rate: currentRate,
+        is_active: true,
+      };
+
+      await currencyService.create(newCurrencyData);
+      await commissionService.upsert('admin', newCurrencyForm.code, buyCommission, sellCommission);
+      await loadCurrencies();
+
+      setShowAddModal(false);
+      setNewCurrencyForm({ code: '', name_ar: '', name_en: '', name_he: '', current_rate: '', buy_commission: '6', sell_commission: '6' });
+
+      Alert.alert('✅ تم بنجاح', `تم إضافة عملة ${newCurrencyForm.name_ar} (${newCurrencyForm.code}) بحالة متوفرة`);
+    } catch (error) {
+      console.error('❌ خطأ في إضافة العملة:', error);
+      Alert.alert('❌ خطأ', 'حدث خطأ في إضافة العملة إلى قاعدة البيانات');
+    }
   };
 
   if (loading) {
@@ -745,7 +800,7 @@ export default function CurrencyManagementScreen() {
           onRequestClose={() => setShowAddModal(false)}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.addModalContainer}>
+            <View style={styles.modalContainer}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>إضافة عملة جديدة</Text>
                 <TouchableOpacity 
@@ -928,100 +983,6 @@ export default function CurrencyManagementScreen() {
     </SafeAreaView>
   );
 }
-
-const saveNewCurrency = async () => {
-  // التحقق من البيانات المطلوبة
-  if (!newCurrencyForm.code.trim()) {
-    Alert.alert('خطأ', 'يرجى إدخال رمز العملة');
-    return;
-  }
-
-  if (!newCurrencyForm.name_ar.trim()) {
-    Alert.alert('خطأ', 'يرجى إدخال اسم العملة بالعربية');
-    return;
-  }
-
-  if (!newCurrencyForm.name_en.trim()) {
-    Alert.alert('خطأ', 'يرجى إدخال اسم العملة بالإنجليزية');
-    return;
-  }
-
-  if (!newCurrencyForm.current_rate.trim()) {
-    Alert.alert('خطأ', 'يرجى إدخال السعر الحالي');
-    return;
-  }
-
-  const currentRate = parseFloat(newCurrencyForm.current_rate);
-  const buyCommission = parseInt(newCurrencyForm.buy_commission);
-  const sellCommission = parseInt(newCurrencyForm.sell_commission);
-
-  if (isNaN(currentRate) || currentRate <= 0) {
-    Alert.alert('خطأ', 'يرجى إدخال سعر صحيح');
-    return;
-  }
-
-  if (isNaN(buyCommission) || buyCommission < 0) {
-    Alert.alert('خطأ', 'يرجى إدخال عمولة شراء صحيحة');
-    return;
-  }
-
-  if (isNaN(sellCommission) || sellCommission < 0) {
-    Alert.alert('خطأ', 'يرجى إدخال عمولة بيع صحيحة');
-    return;
-  }
-
-  // التحقق من عدم وجود العملة مسبقاً
-  const existingCurrency = currencies.find(c => c.code === newCurrencyForm.code);
-  if (existingCurrency) {
-    Alert.alert('تنبيه', `عملة ${newCurrencyForm.code} موجودة بالفعل`);
-    return;
-  }
-
-  try {
-    console.log(`🔄 إضافة عملة جديدة: ${newCurrencyForm.name_ar} (${newCurrencyForm.code})`);
-    
-    // إنشاء بيانات العملة الجديدة
-    const newCurrencyData = {
-      code: newCurrencyForm.code,
-      name_ar: newCurrencyForm.name_ar,
-      name_en: newCurrencyForm.name_en,
-      name_he: newCurrencyForm.name_he || newCurrencyForm.name_en,
-      current_rate: currentRate,
-      buy_commission: buyCommission,
-      sell_commission: sellCommission,
-      is_active: true
-    };
-    
-    // إضافة العملة إلى قاعدة البيانات
-    await currencyService.create(newCurrencyData);
-    
-    // إعادة تحميل العملات من قاعدة البيانات
-    await loadCurrencies();
-    
-    // إغلاق النافذة وإعادة تعيين النموذج
-    setShowAddModal(false);
-    setNewCurrencyForm({
-      code: '',
-      name_ar: '',
-      name_en: '',
-      name_he: '',
-      current_rate: '',
-      buy_commission: '6',
-      sell_commission: '6'
-    });
-    
-    console.log(`✅ تم إضافة العملة ${newCurrencyForm.code} بنجاح`);
-    
-    Alert.alert(
-      '✅ تم بنجاح', 
-      `تم إضافة عملة ${newCurrencyForm.name_ar} (${newCurrencyForm.code}) بحالة متوفرة`
-    );
-    
-  } catch (error) {
-    console.error('❌ خطأ في إضافة العملة إلى قاعدة البيانات:', error);
-    Alert.alert('❌ خطأ', 'حدث خطأ في إضافة العملة إلى قاعدة البيانات');
-  }
-};
 
 const styles = StyleSheet.create({
   container: {
@@ -1400,22 +1361,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
     padding: 10,
     borderRadius: 8,
-  },
-  inputLabel: {
-    fontSize: 16,
-    color: '#374151',
-    marginBottom: 10,
-    fontWeight: '600',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    padding: 15,
-    fontSize: 18,
-    borderRadius: 8,
-    backgroundColor: '#F9FAFB',
-    textAlign: 'center',
-    marginBottom: 10,
   },
   commissionNote: {
     fontSize: 12,
