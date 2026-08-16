@@ -34,7 +34,13 @@ export default function LoginScreen() {
         await AsyncStorage.setItem('savedShopUsername', username.trim());
         await AsyncStorage.setItem('savedShopPassword', password);
 
-        router.replace('/(tabs)/prices');
+        if (result.isSuperAdmin) {
+          await AsyncStorage.setItem('isSuperAdmin', 'true');
+          router.replace('/super-admin');
+        } else {
+          await AsyncStorage.setItem('isSuperAdmin', 'false');
+          router.replace('/(tabs)/prices');
+        }
       } else {
         setError(result.error || 'اسم المستخدم أو كلمة المرور غير صحيحة');
       }

@@ -305,15 +305,16 @@ export const currencyService = {
 
 // Company Settings service
 export const companySettingsService = {
-  async get() {
+  async get(username?: string) {
     try {
       if (isSupabaseConfigured()) {
-        const { data, error } = await supabase!
-          .from('company_settings')
-          .select('*')
-          .limit(1)
-          .single();
-        
+        let query = supabase!.from('company_settings').select('*');
+        if (username) {
+          query = query.eq('username', username).maybeSingle();
+        } else {
+          query = query.limit(1).maybeSingle();
+        }
+        const { data, error } = await query;
         if (error && error.code !== 'PGRST116') throw error;
         return data;
       }
@@ -322,6 +323,10 @@ export const companySettingsService = {
       console.error('خطأ في جلب إعدادات الشركة:', error);
       return null;
     }
+  },
+
+  async getByUsername(username: string) {
+    return this.get(username);
   },
 
   async create(settings: any) {
@@ -350,6 +355,26 @@ export const companySettingsService = {
           .from('company_settings')
           .update(settings)
           .eq('id', id)
+          .select()
+          .single();
+        
+        if (error) throw error;
+        return data;
+      }
+      return settings;
+    } catch (error) {
+      console.error('خطأ في تحديث إعدادات الشركة:', error);
+      throw error;
+    }
+  },
+
+  async updateByUsername(username: string, settings: any) {
+    try {
+      if (isSupabaseConfigured()) {
+        const { data, error } = await supabase!
+          .from('company_settings')
+          .update(settings)
+          .eq('username', username)
           .select()
           .single();
         
@@ -416,11 +441,11 @@ export const workingHoursService = {
         const hoursWithCompanyId = workingHours.map(day => ({
           company_id: companyId,
           day_of_week: day.key,
-          is_working_day: ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'saturday'].includes(day.key),
-          morning_start: '09:00',
-          morning_end: '14:00',
-          evening_start: '16:00',
-          evening_end: '18:00'
+          is_working_day: day.is_working_day,
+          morning_start: day.morning_start || '09:00',
+          morning_end: day.morning_end || '14:00',
+          evening_start: day.evening_start || '16:00',
+          evening_end: day.evening_end || '18:00'
         }));
 
         const { data, error } = await supabase!
@@ -999,14 +1024,29 @@ export const couponService = {
   }
 };
 
-// Exchange Shop service (multi-shop login)
+// Exchange Shop service (multi-shop login via company_settings)
 export const exchangeShopService = {
   async login(username: string, password: string) {
     try {
+      // Super-admin special case
+      if (username.trim() === 'admin' && password === '123456') {
+        return {
+          success: true,
+          shop: {
+            id: 'super-admin',
+            username: 'admin',
+            shop_name_ar: 'متحكم الشركات',
+            shop_name_he: 'מנהל על',
+            shop_name_en: 'Super Admin',
+          },
+          isSuperAdmin: true,
+        };
+      }
+
       if (isSupabaseConfigured()) {
         const { data, error } = await supabase!
-          .from('exchange_shops')
-          .select('id, username, password, shop_name_ar, shop_name_he, shop_name_en, is_active')
+          .from('company_settings')
+          .select('id, username, password, name_ar, name_he, name_en, is_active')
           .eq('username', username.trim())
           .maybeSingle();
 
@@ -1020,22 +1060,9 @@ export const exchangeShopService = {
           shop: {
             id: data.id,
             username: data.username,
-            shop_name_ar: data.shop_name_ar,
-            shop_name_he: data.shop_name_he,
-            shop_name_en: data.shop_name_en,
-          },
-        };
-      }
-      // Fallback for local dev without DB
-      if (username.trim() === 'admin' && password === '123456') {
-        return {
-          success: true,
-          shop: {
-            id: 'local',
-            username: 'admin',
-            shop_name_ar: 'نعامنة للصرافة',
-            shop_name_he: 'נעאמנה להמרות',
-            shop_name_en: 'Naamneh Exchange',
+            shop_name_ar: data.name_ar,
+            shop_name_he: data.name_he,
+            shop_name_en: data.name_en,
           },
         };
       }
@@ -1050,8 +1077,8 @@ export const exchangeShopService = {
     try {
       if (isSupabaseConfigured()) {
         const { data, error } = await supabase!
-          .from('exchange_shops')
-          .select('*')
+          .from('company_settings')
+          .select('id, username, password, name_ar, name_he, name_en, is_active, created_at, updated_at, address_ar, address_he, address_en, phone1, phone2, phone3')
           .order('created_at', { ascending: false });
         if (error) throw error;
         return data || [];
@@ -1063,11 +1090,36 @@ export const exchangeShopService = {
     }
   },
 
-  async create(shop: { username: string; password: string; shop_name_ar?: string; shop_name_he?: string; shop_name_en?: string }) {
+  async create(shop: {
+    username: string;
+    password: string;
+    shop_name_ar?: string;
+    shop_name_he?: string;
+    shop_name_en?: string;
+    address_ar?: string;
+    address_he?: string;
+    address_en?: string;
+    phone1?: string;
+    phone2?: string;
+    phone3?: string;
+  }) {
     if (isSupabaseConfigured()) {
       const { data, error } = await supabase!
-        .from('exchange_shops')
-        .insert(shop)
+        .from('company_settings')
+        .insert({
+          username: shop.username,
+          password: shop.password,
+          name_ar: shop.shop_name_ar || shop.username,
+          name_he: shop.shop_name_he || shop.shop_name_ar || shop.username,
+          name_en: shop.shop_name_en || shop.shop_name_ar || shop.username,
+          address_ar: shop.address_ar || '',
+          address_he: shop.address_he || '',
+          address_en: shop.address_en || '',
+          phone1: shop.phone1 || '',
+          phone2: shop.phone2 || '',
+          phone3: shop.phone3 || '',
+          is_active: true,
+        })
         .select()
         .single();
       if (error) throw error;
@@ -1079,7 +1131,7 @@ export const exchangeShopService = {
   async update(id: string, shop: any) {
     if (isSupabaseConfigured()) {
       const { data, error } = await supabase!
-        .from('exchange_shops')
+        .from('company_settings')
         .update(shop)
         .eq('id', id)
         .select()
@@ -1091,8 +1143,20 @@ export const exchangeShopService = {
 
   async delete(id: string) {
     if (isSupabaseConfigured()) {
+      // Delete working hours first
+      await supabase!.from('working_hours').delete().eq('company_id', id);
+      // Delete commissions
+      const { data: shop } = await supabase!
+        .from('company_settings')
+        .select('username')
+        .eq('id', id)
+        .maybeSingle();
+      if (shop?.username) {
+        await supabase!.from('commissions').delete().eq('shop_username', shop.username);
+      }
+      // Delete the shop
       const { error } = await supabase!
-        .from('exchange_shops')
+        .from('company_settings')
         .delete()
         .eq('id', id);
       if (error) throw error;

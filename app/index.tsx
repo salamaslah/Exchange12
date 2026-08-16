@@ -23,7 +23,13 @@ export default function IndexScreen() {
             await AsyncStorage.setItem('shopNameAr', result.shop.shop_name_ar || '');
             await AsyncStorage.setItem('shopNameHe', result.shop.shop_name_he || '');
             await AsyncStorage.setItem('shopNameEn', result.shop.shop_name_en || '');
-            setGoTo('/(tabs)/prices');
+            if (result.isSuperAdmin) {
+              await AsyncStorage.setItem('isSuperAdmin', 'true');
+              setGoTo('/super-admin');
+            } else {
+              await AsyncStorage.setItem('isSuperAdmin', 'false');
+              setGoTo('/(tabs)/prices');
+            }
             return;
           }
         }
