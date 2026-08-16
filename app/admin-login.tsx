@@ -22,6 +22,8 @@ export default function AdminLoginScreen() {
             await AsyncStorage.setItem('isAdminLoggedIn', 'true');
             await AsyncStorage.setItem('adminLoginTime', new Date().toISOString());
             await AsyncStorage.setItem('adminUsername', result.shop.username);
+            await AsyncStorage.setItem('shopUsername', result.shop.username);
+            await AsyncStorage.setItem('shopId', result.shop.id);
             router.replace('/(tabs)/accounting');
             return;
           }
@@ -50,6 +52,8 @@ export default function AdminLoginScreen() {
         await AsyncStorage.setItem('isAdminLoggedIn', 'true');
         await AsyncStorage.setItem('adminLoginTime', new Date().toISOString());
         await AsyncStorage.setItem('adminUsername', result.shop.username);
+        await AsyncStorage.setItem('shopUsername', result.shop.username);
+        await AsyncStorage.setItem('shopId', result.shop.id);
         await AsyncStorage.setItem('savedAdminUsername', username.trim());
         await AsyncStorage.setItem('savedAdminPassword', password);
 

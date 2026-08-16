@@ -201,13 +201,14 @@ export default function PricesScreen() {
     try {
       setLoading(true);
       const shopUsername = await AsyncStorage.getItem('shopUsername') || undefined;
+      const shopId = await AsyncStorage.getItem('shopId') || undefined;
       const shopAr = await AsyncStorage.getItem('shopNameAr') || '';
       const shopHe = await AsyncStorage.getItem('shopNameHe') || '';
       const shopEn = await AsyncStorage.getItem('shopNameEn') || '';
       if (shopAr || shopHe || shopEn) {
         setShopName({ ar: shopAr, he: shopHe, en: shopEn });
       }
-      const data = await currencyService.getAll(shopUsername);
+      const data = await currencyService.getAll(shopUsername, shopId);
       setAllCurrencies(data.sort((a: any, b: any) => (a.sort_num ?? 999) - (b.sort_num ?? 999)));
       const co = await companySettingsService.get();
       if (co) {
