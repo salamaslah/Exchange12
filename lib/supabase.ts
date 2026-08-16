@@ -28,7 +28,7 @@ export const isSupabaseConfigured = () => {
 
 // Currency service
 export const currencyService = {
-  async getAll(shopUsername?: string) {
+  async getAll(shopUsername?: string, shopId?: string) {
     try {
       console.log('🔄 جلب جميع العملات من قاعدة البيانات...');
 
@@ -52,13 +52,28 @@ export const currencyService = {
           console.log(`✅ تم جلب عمولات وأسعار للمحل: ${effectiveShop} (${commData.length} عملة)`);
         }
       }
-      
+
+      // جلب عملات المحل من جدول shop_currencies إذا تم تمرير shopId
+      let shopCurrencyIds: string[] | null = null;
+      if (shopId && isSupabaseConfigured()) {
+        const { data: scData } = await supabase!
+          .from('shop_currencies')
+          .select('currency_id')
+          .eq('shop_id', shopId);
+        shopCurrencyIds = (scData || []).map((row: any) => row.currency_id);
+        console.log(`✅ تم جلب ${shopCurrencyIds.length} عملة خاصة بالمحل`);
+      }
+
       if (isSupabaseConfigured()) {
         console.log('📊 استخدام Supabase لجلب العملات من جدول currencies');
-        const { data, error } = await supabase!
-          .from('currencies')
-          .select('*')
-          .order('code');
+        let query = supabase!.from('currencies').select('*');
+        if (shopCurrencyIds && shopCurrencyIds.length > 0) {
+          query = query.in('id', shopCurrencyIds);
+        } else if (shopCurrencyIds) {
+          // shop has no currencies yet
+          return [];
+        }
+        const { data, error } = await query.order('code');
         if (error) throw error;
         console.log(`✅ تم جلب ${data?.length || 0} عملة من قاعدة البيانات Supabase`);
         
@@ -172,9 +187,15 @@ export const currencyService = {
             code: newCurrency.code,
             name_ar: newCurrency.name_ar,
             name_en: newCurrency.name_en,
+            name_he: newCurrency.name_he,
             is_active: true
-          });
+          })
+          .select()
+          .single();
         if (error) throw error;
+
+        // استخدام الـ id الحقيقي من قاعدة البيانات
+        newCurrency.id = data.id;
 
         // إضافة عمولة افتراضية للمحل admin في جدول العمولات
         if (currency.buy_commission !== undefined && currency.sell_commission !== undefined) {
@@ -1226,6 +1247,80 @@ export const commissionService = {
         .from('commissions')
         .delete()
         .eq('id', id);
+      if (error) throw error;
+    }
+  },
+};
+
+// Shop Currencies service (links currencies to shops)
+export const shopCurrencyService = {
+  async getByShop(shopId: string) {
+    try {
+      if (isSupabaseConfigured()) {
+        const { data, error } = await supabase!
+          .from('shop_currencies')
+          .select('currency_id, is_active')
+          .eq('shop_id', shopId);
+        if (error) throw error;
+        return data || [];
+      }
+      return [];
+    } catch (error) {
+      console.error('خطأ في جلب عملات المحل:', error);
+      return [];
+    }
+  },
+
+  async getActiveCurrencyIds(shopId: string): Promise<string[]> {
+    try {
+      if (isSupabaseConfigured()) {
+        const { data, error } = await supabase!
+          .from('shop_currencies')
+          .select('currency_id')
+          .eq('shop_id', shopId);
+        if (error) throw error;
+        return (data || []).map((row: any) => row.currency_id);
+      }
+      return [];
+    } catch (error) {
+      console.error('خطأ في جلب عملات المحل:', error);
+      return [];
+    }
+  },
+
+  async addCurrencyToShop(currencyId: string, shopId: string) {
+    if (isSupabaseConfigured()) {
+      const { data, error } = await supabase!
+        .from('shop_currencies')
+        .upsert(
+          { currency_id: currencyId, shop_id: shopId, is_active: true },
+          { onConflict: 'currency_id,shop_id' }
+        )
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    }
+  },
+
+  async removeCurrencyFromShop(currencyId: string, shopId: string) {
+    if (isSupabaseConfigured()) {
+      const { error } = await supabase!
+        .from('shop_currencies')
+        .delete()
+        .eq('currency_id', currencyId)
+        .eq('shop_id', shopId);
+      if (error) throw error;
+    }
+  },
+
+  async toggleActive(currencyId: string, shopId: string, isActive: boolean) {
+    if (isSupabaseConfigured()) {
+      const { error } = await supabase!
+        .from('shop_currencies')
+        .update({ is_active: isActive })
+        .eq('currency_id', currencyId)
+        .eq('shop_id', shopId);
       if (error) throw error;
     }
   },

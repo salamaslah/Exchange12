@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Modal, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { currencyService, currencyUpdateLogService, commissionService, supabase } from '@/lib/supabase';
+import { currencyService, currencyUpdateLogService, commissionService, shopCurrencyService, supabase } from '@/lib/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { exchangeRateAPI } from '@/lib/exchangeRateAPI';
 
 interface Currency {
@@ -29,19 +30,14 @@ export default function CurrencyManagementScreen() {
   const [editType, setEditType] = useState<'buy' | 'sell'>('buy');
   const [commissionValue, setCommissionValue] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newCurrencyForm, setNewCurrencyForm] = useState({
-    code: '',
-    name_ar: '',
-    name_en: '',
-    name_he: '',
-    current_rate: '',
-    buy_commission: '6',
-    sell_commission: '6'
-  });
   const [isAutoUpdateRunning, setIsAutoUpdateRunning] = useState(false);
   const [showEditRateModal, setShowEditRateModal] = useState(false);
   const [editingRateCurrency, setEditingRateCurrency] = useState<Currency | null>(null);
   const [newRateValue, setNewRateValue] = useState('');
+  const [shopId, setShopId] = useState<string | null>(null);
+  const [shopUsername, setShopUsername] = useState<string>('admin');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [addingCurrency, setAddingCurrency] = useState(false);
   const router = useRouter();
 
   // قائمة العملات المتاحة للإضافة
@@ -74,14 +70,25 @@ export default function CurrencyManagementScreen() {
   ];
 
   useEffect(() => {
-    loadCurrencies();
-    setupRealtimeSubscription();
-    loadAutoUpdateStatusAndUpdate();
+    (async () => {
+      const id = await AsyncStorage.getItem('shopId');
+      const username = await AsyncStorage.getItem('shopUsername') || 'admin';
+      setShopId(id);
+      setShopUsername(username);
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (shopId !== null) {
+      loadCurrencies();
+      setupRealtimeSubscription();
+      loadAutoUpdateStatusAndUpdate();
+    }
 
     return () => {
       console.log('🔌 تنظيف الاشتراكات عند الخروج');
     };
-  }, []);
+  }, [shopId]);
 
   const loadAutoUpdateStatus = async () => {
     try {
@@ -199,8 +206,8 @@ export default function CurrencyManagementScreen() {
       setLoading(true);
       console.log('🔄 تحميل جميع العملات من قاعدة البيانات Supabase...');
       
-      // جلب العملات مع عمولات المحل admin
-      const currenciesData = await currencyService.getAll('admin');
+      // جلب العملات مع عمولات المحل
+      const currenciesData = await currencyService.getAll(shopUsername, shopId || undefined);
       console.log(`✅ تم تحميل ${currenciesData.length} عملة من قاعدة البيانات Supabase`);
       
       // ترتيب العملات حسب sort_num تصاعدياً
@@ -252,10 +259,14 @@ export default function CurrencyManagementScreen() {
   const deleteCurrency = async (currency: Currency) => {
     try {
       console.log(`🗑️ بدء حذف العملة ${currency.name_ar} (${currency.code})...`);
-      
+
+      // إزالة العملة من عملات المحل
+      if (shopId) {
+        await shopCurrencyService.removeCurrencyFromShop(currency.id, shopId);
+      }
       // حذف العملة من قاعدة البيانات
       await currencyService.delete(currency.id);
-      
+
       // إعادة تحميل العملات من قاعدة البيانات
       await loadCurrencies();
       
@@ -368,7 +379,7 @@ export default function CurrencyManagementScreen() {
         updated_at: new Date().toISOString()
       });
       // تحديث أسعار الشراء والبيع في جدول العمولات
-      await commissionService.upsert('admin', editingRateCurrency.code, editingRateCurrency.buy_commission ?? 6, editingRateCurrency.sell_commission ?? 6, buyRate, sellRate);
+      await commissionService.upsert(shopUsername, editingRateCurrency.code, editingRateCurrency.buy_commission ?? 6, editingRateCurrency.sell_commission ?? 6, buyRate, sellRate);
 
       await loadCurrencies();
       setShowEditRateModal(false);
@@ -404,7 +415,7 @@ export default function CurrencyManagementScreen() {
       // تحديث العمولة في جدول العمولات لمحل admin
       const newBuy = editType === 'buy' ? newCommission : (editingCurrency.buy_commission ?? 6);
       const newSell = editType === 'sell' ? newCommission : (editingCurrency.sell_commission ?? 6);
-      await commissionService.upsert('admin', editingCurrency.code, newBuy, newSell);
+      await commissionService.upsert(shopUsername, editingCurrency.code, newBuy, newSell);
       
       // إعادة تحميل العملات من قاعدة البيانات
       await loadCurrencies();
@@ -425,47 +436,67 @@ export default function CurrencyManagementScreen() {
     }
   };
 
-  const addNewCurrency = async (currencyData: any) => {
+  const addCurrencyToShop = async (selectedCurrency: { code: string; name_ar: string; name_en: string; name_he: string }) => {
+    if (!shopId) {
+      Alert.alert('خطأ', 'لم يتم التعرف على المحل. يرجى إعادة تسجيل الدخول.');
+      return;
+    }
+
+    setAddingCurrency(true);
     try {
-      console.log(`🔄 إضافة عملة جديدة: ${currencyData.name_ar} (${currencyData.code})`);
-      
-      // التحقق من وجود العملة في القائمة المحلية
-      const existingCurrency = currencies.find(c => c.code === currencyData.code);
-      
+      console.log(`🔄 إضافة عملة ${selectedCurrency.code} للمحل`);
+
+      // التحقق من وجود العملة في جدول currencies
+      const { data: existingCurrency, error: findError } = await supabase
+        .from('currencies')
+        .select('id, code')
+        .eq('code', selectedCurrency.code)
+        .maybeSingle();
+
+      if (findError) throw findError;
+
+      let currencyId: string;
+
       if (existingCurrency) {
-        Alert.alert('تنبيه', `عملة ${currencyData.name_ar} موجودة بالفعل`);
-        return;
+        // العملة موجودة في جدول currencies
+        currencyId = existingCurrency.id;
+        console.log(`✅ العملة ${selectedCurrency.code} موجودة بالفعل في جدول currencies`);
+      } else {
+        // العملة غير موجودة - إنشاؤها
+        const defaultRate = getDefaultRate(selectedCurrency.code);
+        const newCurrencyData = {
+          code: selectedCurrency.code,
+          name_ar: selectedCurrency.name_ar,
+          name_en: selectedCurrency.name_en,
+          name_he: selectedCurrency.name_he,
+          current_rate: defaultRate,
+          is_active: true,
+        };
+        const created = await currencyService.create(newCurrencyData) as any;
+        currencyId = created.id;
+        console.log(`✅ تم إنشاء العملة ${selectedCurrency.code} في جدول currencies`);
       }
-      
-      // إنشاء عملة جديدة في قاعدة البيانات
-      const defaultRate = getDefaultRate(currencyData.code);
-      const newCurrencyData = {
-        code: currencyData.code,
-        name_ar: currencyData.name_ar,
-        name_en: currencyData.name_en,
-        name_he: currencyData.name_he,
-        current_rate: defaultRate,
-        is_active: true
-      };
-      
-      // إضافة العملة إلى قاعدة البيانات
-      await currencyService.create(newCurrencyData);
+
+      // ربط العملة بالمحل في جدول shop_currencies
+      await shopCurrencyService.addCurrencyToShop(currencyId, shopId);
+
       // إضافة عمولة افتراضية في جدول العمولات
-      await commissionService.upsert('admin', currencyData.code, 6, 6);
-      
-      // إعادة تحميل العملات من قاعدة البيانات
+      await commissionService.upsert(shopUsername, selectedCurrency.code, 6, 6);
+
+      // إعادة تحميل العملات
       await loadCurrencies();
-      
-      console.log(`✅ تم إضافة العملة ${currencyData.code} بنجاح`);
-      
-      Alert.alert(
-        '✅ تم بنجاح', 
-        `تم إضافة عملة ${currencyData.name_ar} بحالة متوفرة`
-      );
-      
-    } catch (error) {
-      console.error('❌ خطأ في إضافة العملة إلى قاعدة البيانات:', error);
-      Alert.alert('❌ خطأ', 'حدث خطأ في إضافة العملة إلى قاعدة البيانات');
+
+      console.log(`✅ تم إضافة العملة ${selectedCurrency.code} للمحل بنجاح`);
+      Alert.alert('✅ تم بنجاح', `تم إضافة عملة ${selectedCurrency.name_ar} للمحل`);
+    } catch (error: any) {
+      console.error('❌ خطأ في إضافة العملة:', error);
+      if (error?.code === '23505') {
+        Alert.alert('تنبيه', 'هذه العملة مضافة بالفعل للمحل');
+      } else {
+        Alert.alert('❌ خطأ', 'حدث خطأ في إضافة العملة');
+      }
+    } finally {
+      setAddingCurrency(false);
     }
   };
 
@@ -480,80 +511,22 @@ export default function CurrencyManagementScreen() {
     return defaultRates[code] || 1.0;
   };
 
-  // تصفية العملات المتاحة للإضافة
+  // تصفية العملات المتاحة للإضافة (استبعاد المضافة بالفعل) + البحث
   const filteredAvailableCurrencies = availableCurrencies.filter(ac => {
     const existingCurrency = currencies.find(c => c.code === ac.code);
-    return !existingCurrency;
+    if (existingCurrency) return false;
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.trim().toLowerCase();
+    return ac.code.toLowerCase().includes(q) ||
+      ac.name_ar.includes(searchQuery.trim()) ||
+      ac.name_en.toLowerCase().includes(q);
   });
 
   const handleLogout = async () => {
     router.replace('/(tabs)/accounting');
   };
 
-  const saveNewCurrency = async () => {
-    if (!newCurrencyForm.code.trim()) {
-      Alert.alert('خطأ', 'يرجى إدخال رمز العملة');
-      return;
-    }
-    if (!newCurrencyForm.name_ar.trim()) {
-      Alert.alert('خطأ', 'يرجى إدخال اسم العملة بالعربية');
-      return;
-    }
-    if (!newCurrencyForm.name_en.trim()) {
-      Alert.alert('خطأ', 'يرجى إدخال اسم العملة بالإنجليزية');
-      return;
-    }
-    if (!newCurrencyForm.current_rate.trim()) {
-      Alert.alert('خطأ', 'يرجى إدخال السعر الحالي');
-      return;
-    }
 
-    const currentRate = parseFloat(newCurrencyForm.current_rate);
-    const buyCommission = parseInt(newCurrencyForm.buy_commission);
-    const sellCommission = parseInt(newCurrencyForm.sell_commission);
-
-    if (isNaN(currentRate) || currentRate <= 0) {
-      Alert.alert('خطأ', 'يرجى إدخال سعر صحيح');
-      return;
-    }
-    if (isNaN(buyCommission) || buyCommission < 0) {
-      Alert.alert('خطأ', 'يرجى إدخال عمولة شراء صحيحة');
-      return;
-    }
-    if (isNaN(sellCommission) || sellCommission < 0) {
-      Alert.alert('خطأ', 'يرجى إدخال عمولة بيع صحيحة');
-      return;
-    }
-
-    const existingCurrency = currencies.find(c => c.code === newCurrencyForm.code);
-    if (existingCurrency) {
-      Alert.alert('تنبيه', `عملة ${newCurrencyForm.code} موجودة بالفعل`);
-      return;
-    }
-
-    try {
-      const newCurrencyData = {
-        code: newCurrencyForm.code,
-        name_ar: newCurrencyForm.name_ar,
-        name_en: newCurrencyForm.name_en,
-        name_he: newCurrencyForm.name_he || newCurrencyForm.name_en,
-        current_rate: currentRate,
-        is_active: true,
-      };
-
-      await currencyService.create(newCurrencyData);
-      await commissionService.upsert('admin', newCurrencyForm.code, buyCommission, sellCommission);
-      await loadCurrencies();
-
-      setShowAddModal(false);
-      setNewCurrencyForm({ code: '', name_ar: '', name_en: '', name_he: '', current_rate: '', buy_commission: '6', sell_commission: '6' });
-
-      Alert.alert('✅ تم بنجاح', `تم إضافة عملة ${newCurrencyForm.name_ar} (${newCurrencyForm.code}) بحالة متوفرة`);
-    } catch (error) {
-      console.error('❌ خطأ في إضافة العملة:', error);
-      Alert.alert('❌ خطأ', 'حدث خطأ في إضافة العملة إلى قاعدة البيانات');
-    }
-  };
 
   if (loading) {
     return (
@@ -792,133 +765,82 @@ export default function CurrencyManagementScreen() {
           </View>
         </Modal>
 
-        {/* Add Currency Modal */}
+        {/* Add Currency Modal - Searchable Picker */}
         <Modal
           visible={showAddModal}
           transparent={true}
           animationType="slide"
-          onRequestClose={() => setShowAddModal(false)}
+          onRequestClose={() => { setShowAddModal(false); setSearchQuery(''); }}
         >
           <View style={styles.modalOverlay}>
             <View style={styles.modalContainer}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>إضافة عملة جديدة</Text>
-                <TouchableOpacity 
-                  style={styles.closeButton} 
-                  onPress={() => {
-                    setShowAddModal(false);
-                    setNewCurrencyForm({
-                      code: '',
-                      name_ar: '',
-                      name_en: '',
-                      name_he: '',
-                      current_rate: '',
-                      buy_commission: '6',
-                      sell_commission: '6'
-                    });
-                  }}
+                <Text style={styles.modalTitle}>إضافة عملة للمحل</Text>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => { setShowAddModal(false); setSearchQuery(''); }}
                 >
                   <Text style={styles.closeButtonText}>✕</Text>
                 </TouchableOpacity>
               </View>
 
-              <ScrollView 
-                style={styles.addModalContent}
-                showsVerticalScrollIndicator={true}
-                contentContainerStyle={styles.addModalScrollContent}
-              >
+              <View style={styles.modalContent}>
+                {/* Search Input */}
                 <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>رمز العملة (مثل USD, EUR):</Text>
+                  <Text style={styles.inputLabel}>ابحث بالكود أو الاسم:</Text>
                   <TextInput
                     style={styles.input}
-                    value={newCurrencyForm.code}
-                    onChangeText={(text) => setNewCurrencyForm(prev => ({ ...prev, code: text.toUpperCase() }))}
-                    placeholder="USD"
-                    maxLength={3}
-                    autoCapitalize="characters"
-                  />
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>اسم العملة بالعربية:</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={newCurrencyForm.name_ar}
-                    onChangeText={(text) => setNewCurrencyForm(prev => ({ ...prev, name_ar: text }))}
-                    placeholder="دولار أمريكي"
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    placeholder="USD, EUR, دولار..."
                     textAlign="right"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    autoFocus={true}
                   />
                 </View>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>اسم العملة بالإنجليزية:</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={newCurrencyForm.name_en}
-                    onChangeText={(text) => setNewCurrencyForm(prev => ({ ...prev, name_en: text }))}
-                    placeholder="US Dollar"
-                    textAlign="left"
-                  />
-                </View>
+                {addingCurrency && (
+                  <View style={styles.searchLoadingContainer}>
+                    <Text style={styles.searchLoadingText}>جاري الإضافة...</Text>
+                  </View>
+                )}
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>اسم العملة بالعبرية:</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={newCurrencyForm.name_he}
-                    onChangeText={(text) => setNewCurrencyForm(prev => ({ ...prev, name_he: text }))}
-                    placeholder="דולר אמריקאי"
-                    textAlign="right"
-                  />
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>السعر الحالي (مقابل الشيقل):</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={newCurrencyForm.current_rate}
-                    onChangeText={(text) => setNewCurrencyForm(prev => ({ ...prev, current_rate: text }))}
-                    placeholder="3.65"
-                    keyboardType="decimal-pad"
-                    textAlign="center"
-                  />
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>عمولة الشراء (بالأجورات):</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={newCurrencyForm.buy_commission}
-                    onChangeText={(text) => setNewCurrencyForm(prev => ({ ...prev, buy_commission: text }))}
-                    placeholder="6"
-                    keyboardType="numeric"
-                    textAlign="center"
-                  />
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>عمولة البيع (بالأجورات):</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={newCurrencyForm.sell_commission}
-                    onChangeText={(text) => setNewCurrencyForm(prev => ({ ...prev, sell_commission: text }))}
-                    placeholder="6"
-                    keyboardType="numeric"
-                    textAlign="center"
-                  />
-                </View>
-
-                <Text style={styles.commissionNote}>
-                  * كل 100 أجورة = 1 شيقل
-                </Text>
-
-                <TouchableOpacity 
-                  style={styles.saveButton} 
-                  onPress={saveNewCurrency}
-                >
-                  <Text style={styles.saveButtonText}>💾 حفظ العملة الجديدة</Text>
-                </TouchableOpacity>
-              </ScrollView>
+                {/* Currency List */}
+                {!addingCurrency && (
+                  <ScrollView
+                    style={styles.currencyPickerList}
+                    showsVerticalScrollIndicator={true}
+                  >
+                    {filteredAvailableCurrencies.length === 0 ? (
+                      <View style={styles.noResultsContainer}>
+                        <Text style={styles.noResultsText}>
+                          {searchQuery.trim() ? 'لا توجد نتائج مطابقة' : 'تمت إضافة جميع العملات المتاحة'}
+                        </Text>
+                      </View>
+                    ) : (
+                      filteredAvailableCurrencies.map((ac) => (
+                        <TouchableOpacity
+                          key={ac.code}
+                          style={styles.currencyPickerItem}
+                          onPress={() => {
+                            addCurrencyToShop(ac);
+                            setShowAddModal(false);
+                            setSearchQuery('');
+                          }}
+                        >
+                          <View style={styles.currencyPickerItemLeft}>
+                            <Text style={styles.currencyPickerCode}>{ac.code}</Text>
+                            <Text style={styles.currencyPickerName}>{ac.name_ar}</Text>
+                            <Text style={styles.currencyPickerNameEn}>{ac.name_en}</Text>
+                          </View>
+                          <Text style={styles.currencyPickerAddIcon}>+</Text>
+                        </TouchableOpacity>
+                      ))
+                    )}
+                  </ScrollView>
+                )}
+              </View>
             </View>
           </View>
         </Modal>
@@ -1379,5 +1301,59 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  // Currency Picker styles
+  currencyPickerList: {
+    maxHeight: 400,
+  },
+  currencyPickerItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  currencyPickerItemLeft: {
+    flex: 1,
+  },
+  currencyPickerCode: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#065F46',
+  },
+  currencyPickerName: {
+    fontSize: 13,
+    color: '#374151',
+    marginTop: 2,
+  },
+  currencyPickerNameEn: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginTop: 1,
+  },
+  currencyPickerAddIcon: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#059669',
+  },
+  noResultsContainer: {
+    padding: 30,
+    alignItems: 'center',
+  },
+  noResultsText: {
+    fontSize: 15,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  searchLoadingContainer: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  searchLoadingText: {
+    fontSize: 15,
+    color: '#059669',
+    fontWeight: '600',
   },
 });
