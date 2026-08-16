@@ -28,9 +28,27 @@ export const isSupabaseConfigured = () => {
 
 // Currency service
 export const currencyService = {
-  async getAll() {
+  async getAll(shopUsername?: string) {
     try {
       console.log('🔄 جلب جميع العملات من قاعدة البيانات...');
+
+      // جلب العمولات الخاصة بالمحل إذا تم تمرير اسم المستخدم
+      let shopCommissions: { [code: string]: { buy: number; sell: number } } = {};
+      if (shopUsername && isSupabaseConfigured()) {
+        const { data: commData, error: commError } = await supabase!
+          .from('commissions')
+          .select('currency_code, buy_commission, sell_commission')
+          .eq('shop_username', shopUsername);
+        if (!commError && commData) {
+          commData.forEach((c: any) => {
+            shopCommissions[c.currency_code] = {
+              buy: c.buy_commission,
+              sell: c.sell_commission,
+            };
+          });
+          console.log(`✅ تم جلب عمولات خاصة للمحل: ${shopUsername} (${commData.length} عملة)`);
+        }
+      }
       
       if (isSupabaseConfigured()) {
         console.log('📊 استخدام Supabase لجلب العملات من جدول currencies');
@@ -43,10 +61,15 @@ export const currencyService = {
         
         // حساب أسعار الشراء والبيع من السعر الحالي والعمولات
         const currenciesWithRates = (data || []).map(currency => {
+          // استخدام عمولة المحل إن وجدت، وإلا العمولة الافتراضية من جدول العملات
+          const shopComm = shopCommissions[currency.code];
+          const buyComm = shopComm ? shopComm.buy : (currency.buy_commission || 6);
+          const sellComm = shopComm ? shopComm.sell : (currency.sell_commission || 6);
+
           if (currency.current_rate && currency.current_rate > 0) {
             // تحويل العمولة من أجورات إلى شيقل (100 أجورة = 1 شيقل)
-            const buyCommissionShekel = (currency.buy_commission || 6) / 100;
-            const sellCommissionShekel = (currency.sell_commission || 6) / 100;
+            const buyCommissionShekel = buyComm / 100;
+            const sellCommissionShekel = sellComm / 100;
             
             // حساب أسعار الشراء والبيع
             const buyRate = currency.current_rate - buyCommissionShekel;
@@ -54,12 +77,18 @@ export const currencyService = {
             
             return {
               ...currency,
+              buy_commission: buyComm,
+              sell_commission: sellComm,
               buy_rate: buyRate,
               sell_rate: sellRate
             };
           }
           
-          return currency;
+          return {
+            ...currency,
+            buy_commission: buyComm,
+            sell_commission: sellComm,
+          };
         });
         
         console.log('✅ تم حساب أسعار الشراء والبيع من العمولات');
@@ -119,7 +148,7 @@ export const currencyService = {
 
   async getByCode(code: string) {
     const currencies = await this.getAll();
-    return currencies.find(c => c.code === code);
+    return currencies.find((c: any) => c.code === code);
   },
 
   async create(currency: any) {
@@ -955,6 +984,174 @@ export const couponService = {
       if (error) throw error;
     }
   }
+};
+
+// Exchange Shop service (multi-shop login)
+export const exchangeShopService = {
+  async login(username: string, password: string) {
+    try {
+      if (isSupabaseConfigured()) {
+        const { data, error } = await supabase!
+          .from('exchange_shops')
+          .select('id, username, password, shop_name_ar, shop_name_he, shop_name_en, is_active')
+          .eq('username', username.trim())
+          .maybeSingle();
+
+        if (error) throw error;
+        if (!data) return { success: false, error: 'اسم المستخدم غير موجود' };
+        if (!data.is_active) return { success: false, error: 'هذا الحساب غير مفعّل' };
+        if (data.password !== password) return { success: false, error: 'كلمة المرور غير صحيحة' };
+
+        return {
+          success: true,
+          shop: {
+            id: data.id,
+            username: data.username,
+            shop_name_ar: data.shop_name_ar,
+            shop_name_he: data.shop_name_he,
+            shop_name_en: data.shop_name_en,
+          },
+        };
+      }
+      // Fallback for local dev without DB
+      if (username.trim() === 'admin' && password === '123456') {
+        return {
+          success: true,
+          shop: {
+            id: 'local',
+            username: 'admin',
+            shop_name_ar: 'نعامنة للصرافة',
+            shop_name_he: 'נעאמנה להמרות',
+            shop_name_en: 'Naamneh Exchange',
+          },
+        };
+      }
+      return { success: false, error: 'اسم المستخدم أو كلمة المرور غير صحيحة' };
+    } catch (error) {
+      console.error('خطأ في تسجيل الدخول:', error);
+      return { success: false, error: 'حدث خطأ في الاتصال بقاعدة البيانات' };
+    }
+  },
+
+  async getAll() {
+    try {
+      if (isSupabaseConfigured()) {
+        const { data, error } = await supabase!
+          .from('exchange_shops')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        return data || [];
+      }
+      return [];
+    } catch (error) {
+      console.error('خطأ في جلب المحلات:', error);
+      return [];
+    }
+  },
+
+  async create(shop: { username: string; password: string; shop_name_ar?: string; shop_name_he?: string; shop_name_en?: string }) {
+    if (isSupabaseConfigured()) {
+      const { data, error } = await supabase!
+        .from('exchange_shops')
+        .insert(shop)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    }
+    throw new Error('Supabase not configured');
+  },
+
+  async update(id: string, shop: any) {
+    if (isSupabaseConfigured()) {
+      const { data, error } = await supabase!
+        .from('exchange_shops')
+        .update(shop)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    }
+  },
+
+  async delete(id: string) {
+    if (isSupabaseConfigured()) {
+      const { error } = await supabase!
+        .from('exchange_shops')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    }
+  },
+};
+
+// Commission service (per-shop, per-currency)
+export const commissionService = {
+  async getByShop(shopUsername: string) {
+    try {
+      if (isSupabaseConfigured()) {
+        const { data, error } = await supabase!
+          .from('commissions')
+          .select('*')
+          .eq('shop_username', shopUsername);
+        if (error) throw error;
+        return data || [];
+      }
+      return [];
+    } catch (error) {
+      console.error('خطأ في جلب العمولات:', error);
+      return [];
+    }
+  },
+
+  async upsert(shopUsername: string, currencyCode: string, buyCommission: number, sellCommission: number) {
+    if (isSupabaseConfigured()) {
+      const { data, error } = await supabase!
+        .from('commissions')
+        .upsert(
+          {
+            shop_username: shopUsername,
+            currency_code: currencyCode,
+            buy_commission: buyCommission,
+            sell_commission: sellCommission,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'shop_username,currency_code' }
+        )
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    }
+  },
+
+  async getAll() {
+    try {
+      if (isSupabaseConfigured()) {
+        const { data, error } = await supabase!
+          .from('commissions')
+          .select('*');
+        if (error) throw error;
+        return data || [];
+      }
+      return [];
+    } catch (error) {
+      console.error('خطأ في جلب جميع العمولات:', error);
+      return [];
+    }
+  },
+
+  async delete(id: string) {
+    if (isSupabaseConfigured()) {
+      const { error } = await supabase!
+        .from('commissions')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    }
+  },
 };
 
 // Currency Update Log service

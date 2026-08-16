@@ -1,71 +1,68 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, SafeAreaView, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, SafeAreaView, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { exchangeShopService } from '@/lib/supabase';
 
 export default function LoginScreen() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   const handleLogin = async () => {
     if (!username.trim() || !password.trim()) {
-      Alert.alert('خطأ', 'يرجى إدخال اسم المستخدم وكلمة المرور');
+      setError('يرجى إدخال اسم المستخدم وكلمة المرور');
       return;
     }
 
     setLoading(true);
+    setError(null);
 
     try {
-      // بيانات تسجيل الدخول الافتراضية
-      const defaultCredentials = {
-        username: 'admin',
-        password: '123456'
-      };
+      const result = await exchangeShopService.login(username, password);
 
-      // التحقق من بيانات تسجيل الدخول
-      if (username === defaultCredentials.username && password === defaultCredentials.password) {
-        // حفظ حالة تسجيل الدخول
+      if (result.success && result.shop) {
         await AsyncStorage.setItem('isLoggedIn', 'true');
         await AsyncStorage.setItem('loginTime', new Date().toISOString());
-        
-        // الانتقال المباشر لصفحة الإعدادات
-        router.replace('/(tabs)/accounting');
+        await AsyncStorage.setItem('shopUsername', result.shop.username);
+        await AsyncStorage.setItem('shopId', result.shop.id);
+        await AsyncStorage.setItem('shopNameAr', result.shop.shop_name_ar || '');
+        await AsyncStorage.setItem('shopNameHe', result.shop.shop_name_he || '');
+        await AsyncStorage.setItem('shopNameEn', result.shop.shop_name_en || '');
+
+        router.replace('/(tabs)/prices');
       } else {
-        Alert.alert('خطأ', 'اسم المستخدم أو كلمة المرور غير صحيحة');
+        setError(result.error || 'اسم المستخدم أو كلمة المرور غير صحيحة');
       }
     } catch (error) {
-      Alert.alert('خطأ', 'حدث خطأ في تسجيل الدخول');
+      setError('حدث خطأ في تسجيل الدخول');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleBack = () => {
-    router.back();
-  };
-
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
+      <ScrollView
         style={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-            <Text style={styles.backButtonText}>← العودة</Text>
-          </TouchableOpacity>
-        </View>
-
         <View style={styles.loginContainer}>
           <View style={styles.logoContainer}>
-            <Text style={styles.logoText}>⚙️</Text>
+            <Text style={styles.logoText}>💱</Text>
           </View>
-          
-          <Text style={styles.title}>تسجيل الدخول للإعدادات</Text>
-          <Text style={styles.subtitle}>يرجى إدخال بيانات المدير للوصول للإعدادات</Text>
+
+          <Text style={styles.title}>تسجيل الدخول</Text>
+          <Text style={styles.subtitle}>يرجى إدخال بيانات محل الصرافة للوصول إلى الأسعار</Text>
+
+          {error && (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
 
           <View style={styles.formContainer}>
             <View style={styles.inputGroup}>
@@ -73,11 +70,12 @@ export default function LoginScreen() {
               <TextInput
                 style={styles.input}
                 value={username}
-                onChangeText={setUsername}
-                placeholder="admin"
+                onChangeText={(t) => { setUsername(t); setError(null); }}
+                placeholder="أدخل اسم المستخدم"
                 textAlign="right"
                 autoCapitalize="none"
                 autoCorrect={false}
+                editable={!loading}
               />
             </View>
 
@@ -86,12 +84,14 @@ export default function LoginScreen() {
               <TextInput
                 style={styles.input}
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(t) => { setPassword(t); setError(null); }}
                 placeholder="••••••"
                 textAlign="right"
                 secureTextEntry={true}
                 autoCapitalize="none"
                 autoCorrect={false}
+                editable={!loading}
+                onSubmitEditing={handleLogin}
               />
             </View>
 
@@ -100,9 +100,11 @@ export default function LoginScreen() {
               onPress={handleLogin}
               disabled={loading}
             >
-              <Text style={styles.loginButtonText}>
-                {loading ? 'جاري تسجيل الدخول...' : '🔐 تسجيل الدخول'}
-              </Text>
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Text style={styles.loginButtonText}>تسجيل الدخول</Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -114,33 +116,17 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0FDF4',
+    backgroundColor: '#0B3B24',
   },
   scrollContainer: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
+    justifyContent: 'center',
     padding: 20,
   },
-  header: {
-    marginTop: 20,
-    marginBottom: 40,
-  },
-  backButton: {
-    backgroundColor: '#6B7280',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-  },
-  backButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
   loginContainer: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     maxWidth: 400,
@@ -148,39 +134,51 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#059669',
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: '#C9A84C',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 30,
-    shadowColor: '#059669',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
   },
   logoText: {
-    fontSize: 40,
-    color: '#FFFFFF',
+    fontSize: 44,
   },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: 'bold',
-    color: '#065F46',
+    color: '#FFFFFF',
     marginBottom: 10,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
-    color: '#6B7280',
-    marginBottom: 40,
+    fontSize: 15,
+    color: '#C9A84C',
+    marginBottom: 30,
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 22,
+  },
+  errorBox: {
+    backgroundColor: 'rgba(208, 48, 47, 0.15)',
+    borderWidth: 1,
+    borderColor: '#D0302F',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    marginBottom: 16,
+    width: '100%',
+  },
+  errorText: {
+    color: '#FF6B6B',
+    fontSize: 14,
+    textAlign: 'center',
+    fontWeight: '600',
   },
   formContainer: {
     width: '100%',
@@ -188,14 +186,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 30,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 8,
-    marginBottom: 30,
   },
   inputGroup: {
     marginBottom: 20,
@@ -205,6 +199,7 @@ const styles = StyleSheet.create({
     color: '#374151',
     marginBottom: 8,
     fontWeight: '600',
+    textAlign: 'right',
   },
   input: {
     borderWidth: 2,
@@ -216,24 +211,14 @@ const styles = StyleSheet.create({
     color: '#1F2937',
   },
   loginButton: {
-    backgroundColor: '#059669',
+    backgroundColor: '#0B3B24',
     padding: 18,
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 10,
-    shadowColor: '#059669',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
   },
   loginButtonDisabled: {
-    backgroundColor: '#9CA3AF',
-    shadowOpacity: 0,
-    elevation: 0,
+    backgroundColor: '#6B7280',
   },
   loginButtonText: {
     color: '#FFFFFF',

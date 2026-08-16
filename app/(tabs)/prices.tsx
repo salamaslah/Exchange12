@@ -104,6 +104,7 @@ export default function PricesScreen() {
   const [lastUpdateTime, setLastUpdateTime] = useState<string>('');
   const [selectedFirstCurrency, setSelectedFirstCurrency] = useState<string | null>(null);
   const [currentTime, setCurrentTime]       = useState(new Date());
+  const [shopName, setShopName]             = useState<{ar: string; he: string; en: string} | null>(null);
 
   const router          = useRouter();
   const isScreenFocused = useRef<boolean>(false);
@@ -199,8 +200,15 @@ export default function PricesScreen() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const data = await currencyService.getAll();
-      setAllCurrencies(data.sort((a, b) => (a.sort_num ?? 999) - (b.sort_num ?? 999)));
+      const shopUsername = await AsyncStorage.getItem('shopUsername') || undefined;
+      const shopAr = await AsyncStorage.getItem('shopNameAr') || '';
+      const shopHe = await AsyncStorage.getItem('shopNameHe') || '';
+      const shopEn = await AsyncStorage.getItem('shopNameEn') || '';
+      if (shopAr || shopHe || shopEn) {
+        setShopName({ ar: shopAr, he: shopHe, en: shopEn });
+      }
+      const data = await currencyService.getAll(shopUsername);
+      setAllCurrencies(data.sort((a: any, b: any) => (a.sort_num ?? 999) - (b.sort_num ?? 999)));
       const co = await companySettingsService.get();
       if (co) {
         setCompanyInfo(co);
@@ -371,7 +379,9 @@ export default function PricesScreen() {
     { weekday: 'long' }
   );
 
-  const companyName = companyInfo
+  const companyName = shopName
+    ? (language === 'ar' ? shopName.ar : language === 'he' ? shopName.he : shopName.en)
+    : companyInfo
     ? (language === 'ar' ? companyInfo.name_ar : language === 'he' ? companyInfo.name_he : companyInfo.name_en)
     : (language === 'ar' ? 'نعامنة للصرافة' : language === 'he' ? 'נעאמנה להמרות' : 'Naamneh Exchange');
 

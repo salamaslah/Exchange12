@@ -1,5 +1,5 @@
 import { Redirect } from 'expo-router';
 
-export default function LoginScreen() {
-  return <Redirect href="/(tabs)/prices" />;
+export default function IndexScreen() {
+  return <Redirect href="/login" />;
 }
