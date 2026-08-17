@@ -230,7 +230,7 @@ export default function PricesScreen() {
 
       const data = await currencyService.getAll(shopUsername, shopId);
       setAllCurrencies(data.sort((a: any, b: any) => (a.sort_num ?? 999) - (b.sort_num ?? 999)));
-      const co = await companySettingsService.get();
+      const co = await companySettingsService.get(shopUsername);
       if (co) {
         setCompanyInfo(co);
         setWorkingHours(await workingHoursService.getByCompanyId(co.id));
