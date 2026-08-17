@@ -188,6 +188,7 @@ export const currencyService = {
             name_ar: newCurrency.name_ar,
             name_en: newCurrency.name_en,
             name_he: newCurrency.name_he,
+            current_rate: newCurrency.current_rate ?? null,
             is_active: true
           })
           .select()

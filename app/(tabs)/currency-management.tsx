@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Modal, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { currencyService, currencyUpdateLogService, commissionService, shopCurrencyService, supabase } from '@/lib/supabase';
+import { currencyService, currencyUpdateLogService, commissionService, shopCurrencyService, companySettingsService, supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { exchangeRateAPI } from '@/lib/exchangeRateAPI';
 
@@ -34,7 +34,7 @@ export default function CurrencyManagementScreen() {
   const [showEditRateModal, setShowEditRateModal] = useState(false);
   const [editingRateCurrency, setEditingRateCurrency] = useState<Currency | null>(null);
   const [newRateValue, setNewRateValue] = useState('');
-  const [shopId, setShopId] = useState<string | null>(null);
+  const [shopId, setShopId] = useState<string | null | undefined>(undefined);
   const [shopUsername, setShopUsername] = useState<string>('admin');
   const [searchQuery, setSearchQuery] = useState('');
   const [addingCurrency, setAddingCurrency] = useState(false);
@@ -71,15 +71,29 @@ export default function CurrencyManagementScreen() {
 
   useEffect(() => {
     (async () => {
-      const id = await AsyncStorage.getItem('shopId');
+      let id = await AsyncStorage.getItem('shopId');
       const username = await AsyncStorage.getItem('shopUsername') || 'admin';
+
+      // إذا لم يكن shopId مخزناً (جلسات قديمة)، جلبه من قاعدة البيانات
+      if (!id && username && username !== 'admin') {
+        try {
+          const shop = await companySettingsService.getByUsername(username);
+          if (shop?.id) {
+            id = shop.id;
+            await AsyncStorage.setItem('shopId', id);
+          }
+        } catch (e) {
+          console.error('خطأ في جلب shopId:', e);
+        }
+      }
+
       setShopId(id);
       setShopUsername(username);
     })();
   }, []);
 
   useEffect(() => {
-    if (shopId !== null) {
+    if (shopId !== undefined) {
       loadCurrencies();
       setupRealtimeSubscription();
       loadAutoUpdateStatusAndUpdate();
@@ -207,7 +221,7 @@ export default function CurrencyManagementScreen() {
       console.log('🔄 تحميل جميع العملات من قاعدة البيانات Supabase...');
       
       // جلب العملات مع عمولات المحل
-      const currenciesData = await currencyService.getAll(shopUsername, shopId || undefined);
+      const currenciesData = await currencyService.getAll(shopUsername, shopId && shopId !== 'super-admin' ? shopId : undefined);
       console.log(`✅ تم تحميل ${currenciesData.length} عملة من قاعدة البيانات Supabase`);
       
       // ترتيب العملات حسب sort_num تصاعدياً
@@ -437,7 +451,7 @@ export default function CurrencyManagementScreen() {
   };
 
   const addCurrencyToShop = async (selectedCurrency: { code: string; name_ar: string; name_en: string; name_he: string }) => {
-    if (!shopId) {
+    if (!shopId || shopId === 'super-admin') {
       Alert.alert('خطأ', 'لم يتم التعرف على المحل. يرجى إعادة تسجيل الدخول.');
       return;
     }
@@ -493,7 +507,7 @@ export default function CurrencyManagementScreen() {
       if (error?.code === '23505') {
         Alert.alert('تنبيه', 'هذه العملة مضافة بالفعل للمحل');
       } else {
-        Alert.alert('❌ خطأ', 'حدث خطأ في إضافة العملة');
+        Alert.alert('❌ خطأ', `حدث خطأ في إضافة العملة: ${error?.message || 'غير معروف'}`);
       }
     } finally {
       setAddingCurrency(false);
