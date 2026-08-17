@@ -862,7 +862,7 @@ const s = StyleSheet.create({
   clockDate: { color: GOLD, fontSize: 11, fontWeight: '500' },
 
   headerCenter: { flex: 2, alignItems: 'center', gap: 6 },
-  companyBigName: { color: WHITE, fontSize: 22, fontWeight: '900', textAlign: 'center', letterSpacing: 0.5 },
+  companyBigName: { color: GOLD2, fontSize: 28, fontWeight: '900', textAlign: 'center', letterSpacing: 0.5, textShadowColor: GOLD, textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 },
   sloganRow: { flexDirection: 'row', alignItems: 'center', gap: 8, width: '100%' },
   sloganLine: { flex: 1, height: 1, backgroundColor: GOLD },
   sloganText: { color: GOLD, fontSize: 11, fontWeight: '600', textAlign: 'center' },
@@ -888,7 +888,7 @@ const s = StyleSheet.create({
   clockTimeLarge: { fontSize: 24, fontWeight: '800' },
   clockDateLarge: { fontSize: 14, fontWeight: '600' },
   headerCenterLarge: { gap: 8 },
-  companyBigNameLarge: { fontSize: 32 },
+  companyBigNameLarge: { fontSize: 44 },
   sloganTextLarge: { fontSize: 14 },
   headerRightLarge: { gap: 12 },
   logoCircleLarge: { width: 62, height: 62, borderRadius: 31 },
