@@ -397,20 +397,20 @@ export default function PricesScreen() {
   const handleLogout = async () => {
     try {
       await AsyncStorage.multiRemove([
-        'isAdminLoggedIn',
-        'adminLoginTime',
-        'adminUsername',
+        'isLoggedIn',
+        'loginTime',
         'shopUsername',
         'shopId',
         'shopNameAr',
         'shopNameHe',
         'shopNameEn',
-        'savedAdminUsername',
-        'savedAdminPassword',
+        'savedShopUsername',
+        'savedShopPassword',
+        'isSuperAdmin',
       ]);
-      router.replace('/admin-login');
+      router.replace('/login');
     } catch (e) {
-      router.replace('/admin-login');
+      router.replace('/login');
     }
   };
 
