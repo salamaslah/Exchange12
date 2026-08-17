@@ -247,12 +247,15 @@ export default function CurrencyManagementScreen() {
 
       const newStatus = !currency.is_active;
       console.log(`🔄 تغيير حالة العملة ${currency.name_ar} (${currency.code}) إلى ${newStatus ? 'متوفرة' : 'غير متوفرة'}`);
-      
-      // تحديث العملة في قاعدة البيانات
-      await currencyService.update(currencyId, { 
-        is_active: newStatus,
-        updated_at: new Date().toISOString()
-      });
+
+      // تحديث حالة العملة في جدول shop_currencies
+      if (shopId && shopId !== 'super-admin') {
+        await shopCurrencyService.toggleActive(currencyId, shopId, newStatus);
+      } else {
+        await currencyService.update(currencyId, {
+          updated_at: new Date().toISOString()
+        });
+      }
       
       // إعادة تحميل العملات من قاعدة البيانات
       await loadCurrencies();
@@ -484,7 +487,6 @@ export default function CurrencyManagementScreen() {
           name_en: selectedCurrency.name_en,
           name_he: selectedCurrency.name_he,
           current_rate: defaultRate,
-          is_active: true,
         };
         const created = await currencyService.create(newCurrencyData) as any;
         currencyId = created.id;

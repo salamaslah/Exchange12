@@ -54,22 +54,25 @@ export const currencyService = {
       }
 
       // جلب عملات المحل من جدول shop_currencies إذا تم تمرير shopId
-      let shopCurrencyIds: string[] | null = null;
+      let shopCurrencyMap: { [id: string]: boolean } | null = null;
       if (shopId && isSupabaseConfigured()) {
         const { data: scData } = await supabase!
           .from('shop_currencies')
-          .select('currency_id')
+          .select('currency_id, is_active')
           .eq('shop_id', shopId);
-        shopCurrencyIds = (scData || []).map((row: any) => row.currency_id);
-        console.log(`✅ تم جلب ${shopCurrencyIds.length} عملة خاصة بالمحل`);
+        shopCurrencyMap = {};
+        (scData || []).forEach((row: any) => {
+          shopCurrencyMap![row.currency_id] = row.is_active;
+        });
+        console.log(`✅ تم جلب ${Object.keys(shopCurrencyMap).length} عملة خاصة بالمحل`);
       }
 
       if (isSupabaseConfigured()) {
         console.log('📊 استخدام Supabase لجلب العملات من جدول currencies');
         let query = supabase!.from('currencies').select('*');
-        if (shopCurrencyIds && shopCurrencyIds.length > 0) {
-          query = query.in('id', shopCurrencyIds);
-        } else if (shopCurrencyIds) {
+        if (shopCurrencyMap && Object.keys(shopCurrencyMap).length > 0) {
+          query = query.in('id', Object.keys(shopCurrencyMap));
+        } else if (shopCurrencyMap) {
           // shop has no currencies yet
           return [];
         }
@@ -83,6 +86,9 @@ export const currencyService = {
           const buyComm = shopComm ? shopComm.buy : 6;
           const sellComm = shopComm ? shopComm.sell : 6;
 
+          // is_active يأتي من shop_currencies إن وجد، وإلا true
+          const is_active = shopCurrencyMap ? (shopCurrencyMap[currency.id] ?? false) : true;
+
           if (currency.current_rate && currency.current_rate > 0) {
             const buyCommissionShekel = buyComm / 100;
             const sellCommissionShekel = sellComm / 100;
@@ -93,6 +99,7 @@ export const currencyService = {
 
             return {
               ...currency,
+              is_active,
               buy_commission: buyComm,
               sell_commission: sellComm,
               buy_rate: buyRate,
@@ -102,6 +109,7 @@ export const currencyService = {
           
           return {
             ...currency,
+            is_active,
             buy_commission: buyComm,
             sell_commission: sellComm,
           };
@@ -167,7 +175,7 @@ export const currencyService = {
     try {
       console.log('🔄 بدء إضافة عملة جديدة:', currency);
       
-      // إنشاء العملة الجديدة مع is_active = true
+      // إنشاء العملة الجديدة
       const newCurrency = {
         ...currency,
         id: Date.now().toString(),
@@ -178,7 +186,6 @@ export const currencyService = {
       
       // إضافة العملة إلى قاعدة البيانات الحقيقية
       console.log('📊 إضافة العملة إلى جدول currencies في قاعدة البيانات');
-      console.log('📊 تحديث عمود is_active = true في جدول currencies');
       
       if (isSupabaseConfigured()) {
         const { data, error } = await supabase!
@@ -188,8 +195,7 @@ export const currencyService = {
             name_ar: newCurrency.name_ar,
             name_en: newCurrency.name_en,
             name_he: newCurrency.name_he,
-            current_rate: newCurrency.current_rate ?? null,
-            is_active: true
+            current_rate: newCurrency.current_rate ?? null
           })
           .select()
           .single();
@@ -204,7 +210,7 @@ export const currencyService = {
         }
       }
       
-      console.log(`✅ تم إضافة العملة ${newCurrency.code} في جدول currencies مع is_active = true`);
+      console.log(`✅ تم إضافة العملة ${newCurrency.code} في جدول currencies`);
       
       // تحديث التخزين المحلي
       const savedCurrencies = await AsyncStorage.getItem('managedCurrencies');
@@ -264,9 +270,6 @@ export const currencyService = {
         }
       }
       
-      if (currency.is_active !== undefined) {
-        console.log(`✅ تم تحديث عمود is_active إلى ${currency.is_active} في جدول currencies للعملة ${id}`);
-      }
       if (currency.current_rate !== undefined) {
         console.log(`✅ تم تحديث عمود current_rate إلى ${currency.current_rate} في جدول currencies للعملة ${id}`);
       }
