@@ -394,6 +394,26 @@ export default function PricesScreen() {
     router.push('/(tabs)/customer-info');
   };
 
+  const handleLogout = async () => {
+    try {
+      await AsyncStorage.multiRemove([
+        'isAdminLoggedIn',
+        'adminLoginTime',
+        'adminUsername',
+        'shopUsername',
+        'shopId',
+        'shopNameAr',
+        'shopNameHe',
+        'shopNameEn',
+        'savedAdminUsername',
+        'savedAdminPassword',
+      ]);
+      router.replace('/admin-login');
+    } catch (e) {
+      router.replace('/admin-login');
+    }
+  };
+
   // ── Render helpers ─────────────────────────────────────
   const isLargeScreen = screenData.width >= 768;
   const wh = getWorkingHoursText();
@@ -484,6 +504,11 @@ export default function PricesScreen() {
           <View style={[s.headerRight, isLargeScreen && s.headerRightLarge]}>
             <TouchableOpacity style={[s.logoCircle, isLargeScreen && s.logoCircleLarge]} onPress={() => router.push('/admin-login')}>
               <Text style={[s.logoSymbol, isLargeScreen && s.logoSymbolLarge]}>€$</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[s.logoutBtn, isLargeScreen && s.logoutBtnLarge]} onPress={handleLogout}>
+              <Text style={[s.logoutBtnText, isLargeScreen && s.logoutBtnTextLarge]}>
+                {language === 'ar' ? 'خروج' : language === 'he' ? 'יציאה' : 'Logout'}
+              </Text>
             </TouchableOpacity>
             <View style={[s.langRow, isLargeScreen && s.langRowLarge]}>
               {(['ar','he','en'] as const).map(l => (
@@ -895,6 +920,18 @@ const s = StyleSheet.create({
   logoSymbolLarge: { fontSize: 22 },
   langRowLarge: { gap: 6 },
   langBtnLarge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
+  logoutBtn: {
+    marginTop: 6,
+    backgroundColor: RED,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: RED,
+  },
+  logoutBtnLarge: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 10 },
+  logoutBtnText: { color: WHITE, fontSize: 11, fontWeight: '700' },
+  logoutBtnTextLarge: { fontSize: 14 },
   langBtnTextLarge: { fontSize: 13 },
 
   /* Working hours compact */
