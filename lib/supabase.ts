@@ -465,7 +465,7 @@ export const workingHoursService = {
       if (isSupabaseConfigured()) {
         const hoursWithCompanyId = workingHours.map(day => ({
           company_id: companyId,
-          day_of_week: day.key,
+          day_of_week: day.day_of_week || day.key,
           is_working_day: day.is_working_day,
           morning_start: day.morning_start || '09:00',
           morning_end: day.morning_end || '14:00',
