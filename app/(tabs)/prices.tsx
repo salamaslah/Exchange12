@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { exchangeRateAPI } from '@/lib/exchangeRateAPI';
 import { useAutoUpdateRates } from '@/hooks/useAutoUpdateRates';
 import { LinearGradient } from 'expo-linear-gradient';
+import { TEMPLATES, getTemplate, PriceTemplate } from '@/lib/priceTemplates';
 
 interface Currency {
   id: string;
@@ -105,6 +106,8 @@ export default function PricesScreen() {
   const [selectedFirstCurrency, setSelectedFirstCurrency] = useState<string | null>(null);
   const [currentTime, setCurrentTime]       = useState(new Date());
   const [shopName, setShopName]             = useState<{ar: string; he: string; en: string} | null>(null);
+  const [templateId, setTemplateId]         = useState<number>(1);
+  const tpl: PriceTemplate = getTemplate(templateId);
 
   const router          = useRouter();
   const isScreenFocused = useRef<boolean>(false);
@@ -208,6 +211,8 @@ export default function PricesScreen() {
       if (shopAr || shopHe || shopEn) {
         setShopName({ ar: shopAr, he: shopHe, en: shopEn });
       }
+      const cachedTpl = await AsyncStorage.getItem('templateId');
+      if (cachedTpl) setTemplateId(parseInt(cachedTpl, 10) || 1);
 
       // إذا لم يكن shopId مخزّناً، جلبه من قاعدة البيانات باستخدام اسم المستخدم
       if (!shopId && shopUsername && shopUsername !== 'admin') {
@@ -234,6 +239,10 @@ export default function PricesScreen() {
       if (co) {
         setCompanyInfo(co);
         setWorkingHours(await workingHoursService.getByCompanyId(co.id));
+        if (co.template_id) {
+          setTemplateId(co.template_id);
+          await AsyncStorage.setItem('templateId', String(co.template_id));
+        }
       }
     } catch {} finally { setLoading(false); }
   };
@@ -445,7 +454,16 @@ export default function PricesScreen() {
 
   const companyPhone = companyInfo?.phone1 || '0526000841';
 
-  const cardWidth = isLargeScreen
+  const s = getStyles(templateId);
+  const isListLayout = tpl.layout === 'list';
+  const isCompactLayout = tpl.layout === 'compact';
+  const cardWidth = isListLayout
+    ? screenData.width - 16
+    : isCompactLayout
+    ? isLargeScreen
+      ? (screenData.width - 64) / 6
+      : (screenData.width - 24) / 3
+    : isLargeScreen
     ? (screenData.width - 56) / 4
     : (screenData.width - 32) / 2;
 
@@ -856,352 +874,357 @@ export default function PricesScreen() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// STYLES
+// DYNAMIC STYLES (based on selected template)
 // ═══════════════════════════════════════════════════════════
-const BG      = '#0B3B24';   // deep forest green (matches image)
-const BG2     = '#0F4A2E';   // slightly lighter green
-const GOLD    = '#C9A84C';   // gold accent
-const GOLD2   = '#E8C96A';   // lighter gold
-const WHITE   = '#FFFFFF';
-const RED     = '#D0302F';
-const GREEN   = '#1A9A52';
-const DARK    = '#1A2730';
-const GRAY    = '#8A9BB0';
 const SHADOW  = { shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 6 };
 
-const s = StyleSheet.create({
-  page: { flex: 1, backgroundColor: BG },
-  loadingContainer: { flex: 1, backgroundColor: BG, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { color: GOLD, fontSize: 18, fontWeight: '600' },
+function makeStyles(t: PriceTemplate) {
+  const isDarkCard = t.cardBg !== '#FFFFFF' && t.cardBg !== '#FFF8F0';
+  const cardText = t.cardText;
+  const cardSubText = t.cardSubText;
 
-  /* ── HEADER ── */
-  header: {
-    backgroundColor: BG,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingTop: 14,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: GOLD + '50',
-  },
-  headerLeft: { flex: 1, alignItems: 'flex-start', gap: 2 },
-  clockRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  clockIcon: { fontSize: 13, opacity: 0.8 },
-  clockTime: { color: WHITE, fontSize: 16, fontWeight: '700' },
-  clockDate: { color: GOLD, fontSize: 11, fontWeight: '500' },
+  return StyleSheet.create({
+    page: { flex: 1, backgroundColor: t.bg },
+    loadingContainer: { flex: 1, backgroundColor: t.bg, justifyContent: 'center', alignItems: 'center' },
+    loadingText: { color: t.accent, fontSize: 18, fontWeight: '600' },
 
-  headerCenter: { flex: 2, alignItems: 'center', gap: 6 },
-  companyBigName: { color: GOLD2, fontSize: 28, fontWeight: '900', textAlign: 'center', letterSpacing: 0.5, textShadowColor: GOLD, textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 },
-  sloganRow: { flexDirection: 'row', alignItems: 'center', gap: 8, width: '100%' },
-  sloganLine: { flex: 1, height: 1, backgroundColor: GOLD },
-  sloganText: { color: GOLD, fontSize: 11, fontWeight: '600', textAlign: 'center' },
+    /* ── HEADER ── */
+    header: {
+      backgroundColor: t.bg,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 14,
+      paddingTop: 14,
+      paddingBottom: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: t.accent + '50',
+    },
+    headerLeft: { flex: 1, alignItems: 'flex-start', gap: 2 },
+    clockRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    clockIcon: { fontSize: 13, opacity: 0.8 },
+    clockTime: { color: t.white, fontSize: 16, fontWeight: '700' },
+    clockDate: { color: t.accent, fontSize: 11, fontWeight: '500' },
 
-  headerRight: { flex: 1, alignItems: 'flex-end', gap: 8 },
-  logoCircle: {
-    width: 46, height: 46, borderRadius: 23,
-    backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: GOLD2,
-    ...SHADOW,
-  },
-  logoSymbol: { color: BG, fontSize: 15, fontWeight: '900' },
-  langRow: { flexDirection: 'row', gap: 3 },
-  langBtn: { paddingHorizontal: 6, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: GOLD + '50' },
-  langBtnActive: { backgroundColor: GOLD },
-  langBtnText: { color: GOLD, fontSize: 10, fontWeight: '600' },
-  langBtnTextActive: { color: BG, fontWeight: '700' },
+    headerCenter: { flex: 2, alignItems: 'center', gap: 6 },
+    companyBigName: { color: t.accent2, fontSize: 28, fontWeight: '900', textAlign: 'center', letterSpacing: 0.5, textShadowColor: t.accent, textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 6 },
+    sloganRow: { flexDirection: 'row', alignItems: 'center', gap: 8, width: '100%' },
+    sloganLine: { flex: 1, height: 1, backgroundColor: t.accent },
+    sloganText: { color: t.accent, fontSize: 11, fontWeight: '600', textAlign: 'center' },
 
-  /* Large screen header overrides */
-  headerLarge: { paddingHorizontal: 28, paddingTop: 20, paddingBottom: 22 },
-  headerLeftLarge: { gap: 4 },
-  clockIconLarge: { fontSize: 18 },
-  clockTimeLarge: { fontSize: 24, fontWeight: '800' },
-  clockDateLarge: { fontSize: 14, fontWeight: '600' },
-  headerCenterLarge: { gap: 8 },
-  companyBigNameLarge: { fontSize: 44 },
-  sloganTextLarge: { fontSize: 14 },
-  headerRightLarge: { gap: 12 },
-  logoCircleLarge: { width: 62, height: 62, borderRadius: 31 },
-  logoSymbolLarge: { fontSize: 22 },
-  langRowLarge: { gap: 6 },
-  langBtnLarge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
-  logoutBtn: {
-    marginTop: 6,
-    backgroundColor: RED,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: RED,
-  },
-  logoutBtnLarge: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 10 },
-  logoutBtnText: { color: WHITE, fontSize: 11, fontWeight: '700' },
-  logoutBtnTextLarge: { fontSize: 14 },
-  langBtnTextLarge: { fontSize: 13 },
+    headerRight: { flex: 1, alignItems: 'flex-end', gap: 8 },
+    logoCircle: {
+      width: 46, height: 46, borderRadius: 23,
+      backgroundColor: t.accent, alignItems: 'center', justifyContent: 'center',
+      borderWidth: 2, borderColor: t.accent2,
+      ...SHADOW,
+    },
+    logoSymbol: { color: t.bg, fontSize: 15, fontWeight: '900' },
+    langRow: { flexDirection: 'row', gap: 3 },
+    langBtn: { paddingHorizontal: 6, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: t.accent + '50' },
+    langBtnActive: { backgroundColor: t.accent },
+    langBtnText: { color: t.accent, fontSize: 10, fontWeight: '600' },
+    langBtnTextActive: { color: t.bg, fontWeight: '700' },
 
-  /* Working hours compact */
-  whCompact: { alignItems: 'center', paddingHorizontal: 12 },
-  whCompactCard: {
-    backgroundColor: BG2,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: GOLD + '40',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    width: '100%',
-    maxWidth: 480,
-    alignSelf: 'center',
-  },
-  whCompactRow: { flexDirection: 'row', alignItems: 'center' },
-  whCompactItem: { flex: 1, alignItems: 'center', gap: 4 },
-  whCompactSep: { width: 1, height: 40, backgroundColor: GOLD + '50', marginHorizontal: 8 },
-  whCompactIcon: { fontSize: 18 },
-  whCompactLabel: { color: GOLD, fontSize: 10, fontWeight: '600' },
-  whCompactVal: { color: WHITE, fontSize: 13, fontWeight: '700', textAlign: 'center' },
-  whCompactDivider: { height: 1, backgroundColor: GOLD + '30', marginVertical: 10 },
-  whDaysRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, flexWrap: 'wrap' },
+    /* Large screen header overrides */
+    headerLarge: { paddingHorizontal: 28, paddingTop: 20, paddingBottom: 22 },
+    headerLeftLarge: { gap: 4 },
+    clockIconLarge: { fontSize: 18 },
+    clockTimeLarge: { fontSize: 24, fontWeight: '800' },
+    clockDateLarge: { fontSize: 14, fontWeight: '600' },
+    headerCenterLarge: { gap: 8 },
+    companyBigNameLarge: { fontSize: 44 },
+    sloganTextLarge: { fontSize: 14 },
+    headerRightLarge: { gap: 12 },
+    logoCircleLarge: { width: 62, height: 62, borderRadius: 31 },
+    logoSymbolLarge: { fontSize: 22 },
+    langRowLarge: { gap: 6 },
+    langBtnLarge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
+    logoutBtn: {
+      marginTop: 6,
+      backgroundColor: t.red,
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: t.red,
+    },
+    logoutBtnLarge: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 10 },
+    logoutBtnText: { color: t.white, fontSize: 11, fontWeight: '700' },
+    logoutBtnTextLarge: { fontSize: 14 },
+    langBtnTextLarge: { fontSize: 13 },
 
-  /* Working hours in header (large screens) */
-  whInHeader: {
-    marginTop: 10,
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: GOLD + '50',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  whInHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginTop: 6 },
-  whInHeaderDaysLine: { color: WHITE, fontSize: 26, fontWeight: '800', textAlign: 'center' },
-  whInHeaderRestLine: { color: GOLD2, fontSize: 14, fontWeight: '600', textAlign: 'center', marginTop: 4 },
-  whInHeaderItem: { color: GOLD2, fontSize: 26, fontWeight: '600' },
-  whInHeaderVal: { color: WHITE, fontWeight: '800', fontSize: 26 },
-  whInHeaderSep: { width: 1, height: 28, backgroundColor: GOLD + '60' },
-  ratesTitleBar: {
-    backgroundColor: BG,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    gap: 8,
-  },
-  goldHLine: { height: 1, backgroundColor: GOLD + '60', width: '100%' },
-  ratesTitleContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  ratesTitleText: { color: WHITE, fontSize: 18, fontWeight: '800', textAlign: 'center' },
-  calcHint: { fontSize: 20 },
+    /* Working hours compact */
+    whCompact: { alignItems: 'center', paddingHorizontal: 12 },
+    whCompactCard: {
+      backgroundColor: t.bg2,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: t.accent + '40',
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      width: '100%',
+      maxWidth: 480,
+      alignSelf: 'center',
+    },
+    whCompactRow: { flexDirection: 'row', alignItems: 'center' },
+    whCompactItem: { flex: 1, alignItems: 'center', gap: 4 },
+    whCompactSep: { width: 1, height: 40, backgroundColor: t.accent + '50', marginHorizontal: 8 },
+    whCompactIcon: { fontSize: 18 },
+    whCompactLabel: { color: t.accent, fontSize: 10, fontWeight: '600' },
+    whCompactVal: { color: t.white, fontSize: 13, fontWeight: '700', textAlign: 'center' },
+    whCompactDivider: { height: 1, backgroundColor: t.accent + '30', marginVertical: 10 },
+    whDaysRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, flexWrap: 'wrap' },
 
-  /* ── HINT BAR ── */
-  hintBar: {
-    marginHorizontal: 12, marginBottom: 8,
-    backgroundColor: BG2,
-    borderRadius: 8, paddingVertical: 7, paddingHorizontal: 12,
-    alignItems: 'center',
-    borderWidth: 1, borderColor: GOLD + '30',
-  },
-  hintBarActive: { borderColor: GOLD, backgroundColor: GOLD + '15' },
-  hintText: { color: GOLD2, fontSize: 11, fontWeight: '500', textAlign: 'center' },
-  hintTextBig: { color: GOLD2, fontSize: 13, fontWeight: '700', textAlign: 'center' },
+    /* Working hours in header (large screens) */
+    whInHeader: {
+      marginTop: 10,
+      backgroundColor: 'rgba(0,0,0,0.25)',
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: t.accent + '50',
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+    },
+    whInHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginTop: 6 },
+    whInHeaderDaysLine: { color: t.white, fontSize: 26, fontWeight: '800', textAlign: 'center' },
+    whInHeaderRestLine: { color: t.accent2, fontSize: 14, fontWeight: '600', textAlign: 'center', marginTop: 4 },
+    whInHeaderItem: { color: t.accent2, fontSize: 26, fontWeight: '600' },
+    whInHeaderVal: { color: t.white, fontWeight: '800', fontSize: 26 },
+    whInHeaderSep: { width: 1, height: 28, backgroundColor: t.accent + '60' },
+    ratesTitleBar: {
+      backgroundColor: t.bg,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      alignItems: 'center',
+      gap: 8,
+    },
+    goldHLine: { height: 1, backgroundColor: t.accent + '60', width: '100%' },
+    ratesTitleContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    ratesTitleText: { color: t.white, fontSize: 18, fontWeight: '800', textAlign: 'center' },
+    calcHint: { fontSize: 20 },
 
-  /* ── CURRENCY GRID ── */
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 8,
-    paddingBottom: 8,
-    gap: 8,
-  },
-  card: {
-    backgroundColor: WHITE,
-    borderRadius: 14,
-    overflow: 'hidden',
-    ...SHADOW,
-    borderWidth: 1,
-    borderColor: '#E2EBF0',
-  },
-  cardSelected: { borderWidth: 2, borderColor: GOLD },
-  cardInactive: {},
+    /* ── HINT BAR ── */
+    hintBar: {
+      marginHorizontal: 12, marginBottom: 8,
+      backgroundColor: t.bg2,
+      borderRadius: 8, paddingVertical: 7, paddingHorizontal: 12,
+      alignItems: 'center',
+      borderWidth: 1, borderColor: t.accent + '30',
+    },
+    hintBarActive: { borderColor: t.accent, backgroundColor: t.accent + '15' },
+    hintText: { color: t.accent2, fontSize: 11, fontWeight: '500', textAlign: 'center' },
+    hintTextBig: { color: t.accent2, fontSize: 13, fontWeight: '700', textAlign: 'center' },
 
-  unavailBadge: {
-    position: 'absolute',
-    alignSelf: 'center',
-    top: '55%',
-    zIndex: 10,
-    backgroundColor: '#6B7280',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  unavailText: { color: WHITE, fontSize: 13, fontWeight: '800', textAlign: 'center' },
+    /* ── CURRENCY GRID ── */
+    grid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      paddingHorizontal: 8,
+      paddingBottom: 8,
+      gap: 8,
+    },
+    card: {
+      backgroundColor: t.cardBg,
+      borderRadius: t.cardRadius,
+      overflow: 'hidden',
+      ...SHADOW,
+      borderWidth: 1,
+      borderColor: t.cardBorder,
+    },
+    cardSelected: { borderWidth: 2, borderColor: t.accent },
+    cardInactive: {},
 
-  cardFlagArea: {
-    alignItems: 'center',
-    paddingTop: 14, paddingBottom: 10, paddingHorizontal: 6,
-    backgroundColor: WHITE,
-  },
-  checkBadge: {
-    position: 'absolute', top: 6, right: 6,
-    width: 20, height: 20, borderRadius: 10,
-    backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center',
-  },
-  checkText: { color: WHITE, fontSize: 11, fontWeight: '800' },
-  flagRing: {
-    width: 52, height: 52, borderRadius: 26,
-    overflow: 'hidden',
-    borderWidth: 2, borderColor: '#DCE8F0',
-    marginBottom: 7,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 4, elevation: 3,
-  },
-  flagRingActive: { borderColor: GOLD + '80' },
-  flagImg: { width: '100%', height: '100%' },
-  flagEmoji: { fontSize: 30, lineHeight: 52, textAlign: 'center' },
-  cardCode: { color: DARK, fontSize: 16, fontWeight: '800', letterSpacing: 0.3 },
-  cardName: { color: GRAY, fontSize: 10, textAlign: 'center', marginTop: 2 },
-  dimText: { color: '#C0CBD5' },
+    unavailBadge: {
+      position: 'absolute',
+      alignSelf: 'center',
+      top: '55%',
+      zIndex: 10,
+      backgroundColor: '#6B7280',
+      borderRadius: 8,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+    },
+    unavailText: { color: t.white, fontSize: 13, fontWeight: '800', textAlign: 'center' },
 
-  /* Large screen card name overrides */
-  cardCodeLg: { fontSize: 32, letterSpacing: 0.5 },
-  cardNameLg: { fontSize: 20, marginTop: 4 },
-  cardFlagAreaLg: { paddingTop: 22, paddingBottom: 16 },
-  flagRingLg: { width: 80, height: 80, borderRadius: 40 },
-  flagEmojiLg: { fontSize: 48, lineHeight: 80 },
+    cardFlagArea: {
+      alignItems: 'center',
+      paddingTop: 14, paddingBottom: 10, paddingHorizontal: 6,
+      backgroundColor: t.cardBg,
+    },
+    checkBadge: {
+      position: 'absolute', top: 6, right: 6,
+      width: 20, height: 20, borderRadius: 10,
+      backgroundColor: t.accent, alignItems: 'center', justifyContent: 'center',
+    },
+    checkText: { color: t.white, fontSize: 11, fontWeight: '800' },
+    flagRing: {
+      width: 52, height: 52, borderRadius: 26,
+      overflow: 'hidden',
+      borderWidth: 2, borderColor: t.flagRingColor,
+      marginBottom: 7,
+      shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 4, elevation: 3,
+    },
+    flagRingActive: { borderColor: t.accent + '80' },
+    flagImg: { width: '100%', height: '100%' },
+    flagEmoji: { fontSize: 30, lineHeight: 52, textAlign: 'center' },
+    cardCode: { color: cardText, fontSize: 16, fontWeight: '800', letterSpacing: 0.3 },
+    cardName: { color: cardSubText, fontSize: 10, textAlign: 'center', marginTop: 2 },
+    dimText: { color: cardSubText },
 
-  cardGoldLine: { height: 1.5, backgroundColor: GOLD + '50', marginHorizontal: 8 },
+    /* Large screen card name overrides */
+    cardCodeLg: { fontSize: 32, letterSpacing: 0.5 },
+    cardNameLg: { fontSize: 20, marginTop: 4 },
+    cardFlagAreaLg: { paddingTop: 22, paddingBottom: 16 },
+    flagRingLg: { width: 80, height: 80, borderRadius: 40 },
+    flagEmojiLg: { fontSize: 48, lineHeight: 80 },
 
-  cardRatesRow: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingVertical: 10, paddingHorizontal: 6,
-    backgroundColor: WHITE,
-  },
-  rateHalf: { flex: 1, alignItems: 'center', gap: 3, paddingVertical: 4, borderRadius: 8 },
-  rateHalfActive: { backgroundColor: '#F5F8FA' },
-  rateVLine: { width: 1, height: 32, backgroundColor: '#E2EBF0', marginHorizontal: 4 },
-  rateLbl: { fontSize: 10, color: GRAY, fontWeight: '600' },
-  rateLblActive: { color: '#4A6572', fontWeight: '700' },
-  rateLblBuy:  { color: RED },
-  rateLblSell: { color: GREEN },
-  buyVal:  { fontSize: 17, fontWeight: '700', color: RED },
-  sellVal: { fontSize: 18, fontWeight: '800', color: GREEN },
-  currentVal: { fontSize: 13, fontWeight: '700', color: DARK },
-  currentLbl: { fontSize: 9, color: GRAY, fontWeight: '600' },
+    cardGoldLine: { height: 1.5, backgroundColor: t.dividerColor + '50', marginHorizontal: 8 },
 
-  /* Large screen rate overrides */
-  rateLblLg: { fontSize: 22, fontWeight: '700' },
-  buyValLg:  { fontSize: 44, fontWeight: '800', letterSpacing: -0.5 },
-  sellValLg: { fontSize: 46, fontWeight: '900', letterSpacing: -0.5 },
-  currentValLg: { fontSize: 26, fontWeight: '700' },
-  currentLblLg: { fontSize: 18, fontWeight: '700' },
-  rateHalfLg: { paddingVertical: 10 },
-  rateVLineLg: { height: 72 },
-  cardRatesRowLg: { paddingVertical: 18, paddingHorizontal: 10 },
+    cardRatesRow: {
+      flexDirection: 'row', alignItems: 'center',
+      paddingVertical: 10, paddingHorizontal: 6,
+      backgroundColor: t.cardBg,
+    },
+    rateHalf: { flex: 1, alignItems: 'center', gap: 3, paddingVertical: 4, borderRadius: 8 },
+    rateHalfActive: { backgroundColor: isDarkCard ? 'rgba(255,255,255,0.05)' : '#F5F8FA' },
+    rateVLine: { width: 1, height: 32, backgroundColor: t.cardBorder, marginHorizontal: 4 },
+    rateLbl: { fontSize: 10, color: cardSubText, fontWeight: '600' },
+    rateLblActive: { color: cardText, fontWeight: '700' },
+    rateLblBuy:  { color: t.red },
+    rateLblSell: { color: t.green },
+    buyVal:  { fontSize: 17, fontWeight: '700', color: t.red },
+    sellVal: { fontSize: 18, fontWeight: '800', color: t.green },
+    currentVal: { fontSize: 13, fontWeight: '700', color: cardText },
+    currentLbl: { fontSize: 9, color: cardSubText, fontWeight: '600' },
 
-  /* ── INFO BAR ── */
-  infoBar: {
-    backgroundColor: BG2,
-    marginTop: 0,
-    borderTopWidth: 1.5,
-    borderBottomWidth: 1.5,
-    borderColor: GOLD + '60',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-  },
-  infoBarInner: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
-  infoSegment: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, minWidth: 110 },
-  infoSep: { width: 1.5, height: 24, backgroundColor: GOLD + '70' },
-  infoIcon: { fontSize: 15 },
-  infoText: { color: WHITE, fontSize: 12, fontWeight: '700', flex: 1, opacity: 0.95 },
+    /* Large screen rate overrides */
+    rateLblLg: { fontSize: 22, fontWeight: '700' },
+    buyValLg:  { fontSize: 44, fontWeight: '800', letterSpacing: -0.5 },
+    sellValLg: { fontSize: 46, fontWeight: '900', letterSpacing: -0.5 },
+    currentValLg: { fontSize: 26, fontWeight: '700' },
+    currentLblLg: { fontSize: 18, fontWeight: '700' },
+    rateHalfLg: { paddingVertical: 10 },
+    rateVLineLg: { height: 72 },
+    cardRatesRowLg: { paddingVertical: 18, paddingHorizontal: 10 },
 
-  /* ── SECTIONS ── */
-  section: { paddingHorizontal: 12, paddingTop: 16, paddingBottom: 4 },
-  sectionTitle: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
-  sectionTitleText: { color: GOLD, fontSize: 15, fontWeight: '800' },
+    /* ── INFO BAR ── */
+    infoBar: {
+      backgroundColor: t.bg2,
+      marginTop: 0,
+      borderTopWidth: 1.5,
+      borderBottomWidth: 1.5,
+      borderColor: t.accent + '60',
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+    },
+    infoBarInner: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
+    infoSegment: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, minWidth: 110 },
+    infoSep: { width: 1.5, height: 24, backgroundColor: t.accent + '70' },
+    infoIcon: { fontSize: 15 },
+    infoText: { color: t.white, fontSize: 12, fontWeight: '700', flex: 1, opacity: 0.95 },
 
-  /* Services */
-  servicesRow: { flexDirection: 'row', gap: 8 },
-  serviceCard: {
-    flex: 1, alignItems: 'center',
-    backgroundColor: BG2, borderRadius: 12, paddingVertical: 28,
-    borderWidth: 1, borderColor: GOLD + '40',
-    ...SHADOW,
-  },
-  serviceIconWrap: {
-    width: 88, height: 88, borderRadius: 44,
-    backgroundColor: WHITE + '15',
-    alignItems: 'center', justifyContent: 'center',
-    marginBottom: 12,
-  },
-  serviceIcon: { fontSize: 44 },
-  serviceLabel: { color: WHITE, fontSize: 20, fontWeight: '600', textAlign: 'center' },
+    /* ── SECTIONS ── */
+    section: { paddingHorizontal: 12, paddingTop: 16, paddingBottom: 4 },
+    sectionTitle: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
+    sectionTitleText: { color: t.accent, fontSize: 15, fontWeight: '800' },
 
-  /* Working hours */
-  whRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  whCard: {
-    flex: 1, minWidth: 80,
-    backgroundColor: BG2, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 8,
-    alignItems: 'center', borderWidth: 1, borderColor: GOLD + '40',
-  },
-  whCardFull: { width: '100%', flex: 0 },
-  whIcon: { fontSize: 18, marginBottom: 4 },
-  whLabel: { color: GOLD, fontSize: 10, fontWeight: '600', marginBottom: 3 },
-  whVal: { color: WHITE, fontSize: 12, fontWeight: '700', textAlign: 'center' },
+    /* Services */
+    servicesRow: { flexDirection: 'row', gap: 8 },
+    serviceCard: {
+      flex: 1, alignItems: 'center',
+      backgroundColor: t.bg2, borderRadius: 12, paddingVertical: 28,
+      borderWidth: 1, borderColor: t.accent + '40',
+      ...SHADOW,
+    },
+    serviceIconWrap: {
+      width: 88, height: 88, borderRadius: 44,
+      backgroundColor: t.white + '15',
+      alignItems: 'center', justifyContent: 'center',
+      marginBottom: 12,
+    },
+    serviceIcon: { fontSize: 44 },
+    serviceLabel: { color: t.white, fontSize: 20, fontWeight: '600', textAlign: 'center' },
 
-  /* Footer */
-  footer: {
-    flexDirection: 'row', alignItems: 'center',
-    marginHorizontal: 12, marginTop: 18, gap: 10,
-  },
-  footerSlogan: { color: GOLD, fontSize: 14, fontWeight: '800' },
+    /* Working hours */
+    whRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    whCard: {
+      flex: 1, minWidth: 80,
+      backgroundColor: t.bg2, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 8,
+      alignItems: 'center', borderWidth: 1, borderColor: t.accent + '40',
+    },
+    whCardFull: { width: '100%', flex: 0 },
+    whIcon: { fontSize: 18, marginBottom: 4 },
+    whLabel: { color: t.accent, fontSize: 10, fontWeight: '600', marginBottom: 3 },
+    whVal: { color: t.white, fontSize: 12, fontWeight: '700', textAlign: 'center' },
 
-  /* Customer button */
-  custBtn: {
-    backgroundColor: GOLD,
-    marginHorizontal: 12, marginTop: 14, marginBottom: 24,
-    borderRadius: 14, paddingVertical: 16, alignItems: 'center',
-    ...SHADOW,
-  },
-  custBtnText: { color: BG, fontSize: 16, fontWeight: '900' },
+    /* Footer */
+    footer: {
+      flexDirection: 'row', alignItems: 'center',
+      marginHorizontal: 12, marginTop: 18, gap: 10,
+    },
+    footerSlogan: { color: t.accent, fontSize: 14, fontWeight: '800' },
 
-  /* ── CALCULATOR MODAL ── */
-  modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'flex-end' },
-  calcModal: {
-    backgroundColor: WHITE, borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    maxHeight: '85%', paddingTop: 16,
-  },
-  calcHead: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingBottom: 12,
-    borderBottomWidth: 1, borderBottomColor: '#E5E7EB',
-  },
-  calcTitle: { color: DARK, fontSize: 17, fontWeight: '800' },
-  calcCloseBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
-  calcCloseX: { color: '#374151', fontSize: 15, fontWeight: '700' },
-  calcSection: { paddingHorizontal: 20, paddingTop: 16 },
-  calcSectionLbl: { color: GRAY, fontSize: 12, fontWeight: '600', marginBottom: 10, textAlign: 'center' },
-  calcCurrRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  calcCurrBtn: { flex: 1, backgroundColor: '#F3F4F6', borderRadius: 12, alignItems: 'center', paddingVertical: 12 },
-  calcCurrCode: { color: DARK, fontSize: 20, fontWeight: '800' },
-  calcCurrName: { color: GRAY, fontSize: 11, marginTop: 2, textAlign: 'center' },
-  calcTap: { color: '#9CA3AF', fontSize: 10, marginTop: 4 },
-  calcSwapBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center' },
-  calcSwapTxt: { color: WHITE, fontSize: 20, fontWeight: '700' },
-  calcAmtRow: { flexDirection: 'row', gap: 12 },
-  calcAmtLbl: { color: DARK, fontSize: 13, fontWeight: '700', marginBottom: 6 },
-  calcInput: {
-    borderWidth: 2, borderColor: '#D1D5DB', borderRadius: 10,
-    padding: 12, fontSize: 22, fontWeight: '700', color: DARK,
-    textAlign: 'center', width: '100%',
-  },
-  calcDetailsBox: {
-    marginHorizontal: 20, marginTop: 10,
-    backgroundColor: '#F3F4F6', borderRadius: 8, padding: 10,
-  },
-  calcDetailsTxt: { color: '#374151', fontSize: 11, textAlign: 'center' },
-  proceedBtn: {
-    backgroundColor: BG, marginHorizontal: 20, marginTop: 16,
-    borderRadius: 14, paddingVertical: 16, alignItems: 'center',
-  },
-  proceedTxt: { color: WHITE, fontSize: 15, fontWeight: '800' },
-});
+    /* Customer button */
+    custBtn: {
+      backgroundColor: t.accent,
+      marginHorizontal: 12, marginTop: 14, marginBottom: 24,
+      borderRadius: 14, paddingVertical: 16, alignItems: 'center',
+      ...SHADOW,
+    },
+    custBtnText: { color: t.bg, fontSize: 16, fontWeight: '900' },
+
+    /* ── CALCULATOR MODAL ── */
+    modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'flex-end' },
+    calcModal: {
+      backgroundColor: t.cardBg, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+      maxHeight: '85%', paddingTop: 16,
+    },
+    calcHead: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingHorizontal: 20, paddingBottom: 12,
+      borderBottomWidth: 1, borderBottomColor: t.cardBorder,
+    },
+    calcTitle: { color: cardText, fontSize: 17, fontWeight: '800' },
+    calcCloseBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: isDarkCard ? 'rgba(255,255,255,0.08)' : '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
+    calcCloseX: { color: cardText, fontSize: 15, fontWeight: '700' },
+    calcSection: { paddingHorizontal: 20, paddingTop: 16 },
+    calcSectionLbl: { color: cardSubText, fontSize: 12, fontWeight: '600', marginBottom: 10, textAlign: 'center' },
+    calcCurrRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    calcCurrBtn: { flex: 1, backgroundColor: isDarkCard ? 'rgba(255,255,255,0.05)' : '#F3F4F6', borderRadius: 12, alignItems: 'center', paddingVertical: 12 },
+    calcCurrCode: { color: cardText, fontSize: 20, fontWeight: '800' },
+    calcCurrName: { color: cardSubText, fontSize: 11, marginTop: 2, textAlign: 'center' },
+    calcTap: { color: cardSubText, fontSize: 10, marginTop: 4 },
+    calcSwapBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: t.accent, alignItems: 'center', justifyContent: 'center' },
+    calcSwapTxt: { color: t.white, fontSize: 20, fontWeight: '700' },
+    calcAmtRow: { flexDirection: 'row', gap: 12 },
+    calcAmtLbl: { color: cardText, fontSize: 13, fontWeight: '700', marginBottom: 6 },
+    calcInput: {
+      borderWidth: 2, borderColor: t.cardBorder, borderRadius: 10,
+      padding: 12, fontSize: 22, fontWeight: '700', color: cardText,
+      textAlign: 'center', width: '100%',
+      backgroundColor: isDarkCard ? 'rgba(255,255,255,0.03)' : '#F9FAFB',
+    },
+    calcDetailsBox: {
+      marginHorizontal: 20, marginTop: 10,
+      backgroundColor: isDarkCard ? 'rgba(255,255,255,0.05)' : '#F3F4F6', borderRadius: 8, padding: 10,
+    },
+    calcDetailsTxt: { color: cardText, fontSize: 11, textAlign: 'center' },
+    proceedBtn: {
+      backgroundColor: t.bg, marginHorizontal: 20, marginTop: 16,
+      borderRadius: 14, paddingVertical: 16, alignItems: 'center',
+    },
+    proceedTxt: { color: t.white, fontSize: 15, fontWeight: '800' },
+  });
+}
+
+// Memoize styles per template id to avoid recreating on every render
+const styleCache: { [id: number]: ReturnType<typeof makeStyles> } = {};
+function getStyles(templateId: number) {
+  if (!styleCache[templateId]) styleCache[templateId] = makeStyles(getTemplate(templateId));
+  return styleCache[templateId];
+}

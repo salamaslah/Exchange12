@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert,
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { companySettingsService, workingHoursService } from '@/lib/supabase';
+import { TEMPLATES } from '@/lib/priceTemplates';
 
 interface CompanyInfo {
   name_ar: string;
@@ -51,6 +52,7 @@ export default function CompanySettingsScreen() {
 
   const [screenData, setScreenData] = useState(Dimensions.get('window'));
   const [shopUsername, setShopUsername] = useState<string | null>(null);
+  const [templateId, setTemplateId] = useState<number>(1);
   const router = useRouter();
 
   useEffect(() => {
@@ -105,6 +107,10 @@ export default function CompanySettingsScreen() {
           evening_end: eveningEnd,
           work_days: workDays
         });
+        if (settings.template_id) {
+          setTemplateId(settings.template_id);
+          await AsyncStorage.setItem('templateId', String(settings.template_id));
+        }
       } else {
         console.log('📝 لا توجد إعدادات محفوظة، استخدام القيم الافتراضية');
         
@@ -166,7 +172,8 @@ export default function CompanySettingsScreen() {
         address_en: companyInfo.address_en,
         phone1: companyInfo.phone1,
         phone2: companyInfo.phone2,
-        phone3: companyInfo.phone3
+        phone3: companyInfo.phone3,
+        template_id: templateId
       };
       
       if (settings) {
@@ -473,6 +480,46 @@ export default function CompanySettingsScreen() {
             </View>
           </View>
 
+          {/* Template Selection Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>🎨 قالب عرض الأسعار</Text>
+            <Text style={styles.templateHint}>اختر القالب الذي يناسب متجرك — سيظهر لعملائك في صفحة الأسعار</Text>
+            <View style={styles.templateGrid}>
+              {TEMPLATES.map((tpl) => (
+                <TouchableOpacity
+                  key={tpl.id}
+                  style={[
+                    styles.templateCard,
+                    templateId === tpl.id && styles.templateCardSelected,
+                  ]}
+                  onPress={() => setTemplateId(tpl.id)}
+                >
+                  {/* Mini preview swatch */}
+                  <View style={[styles.templateSwatch, { backgroundColor: tpl.bg }]}>
+                    <View style={[styles.templateSwatchBar, { backgroundColor: tpl.accent }]} />
+                    <View style={styles.templateSwatchDots}>
+                      <View style={[styles.templateSwatchDot, { backgroundColor: tpl.red }]} />
+                      <View style={[styles.templateSwatchDot, { backgroundColor: tpl.green }]} />
+                    </View>
+                    <View style={[styles.templateSwatchCard, { backgroundColor: tpl.cardBg, borderColor: tpl.cardBorder }]}>
+                      <Text style={[styles.templateSwatchCardText, { color: tpl.cardText }]}>{tpl.nameAr}</Text>
+                    </View>
+                  </View>
+                  <Text style={[
+                    styles.templateName,
+                    templateId === tpl.id && styles.templateNameSelected,
+                  ]}>
+                    {tpl.id}. {tpl.nameAr}
+                  </Text>
+                  <Text style={styles.templateNameEn}>{tpl.nameEn}</Text>
+                  {templateId === tpl.id && (
+                    <Text style={styles.templateCheck}>✓</Text>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
           {/* Save Button */}
           <TouchableOpacity style={styles.saveButton} onPress={saveCompanyInfo}>
             <Text style={styles.saveButtonText}>💾 حفظ معلومات الشركة</Text>
@@ -666,5 +713,87 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#374151',
     lineHeight: 20,
+  },
+  templateHint: {
+    fontSize: 13,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  templateGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'center',
+  },
+  templateCard: {
+    width: 160,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    padding: 10,
+    alignItems: 'center',
+    position: 'relative',
+  },
+  templateCardSelected: {
+    borderColor: '#065F46',
+    backgroundColor: '#F0FDF4',
+  },
+  templateSwatch: {
+    width: '100%',
+    height: 80,
+    borderRadius: 8,
+    padding: 8,
+    justifyContent: 'space-between',
+    overflow: 'hidden',
+  },
+  templateSwatchBar: {
+    height: 4,
+    borderRadius: 2,
+    width: '70%',
+  },
+  templateSwatchDots: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  templateSwatchDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  templateSwatchCard: {
+    borderRadius: 4,
+    borderWidth: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    alignSelf: 'flex-start',
+  },
+  templateSwatchCardText: {
+    fontSize: 9,
+    fontWeight: '700',
+  },
+  templateName: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#374151',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  templateNameSelected: {
+    color: '#065F46',
+  },
+  templateNameEn: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginTop: 2,
+  },
+  templateCheck: {
+    position: 'absolute',
+    top: 6,
+    right: 8,
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#065F46',
   },
 });
