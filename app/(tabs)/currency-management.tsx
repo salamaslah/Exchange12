@@ -275,42 +275,43 @@ export default function CurrencyManagementScreen() {
 
   const deleteCurrency = async (currency: Currency) => {
     try {
-      console.log(`🗑️ بدء حذف العملة ${currency.name_ar} (${currency.code})...`);
-
-      // إزالة العملة من عملات المحل
-      if (shopId) {
-        await shopCurrencyService.removeCurrencyFromShop(currency.id, shopId);
+      if (!shopId || shopId === 'super-admin') {
+        Alert.alert('خطأ', 'لم يتم التعرف على المحل. يرجى إعادة تسجيل الدخول.');
+        return;
       }
-      // حذف العملة من قاعدة البيانات
-      await currencyService.delete(currency.id);
+
+      console.log(`🗑️ إزالة العملة ${currency.name_ar} (${currency.code}) من المحل...`);
+
+      // إزالة العملة من عملات المحل فقط (تبقى في جدول currencies)
+      await shopCurrencyService.removeCurrencyFromShop(currency.id, shopId);
 
       // إعادة تحميل العملات من قاعدة البيانات
       await loadCurrencies();
       
-      console.log(`✅ تم حذف العملة ${currency.code} بنجاح`);
+      console.log(`✅ تمت إزالة العملة ${currency.code} من المحل بنجاح`);
       
       Alert.alert(
-        '✅ تم الحذف',
-        `تم حذف عملة ${currency.name_ar} (${currency.code}) بنجاح`
+        '✅ تمت الإزالة',
+        `تمت إزالة عملة ${currency.name_ar} (${currency.code}) من المحل`
       );
       
     } catch (error) {
-      console.error('❌ خطأ في حذف العملة من قاعدة البيانات:', error);
-      Alert.alert('❌ خطأ', 'حدث خطأ في حذف العملة من قاعدة البيانات');
+      console.error('❌ خطأ في إزالة العملة من المحل:', error);
+      Alert.alert('❌ خطأ', 'حدث خطأ في إزالة العملة من المحل');
     }
   };
 
   const confirmDeleteCurrency = (currency: Currency) => {
     Alert.alert(
-      '🗑️ حذف العملة',
-      `هل تريد حذف عملة ${currency.name_ar} (${currency.code}) نهائياً؟\n\nتحذير: هذا الإجراء لا يمكن التراجع عنه!`,
+      '🗑️ إزالة العملة',
+      `هل تريد إزالة عملة ${currency.name_ar} (${currency.code}) من المحل؟\n\nسيبقى العملة في جدول العملات ويمكن إضافتها مجدداً لاحقاً.`,
       [
         {
           text: 'إلغاء',
           style: 'cancel'
         },
         {
-          text: 'نعم، احذف',
+          text: 'نعم، أزِل',
           style: 'destructive',
           onPress: () => deleteCurrency(currency)
         }
