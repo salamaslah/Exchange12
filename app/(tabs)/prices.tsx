@@ -239,12 +239,23 @@ export default function PricesScreen() {
   };
 
   const getWorkingDaysText = () => {
-    const allExceptFriday = DAYS_OF_WEEK.filter(d => d.key !== 'friday');
+    const allDays = DAYS_OF_WEEK;
     if (!workingHours?.length) {
+      const allExceptFriday = allDays.filter(d => d.key !== 'friday');
       return allExceptFriday.map(d => language === 'he' ? d.he : language === 'en' ? d.en : d.ar).join(' - ');
     }
     const activeDays = workingHours.filter(wh => wh.is_working_day === true || (wh.is_working_day as any) === 'true').map(wh => wh.day_of_week);
-    const filtered = allExceptFriday.filter(d => activeDays.length === 0 || activeDays.includes(d.key));
+    const filtered = allDays.filter(d => activeDays.length === 0 || activeDays.includes(d.key));
+    return filtered.map(d => language === 'he' ? d.he : language === 'en' ? d.en : d.ar).join(' - ');
+  };
+
+  const getRestDaysText = () => {
+    if (!workingHours?.length) return '';
+    const restDays = workingHours
+      .filter(wh => wh.is_working_day === false || (wh.is_working_day as any) === 'false')
+      .map(wh => wh.day_of_week);
+    if (restDays.length === 0) return '';
+    const filtered = DAYS_OF_WEEK.filter(d => restDays.includes(d.key));
     return filtered.map(d => language === 'he' ? d.he : language === 'en' ? d.en : d.ar).join(' - ');
   };
 
@@ -455,6 +466,11 @@ export default function PricesScreen() {
                 <Text style={s.whInHeaderDaysLine}>
                   📅 {getWorkingDaysText()}
                 </Text>
+                {getRestDaysText() ? (
+                  <Text style={s.whInHeaderRestLine}>
+                    🏖️ {language === 'ar' ? 'أيام العطل: ' : language === 'he' ? 'ימי מנוחה: ' : 'Rest days: '}{getRestDaysText()}
+                  </Text>
+                ) : null}
                 <View style={s.whInHeaderRow}>
                   <Text style={s.whInHeaderItem}>🌅 {language === 'ar' ? 'صباحاً' : language === 'he' ? 'בוקר' : 'Morning'}: <Text style={s.whInHeaderVal}>{wh.morning}</Text></Text>
                   <View style={s.whInHeaderSep} />
@@ -684,6 +700,16 @@ export default function PricesScreen() {
                 <Text style={s.whCompactLabel}>{language === 'ar' ? 'أيام العمل: ' : language === 'he' ? 'ימי עבודה: ' : 'Days: '}</Text>
                 <Text style={s.whCompactVal}>{getWorkingDaysText()}</Text>
               </View>
+              {getRestDaysText() ? (
+                <>
+                  <View style={s.whCompactDivider} />
+                  <View style={s.whDaysRow}>
+                    <Text style={s.whCompactIcon}>🏖️</Text>
+                    <Text style={s.whCompactLabel}>{language === 'ar' ? 'أيام العطل: ' : language === 'he' ? 'ימי מנוחה: ' : 'Rest days: '}</Text>
+                    <Text style={s.whCompactVal}>{getRestDaysText()}</Text>
+                  </View>
+                </>
+              ) : null}
               <View style={s.whCompactDivider} />
               <View style={s.whCompactRow}>
                 <View style={s.whCompactItem}>
@@ -905,6 +931,7 @@ const s = StyleSheet.create({
   },
   whInHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap', marginTop: 6 },
   whInHeaderDaysLine: { color: WHITE, fontSize: 26, fontWeight: '800', textAlign: 'center' },
+  whInHeaderRestLine: { color: GOLD2, fontSize: 14, fontWeight: '600', textAlign: 'center', marginTop: 4 },
   whInHeaderItem: { color: GOLD2, fontSize: 26, fontWeight: '600' },
   whInHeaderVal: { color: WHITE, fontWeight: '800', fontSize: 26 },
   whInHeaderSep: { width: 1, height: 28, backgroundColor: GOLD + '60' },
