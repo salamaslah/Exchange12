@@ -138,22 +138,15 @@ export default function CompanySettingsScreen() {
         console.log('✅ تم إنشاء أوقات عمل افتراضية في قاعدة البيانات');
       }
       
-      // حفظ نسخة في التخزين المحلي للتوافق مع الإصدارات السابقة
-      await AsyncStorage.setItem('companyInfo', JSON.stringify(companyInfo));
+      // حفظ أسماء الشركة في التخزين المحلي لتستخدمها صفحة الأسعار
+      await AsyncStorage.multiSet([
+        ['shopNameAr', settings.name_ar || ''],
+        ['shopNameHe', settings.name_he || ''],
+        ['shopNameEn', settings.name_en || ''],
+      ]);
       
     } catch (error) {
       console.error('❌ خطأ في تحميل إعدادات الشركة:', error);
-      
-      // في حالة الخطأ، جرب التحميل من التخزين المحلي
-      try {
-        const savedInfo = await AsyncStorage.getItem('companyInfo');
-        if (savedInfo) {
-          setCompanyInfo(JSON.parse(savedInfo));
-          console.log('✅ تم تحميل الإعدادات من التخزين المحلي كبديل');
-        }
-      } catch (localError) {
-        console.log('خطأ في تحميل الإعدادات من التخزين المحلي:', localError);
-      }
     }
   };
 
@@ -199,8 +192,12 @@ export default function CompanySettingsScreen() {
       await workingHoursService.upsert(settings.id, workingHoursData);
       console.log('✅ تم حفظ أوقات العمل في قاعدة البيانات');
       
-      // حفظ نسخة في التخزين المحلي للتوافق
-      await AsyncStorage.setItem('companyInfo', JSON.stringify(companyInfo));
+      // تحديث أسماء الشركة في التخزين المحلي
+      await AsyncStorage.multiSet([
+        ['shopNameAr', companyInfo.name_ar || ''],
+        ['shopNameHe', companyInfo.name_he || ''],
+        ['shopNameEn', companyInfo.name_en || ''],
+      ]);
       
       Alert.alert(
         '✅ تم الحفظ بنجاح', 

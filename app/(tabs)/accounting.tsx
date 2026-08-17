@@ -25,11 +25,24 @@ export default function AccountingScreen() {
   };
 
   const handleLogout = async () => {
-    await AsyncStorage.removeItem('isAdminLoggedIn');
-    await AsyncStorage.removeItem('adminLoginTime');
-    await AsyncStorage.removeItem('adminUsername');
-    await AsyncStorage.removeItem('savedAdminUsername');
-    await AsyncStorage.removeItem('savedAdminPassword');
+    await AsyncStorage.multiRemove([
+      'isAdminLoggedIn',
+      'adminLoginTime',
+      'adminUsername',
+      'savedAdminUsername',
+      'savedAdminPassword',
+      'shopUsername',
+      'shopId',
+      'shopNameAr',
+      'shopNameHe',
+      'shopNameEn',
+      'savedShopUsername',
+      'savedShopPassword',
+      'isLoggedIn',
+      'loginTime',
+      'isSuperAdmin',
+      'companyInfo',
+    ]);
     router.replace('/');
   };
 

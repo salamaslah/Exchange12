@@ -82,12 +82,24 @@ export default function SuperAdminScreen() {
   };
 
   const handleLogout = async () => {
-    await AsyncStorage.removeItem('isLoggedIn');
-    await AsyncStorage.removeItem('isSuperAdmin');
-    await AsyncStorage.removeItem('savedShopUsername');
-    await AsyncStorage.removeItem('savedShopPassword');
-    await AsyncStorage.removeItem('shopUsername');
-    await AsyncStorage.removeItem('shopId');
+    await AsyncStorage.multiRemove([
+      'isLoggedIn',
+      'loginTime',
+      'isSuperAdmin',
+      'savedShopUsername',
+      'savedShopPassword',
+      'shopUsername',
+      'shopId',
+      'shopNameAr',
+      'shopNameHe',
+      'shopNameEn',
+      'isAdminLoggedIn',
+      'adminLoginTime',
+      'adminUsername',
+      'savedAdminUsername',
+      'savedAdminPassword',
+      'companyInfo',
+    ]);
     router.replace('/login');
   };
 

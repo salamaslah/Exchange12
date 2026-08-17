@@ -407,6 +407,12 @@ export default function PricesScreen() {
         'savedShopUsername',
         'savedShopPassword',
         'isSuperAdmin',
+        'isAdminLoggedIn',
+        'adminLoginTime',
+        'adminUsername',
+        'savedAdminUsername',
+        'savedAdminPassword',
+        'companyInfo',
       ]);
       router.replace('/login');
     } catch (e) {
