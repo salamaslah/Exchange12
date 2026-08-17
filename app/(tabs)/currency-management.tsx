@@ -38,6 +38,8 @@ export default function CurrencyManagementScreen() {
   const [shopUsername, setShopUsername] = useState<string>('admin');
   const [searchQuery, setSearchQuery] = useState('');
   const [addingCurrency, setAddingCurrency] = useState(false);
+  const [currencyToDelete, setCurrencyToDelete] = useState<Currency | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const router = useRouter();
 
   // قائمة العملات المتاحة للإضافة
@@ -280,6 +282,7 @@ export default function CurrencyManagementScreen() {
         return;
       }
 
+      setDeleting(true);
       console.log(`🗑️ إزالة العملة ${currency.name_ar} (${currency.code}) من المحل...`);
 
       // إزالة العملة من عملات المحل فقط (تبقى في جدول currencies)
@@ -298,25 +301,14 @@ export default function CurrencyManagementScreen() {
     } catch (error) {
       console.error('❌ خطأ في إزالة العملة من المحل:', error);
       Alert.alert('❌ خطأ', 'حدث خطأ في إزالة العملة من المحل');
+    } finally {
+      setDeleting(false);
+      setCurrencyToDelete(null);
     }
   };
 
   const confirmDeleteCurrency = (currency: Currency) => {
-    Alert.alert(
-      '🗑️ إزالة العملة',
-      `هل تريد إزالة عملة ${currency.name_ar} (${currency.code}) من المحل؟\n\nسيبقى العملة في جدول العملات ويمكن إضافتها مجدداً لاحقاً.`,
-      [
-        {
-          text: 'إلغاء',
-          style: 'cancel'
-        },
-        {
-          text: 'نعم، أزِل',
-          style: 'destructive',
-          onPress: () => deleteCurrency(currency)
-        }
-      ]
-    );
+    setCurrencyToDelete(currency);
   };
 
   const toggleAutoUpdate = async () => {
@@ -912,6 +904,61 @@ export default function CurrencyManagementScreen() {
                     >
                       <Text style={styles.saveButtonText}>حفظ السعر الجديد</Text>
                     </TouchableOpacity>
+                  </>
+                )}
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Delete Confirmation Modal */}
+        <Modal
+          visible={currencyToDelete !== null}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => { if (!deleting) setCurrencyToDelete(null); }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>إزالة العملة</Text>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => { if (!deleting) setCurrencyToDelete(null); }}
+                  disabled={deleting}
+                >
+                  <Text style={styles.closeButtonText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.modalContent}>
+                {currencyToDelete && (
+                  <>
+                    <Text style={styles.currencyInfo}>
+                      هل تريد إزالة عملة {currencyToDelete.name_ar} ({currencyToDelete.code}) من المحل؟
+                    </Text>
+                    <Text style={styles.commissionNote}>
+                      سيبقى العملة في جدول العملات ويمكن إضافتها مجدداً لاحقاً.
+                    </Text>
+
+                    <View style={{ flexDirection: 'row', gap: 10, marginTop: 20 }}>
+                      <TouchableOpacity
+                        style={[styles.saveButton, { backgroundColor: '#6B7280', flex: 1 }]}
+                        onPress={() => setCurrencyToDelete(null)}
+                        disabled={deleting}
+                      >
+                        <Text style={styles.saveButtonText}>إلغاء</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.saveButton, { backgroundColor: '#DC2626', flex: 1 }]}
+                        onPress={() => deleteCurrency(currencyToDelete)}
+                        disabled={deleting}
+                      >
+                        <Text style={styles.saveButtonText}>
+                          {deleting ? 'جاري الإزالة...' : 'نعم، أزِل'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   </>
                 )}
               </View>
