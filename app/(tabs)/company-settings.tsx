@@ -50,6 +50,7 @@ export default function CompanySettingsScreen() {
   });
 
   const [screenData, setScreenData] = useState(Dimensions.get('window'));
+  const [shopUsername, setShopUsername] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -58,17 +59,21 @@ export default function CompanySettingsScreen() {
     };
 
     const subscription = Dimensions.addEventListener('change', onChange);
-    loadCompanyInfo();
+    (async () => {
+      const username = await AsyncStorage.getItem('shopUsername');
+      setShopUsername(username);
+      loadCompanyInfo(username);
+    })();
 
     return () => subscription?.remove();
   }, []);
 
-  const loadCompanyInfo = async () => {
+  const loadCompanyInfo = async (username?: string | null) => {
     try {
       console.log('🔄 تحميل إعدادات الشركة من قاعدة البيانات...');
       
       // جلب إعدادات الشركة من قاعدة البيانات
-      const settings = await companySettingsService.get();
+      const settings = await companySettingsService.get(username || shopUsername || undefined);
       
       if (settings) {
         console.log('✅ تم تحميل إعدادات الشركة من قاعدة البيانات');
@@ -157,7 +162,7 @@ export default function CompanySettingsScreen() {
       console.log('💾 حفظ إعدادات الشركة في قاعدة البيانات...');
       
       // جلب الإعدادات الحالية أو إنشاء جديدة
-      let settings = await companySettingsService.get();
+      let settings = await companySettingsService.get(shopUsername || undefined);
       
       const settingsData = {
         name_ar: companyInfo.name_ar,
