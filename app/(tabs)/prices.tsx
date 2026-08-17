@@ -200,14 +200,34 @@ export default function PricesScreen() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const shopUsername = await AsyncStorage.getItem('shopUsername') || undefined;
-      const shopId = await AsyncStorage.getItem('shopId') || undefined;
+      let shopUsername = await AsyncStorage.getItem('shopUsername') || undefined;
+      let shopId = await AsyncStorage.getItem('shopId') || undefined;
       const shopAr = await AsyncStorage.getItem('shopNameAr') || '';
       const shopHe = await AsyncStorage.getItem('shopNameHe') || '';
       const shopEn = await AsyncStorage.getItem('shopNameEn') || '';
       if (shopAr || shopHe || shopEn) {
         setShopName({ ar: shopAr, he: shopHe, en: shopEn });
       }
+
+      // إذا لم يكن shopId مخزّناً، جلبه من قاعدة البيانات باستخدام اسم المستخدم
+      if (!shopId && shopUsername && shopUsername !== 'admin') {
+        try {
+          const shop = await companySettingsService.getByUsername(shopUsername);
+          if (shop?.id) {
+            shopId = shop.id;
+            await AsyncStorage.setItem('shopId', shopId);
+          }
+        } catch (e) {
+          console.error('خطأ في جلب shopId:', e);
+        }
+      }
+
+      // إذا لم يوجد اسم مستخدم أو رقم محل، إعادة توجيه لتسجيل الدخول
+      if (!shopUsername || !shopId) {
+        router.replace('/login');
+        return;
+      }
+
       const data = await currencyService.getAll(shopUsername, shopId);
       setAllCurrencies(data.sort((a: any, b: any) => (a.sort_num ?? 999) - (b.sort_num ?? 999)));
       const co = await companySettingsService.get();

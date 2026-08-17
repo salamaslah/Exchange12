@@ -34,12 +34,6 @@ export default function IndexScreen() {
           }
         }
 
-        const isLoggedIn = await AsyncStorage.getItem('isLoggedIn');
-        if (isLoggedIn === 'true') {
-          setGoTo('/(tabs)/prices');
-          return;
-        }
-
         setGoTo('/login');
       } catch {
         setGoTo('/login');
