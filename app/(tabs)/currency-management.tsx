@@ -839,8 +839,8 @@ export default function CurrencyManagementScreen() {
                         <TouchableOpacity
                           key={ac.code}
                           style={styles.currencyPickerItem}
-                          onPress={() => {
-                            addCurrencyToShop(ac);
+                          onPress={async () => {
+                            await addCurrencyToShop(ac);
                             setShowAddModal(false);
                             setSearchQuery('');
                           }}
