@@ -485,29 +485,29 @@ export default function PricesScreen() {
             HEADER
         ════════════════════════════════ */}
         {templateId === 2 ? (
-          <View style={s.alArzHeader}>
+          <View style={[s.alArzHeader, isLargeScreen && s.alArzHeaderLg]}>
             <View style={s.alArzBrand}>
-              <TouchableOpacity style={s.alArzLogoMark} onPress={() => router.push('/admin-login')}>
-                <Text style={s.alArzLogoTree}>✦</Text>
-                <Text style={s.alArzLogoCoin}>€</Text>
+              <TouchableOpacity style={[s.alArzLogoMark, isLargeScreen && s.alArzLogoMarkLg]} onPress={() => router.push('/admin-login')}>
+                <Text style={[s.alArzLogoTree, isLargeScreen && s.alArzLogoTreeLg]}>✦</Text>
+                <Text style={[s.alArzLogoCoin, isLargeScreen && s.alArzLogoCoinLg]}>€</Text>
               </TouchableOpacity>
               <View>
-                <Text style={s.alArzCompanyName}>{companyName}</Text>
-                <Text style={s.alArzCompanySub}>AL-ARZ FINANCIAL SERVICES</Text>
+                <Text style={[s.alArzCompanyName, isLargeScreen && s.alArzCompanyNameLg]}>{companyName}</Text>
+                <Text style={[s.alArzCompanySub, isLargeScreen && s.alArzCompanySubLg]}>AL-ARZ FINANCIAL SERVICES</Text>
               </View>
             </View>
             <View style={s.alArzContact}>
-              <Text style={s.alArzContactTitle}>
+              <Text style={[s.alArzContactTitle, isLargeScreen && s.alArzContactTitleLg]}>
                 {language === 'ar' ? 'اتصل بنا:' : language === 'he' ? 'צור קשר:' : 'Contact us:'}
               </Text>
               <View style={s.alArzContactRow}>
-                <Text style={s.alArzContactText}>☎ {companyPhone}</Text>
-                {companyInfo?.phone2 ? <Text style={s.alArzContactText}>◉ {companyInfo.phone2}</Text> : null}
+                <Text style={[s.alArzContactText, isLargeScreen && s.alArzContactTextLg]}>☎ {companyPhone}</Text>
+                {companyInfo?.phone2 ? <Text style={[s.alArzContactText, isLargeScreen && s.alArzContactTextLg]}>◉ {companyInfo.phone2}</Text> : null}
               </View>
               <View style={s.alArzLanguageRow}>
                 {(['ar', 'he', 'en'] as const).map(l => (
-                  <TouchableOpacity key={l} onPress={() => setLanguage(l)} style={[s.langBtn, language === l && s.langBtnActive]}>
-                    <Text style={[s.langBtnText, language === l && s.langBtnTextActive]}>{l === 'ar' ? 'ع' : l === 'he' ? 'ע' : 'EN'}</Text>
+                  <TouchableOpacity key={l} onPress={() => setLanguage(l)} style={[s.alArzLangBtn, language === l && s.alArzLangBtnActive]}>
+                    <Text style={[s.alArzLangBtnText, language === l && s.alArzLangBtnTextActive]}>{l === 'ar' ? 'ع' : l === 'he' ? 'ע' : 'EN'}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -646,17 +646,17 @@ export default function PricesScreen() {
         ════════════════════════════════ */}
         {templateId === 2 && (
           <View style={s.tableCard}>
-            <Text style={s.tableTitle}>
+            <Text style={[s.tableTitle, isLargeScreen && s.tableTitleLg]}>
               {language === 'ar' ? 'أسعار العملات مباشرة' : language === 'he' ? 'שערי מטבע ישירים' : 'Live Currency Rates'}
             </Text>
-            <Text style={s.tableUpdated}>
+            <Text style={[s.tableUpdated, isLargeScreen && s.tableUpdatedLg]}>
               {language === 'ar' ? `آخر تحديث: ${timeStr} - ${dateStr}` : `${dateStr} - ${timeStr}`}
             </Text>
             <View style={[s.tableHeader, { flexDirection: language === 'en' ? 'row' : 'row-reverse' }]}>
-              <Text style={[s.tableHeaderCell, s.tableCurrencyHeader]}>{language === 'ar' ? 'العملة' : language === 'he' ? 'מטבע' : 'Currency'}</Text>
-              <Text style={[s.tableHeaderCell, s.tableCurrentHeader]}>{language === 'ar' ? 'السعر الحالي' : language === 'he' ? 'שער נוכחי' : 'Current Rate'}</Text>
-              <Text style={[s.tableHeaderCell, s.tableSellHeader]}>{language === 'ar' ? 'سعر البيع' : language === 'he' ? 'שער מכירה' : 'Sell Rate'}</Text>
-              <Text style={[s.tableHeaderCell, s.tableBuyHeader]}>{language === 'ar' ? 'سعر الشراء' : language === 'he' ? 'שער קנייה' : 'Buy Rate'}</Text>
+              <Text style={[s.tableHeaderCell, s.tableCurrencyHeader, isLargeScreen && s.tableHeaderCellLg]}>{language === 'ar' ? 'العملة' : language === 'he' ? 'מטבע' : 'Currency'}</Text>
+              <Text style={[s.tableHeaderCell, s.tableCurrentHeader, isLargeScreen && s.tableHeaderCellLg]}>{language === 'ar' ? 'السعر الحالي' : language === 'he' ? 'שער נוכחי' : 'Current Rate'}</Text>
+              <Text style={[s.tableHeaderCell, s.tableSellHeader, isLargeScreen && s.tableHeaderCellLg]}>{language === 'ar' ? 'سعر البيع' : language === 'he' ? 'שער מכירה' : 'Sell Rate'}</Text>
+              <Text style={[s.tableHeaderCell, s.tableBuyHeader, isLargeScreen && s.tableHeaderCellLg]}>{language === 'ar' ? 'سعر الشراء' : language === 'he' ? 'שער קנייה' : 'Buy Rate'}</Text>
             </View>
             {[...allCurrencies.filter(c => c.is_active), ...allCurrencies.filter(c => !c.is_active)].map(currency => (
               <TouchableOpacity
@@ -665,24 +665,67 @@ export default function PricesScreen() {
                 activeOpacity={currency.is_active ? 0.75 : 1}
                 onPress={() => currency.is_active && handleCurrencyNameClick(currency.code)}
               >
-                <View style={[s.tableCell, s.tableCurrencyCell]}>
-                  <View style={s.tableFlagWrap}>
+                <View style={[s.tableCell, s.tableCurrencyCell, isLargeScreen && s.tableCurrencyCellLg]}>
+                  <View style={[s.tableFlagWrap, isLargeScreen && s.tableFlagWrapLg]}>
                     {getFlagUrl(currency.code) ? (
-                      <Image source={{ uri: getFlagUrl(currency.code) }} style={s.tableFlag} resizeMode="contain" />
+                      <Image source={{ uri: getFlagUrl(currency.code) }} style={[s.tableFlag, isLargeScreen && s.tableFlagLg]} resizeMode="contain" />
                     ) : (
-                      <Text style={s.tableFlagEmoji}>{FLAG_EMOJI[currency.code] || '💱'}</Text>
+                      <Text style={[s.tableFlagEmoji, isLargeScreen && s.tableFlagEmojiLg]}>{FLAG_EMOJI[currency.code] || '💱'}</Text>
                     )}
                   </View>
-                  <Text style={s.tableCurrencyCode}>{currency.code}</Text>
-                  <Text style={s.tableCurrencyName} numberOfLines={1}>
-                    {language === 'ar' ? currency.name_ar : language === 'he' ? (currency.name_he || currency.name_ar) : currency.name_en}
-                  </Text>
+                  <View style={s.tableCurrencyInfo}>
+                    <Text style={[s.tableCurrencyCode, isLargeScreen && s.tableCurrencyCodeLg]}>{currency.code}</Text>
+                    <Text style={[s.tableCurrencyName, isLargeScreen && s.tableCurrencyNameLg]} numberOfLines={2}>
+                      {language === 'ar' ? currency.name_ar : language === 'he' ? (currency.name_he || currency.name_ar) : currency.name_en}
+                    </Text>
+                    {isLargeScreen && (
+                      <Text style={s.tableCurrencyNameEn} numberOfLines={1}>
+                        {currency.name_en}
+                      </Text>
+                    )}
+                  </View>
                 </View>
-                <Text style={[s.tableCell, s.tableCurrentCell]}>{currency.current_rate?.toFixed(2) ?? '—'}</Text>
-                <Text style={[s.tableCell, s.tableSellCell]}>{currency.sell_rate?.toFixed(2) ?? '—'}</Text>
-                <Text style={[s.tableCell, s.tableBuyCell]}>{currency.buy_rate?.toFixed(2) ?? '—'}</Text>
+                <Text style={[s.tableCell, s.tableCurrentCell, isLargeScreen && s.tableCellLg]}>{currency.current_rate?.toFixed(2) ?? '—'}</Text>
+                <Text style={[s.tableCell, s.tableSellCell, isLargeScreen && s.tableCellLg]}>{currency.sell_rate?.toFixed(2) ?? '—'}</Text>
+                <Text style={[s.tableCell, s.tableBuyCell, isLargeScreen && s.tableCellLg]}>{currency.buy_rate?.toFixed(2) ?? '—'}</Text>
               </TouchableOpacity>
             ))}
+          </View>
+        )}
+
+        {/* ════════════════════════════════
+            TEMPLATE 2 — WORKING HOURS
+        ════════════════════════════════ */}
+        {templateId === 2 && (
+          <View style={s.alArzWHSection}>
+            <View style={[s.alArzWHCard, isLargeScreen && s.alArzWHCardLg]}>
+              <Text style={[s.alArzWHTitle, isLargeScreen && s.alArzWHTitleLg]}>
+                {language === 'ar' ? 'ساعات العمل' : language === 'he' ? 'שעות פעילות' : 'Working Hours'}
+              </Text>
+              <View style={[s.alArzWHRow, isLargeScreen && s.alArzWHRowLg]}>
+                <Text style={[s.alArzWHLabel, isLargeScreen && s.alArzWHLabelLg]}>📅 {getWorkingDaysText()}</Text>
+                {getRestDaysText() ? (
+                  <Text style={[s.alArzWHLabel, isLargeScreen && s.alArzWHLabelLg]}>🏖️ {getRestDaysText()}</Text>
+                ) : null}
+              </View>
+              <View style={[s.alArzWHTimeRow, isLargeScreen && s.alArzWHTimeRowLg]}>
+                <View style={s.alArzWHTimeItem}>
+                  <Text style={[s.alArzWHTimeIcon, isLargeScreen && s.alArzWHTimeIconLg]}>🌅</Text>
+                  <Text style={[s.alArzWHTimeLabel, isLargeScreen && s.alArzWHTimeLabelLg]}>
+                    {language === 'ar' ? 'صباحاً' : language === 'he' ? 'בוקר' : 'Morning'}
+                  </Text>
+                  <Text style={[s.alArzWHTimeVal, isLargeScreen && s.alArzWHTimeValLg]}>{wh.morning}</Text>
+                </View>
+                <View style={[s.alArzWHSep, isLargeScreen && s.alArzWHSepLg]} />
+                <View style={s.alArzWHTimeItem}>
+                  <Text style={[s.alArzWHTimeIcon, isLargeScreen && s.alArzWHTimeIconLg]}>🌆</Text>
+                  <Text style={[s.alArzWHTimeLabel, isLargeScreen && s.alArzWHTimeLabelLg]}>
+                    {language === 'ar' ? 'مساءً' : language === 'he' ? 'ערב' : 'Evening'}
+                  </Text>
+                  <Text style={[s.alArzWHTimeVal, isLargeScreen && s.alArzWHTimeValLg]}>{wh.evening}</Text>
+                </View>
+              </View>
+            </View>
           </View>
         )}
 
@@ -1106,6 +1149,7 @@ function makeStyles(t: PriceTemplate) {
       paddingVertical: 14,
       gap: 8,
     },
+    alArzHeaderLg: { paddingHorizontal: 40, paddingVertical: 28 },
     alArzBrand: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
     alArzLogoMark: {
       width: 46, height: 46, borderRadius: 23,
@@ -1113,15 +1157,58 @@ function makeStyles(t: PriceTemplate) {
       alignItems: 'center', justifyContent: 'center',
       flexDirection: 'row',
     },
+    alArzLogoMarkLg: { width: 72, height: 72, borderRadius: 36 },
     alArzLogoTree: { fontSize: 18, color: t.accent, fontWeight: '900', position: 'absolute', top: 2 },
+    alArzLogoTreeLg: { fontSize: 28, top: 4 },
     alArzLogoCoin: { fontSize: 20, color: '#C9A84C', fontWeight: '900' },
+    alArzLogoCoinLg: { fontSize: 32 },
     alArzCompanyName: { color: '#FFFFFF', fontSize: 18, fontWeight: '900' },
+    alArzCompanyNameLg: { fontSize: 32 },
     alArzCompanySub: { color: '#AFC2D8', fontSize: 9, fontWeight: '600', letterSpacing: 0.5, marginTop: 2 },
+    alArzCompanySubLg: { fontSize: 14, marginTop: 4 },
     alArzContact: { alignItems: 'flex-end', gap: 4 },
     alArzContactTitle: { color: '#AFC2D8', fontSize: 10, fontWeight: '700' },
+    alArzContactTitleLg: { fontSize: 16 },
     alArzContactRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' },
     alArzContactText: { color: '#FFFFFF', fontSize: 11, fontWeight: '600' },
+    alArzContactTextLg: { fontSize: 18 },
     alArzLanguageRow: { flexDirection: 'row', gap: 4, marginTop: 4 },
+    alArzLangBtn: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, borderWidth: 1.5, borderColor: '#FFFFFF', backgroundColor: 'rgba(255,255,255,0.15)' },
+    alArzLangBtnActive: { backgroundColor: '#FFFFFF' },
+    alArzLangBtnText: { color: '#FFFFFF', fontSize: 11, fontWeight: '700' },
+    alArzLangBtnTextActive: { color: t.accent, fontWeight: '900' },
+
+    /* Template 2 working hours */
+    alArzWHSection: { paddingHorizontal: 12, paddingTop: 16, paddingBottom: 8 },
+    alArzWHCard: {
+      backgroundColor: t.cardBg,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: t.cardBorder,
+      paddingVertical: 16,
+      paddingHorizontal: 16,
+      alignItems: 'center',
+      ...SHADOW,
+    },
+    alArzWHCardLg: { paddingVertical: 28, paddingHorizontal: 32, maxWidth: 700, alignSelf: 'center', width: '100%' },
+    alArzWHTitle: { fontSize: 16, fontWeight: '800', color: t.dark, marginBottom: 12 },
+    alArzWHTitleLg: { fontSize: 28, marginBottom: 20 },
+    alArzWHRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center', marginBottom: 12 },
+    alArzWHRowLg: { gap: 24, marginBottom: 20 },
+    alArzWHLabel: { fontSize: 12, color: t.gray, fontWeight: '600' },
+    alArzWHLabelLg: { fontSize: 20 },
+    alArzWHTimeRow: { flexDirection: 'row', alignItems: 'center', width: '100%' },
+    alArzWHTimeRowLg: {},
+    alArzWHTimeItem: { flex: 1, alignItems: 'center', gap: 4 },
+    alArzWHTimeIcon: { fontSize: 20 },
+    alArzWHTimeIconLg: { fontSize: 36 },
+    alArzWHTimeLabel: { fontSize: 11, color: t.accent, fontWeight: '700' },
+    alArzWHTimeLabelLg: { fontSize: 18 },
+    alArzWHTimeVal: { fontSize: 14, color: t.dark, fontWeight: '800' },
+    alArzWHTimeValLg: { fontSize: 24 },
+    alArzWHSep: { width: 1, height: 44, backgroundColor: t.cardBorder, marginHorizontal: 8 },
+    alArzWHSepLg: { height: 72 },
+
     tableCard: {
       backgroundColor: t.cardBg,
       marginHorizontal: 12,
@@ -1140,6 +1227,7 @@ function makeStyles(t: PriceTemplate) {
       paddingTop: 16,
       paddingHorizontal: 16,
     },
+    tableTitleLg: { fontSize: 36, paddingTop: 28 },
     tableUpdated: {
       fontSize: 12,
       color: t.gray,
@@ -1147,6 +1235,7 @@ function makeStyles(t: PriceTemplate) {
       paddingBottom: 12,
       paddingHorizontal: 16,
     },
+    tableUpdatedLg: { fontSize: 18, paddingBottom: 20 },
     tableHeader: {
       flexDirection: 'row',
       backgroundColor: t.accent,
@@ -1161,6 +1250,7 @@ function makeStyles(t: PriceTemplate) {
       paddingVertical: 11,
       paddingHorizontal: 4,
     },
+    tableHeaderCellLg: { fontSize: 22, paddingVertical: 18 },
     tableCurrencyHeader: { flex: 1.7, backgroundColor: '#AFC2D8' },
     tableCurrentHeader: { flex: 1, backgroundColor: '#9ED9D8' },
     tableSellHeader: { flex: 1.15, backgroundColor: '#E5C5DF' },
@@ -1182,6 +1272,7 @@ function makeStyles(t: PriceTemplate) {
       paddingHorizontal: 4,
       textAlignVertical: 'center',
     },
+    tableCellLg: { fontSize: 26, paddingVertical: 24, fontWeight: '800' },
     tableCurrencyCell: {
       flex: 1.7,
       flexDirection: 'row',
@@ -1190,6 +1281,7 @@ function makeStyles(t: PriceTemplate) {
       paddingHorizontal: 8,
       backgroundColor: '#D9E2EC',
     },
+    tableCurrencyCellLg: { gap: 14, paddingHorizontal: 16 },
     tableFlagWrap: {
       width: 32,
       height: 32,
@@ -1200,19 +1292,24 @@ function makeStyles(t: PriceTemplate) {
       alignItems: 'center',
       justifyContent: 'center',
     },
+    tableFlagWrapLg: { width: 56, height: 56, borderRadius: 28 },
     tableFlag: { width: 28, height: 28, borderRadius: 14 },
+    tableFlagLg: { width: 50, height: 50, borderRadius: 25 },
     tableFlagEmoji: { fontSize: 18 },
+    tableFlagEmojiLg: { fontSize: 32 },
+    tableCurrencyInfo: { flex: 1, flexDirection: 'column' },
     tableCurrencyCode: {
       fontSize: 15,
       fontWeight: '800',
       color: t.dark,
     },
+    tableCurrencyCodeLg: { fontSize: 26 },
     tableCurrencyName: {
       fontSize: 11,
       color: t.gray,
-      flex: 1,
-      marginLeft: 4,
     },
+    tableCurrencyNameLg: { fontSize: 16, marginTop: 2 },
+    tableCurrencyNameEn: { fontSize: 13, color: '#9AABBE', marginTop: 1 },
     tableCurrentCell: { color: t.dark },
     tableBuyCell: { color: t.red },
     tableSellCell: { color: t.green },
