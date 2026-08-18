@@ -486,30 +486,43 @@ export default function PricesScreen() {
         ════════════════════════════════ */}
         {templateId === 2 ? (
           <View style={[s.alArzHeader, isLargeScreen && s.alArzHeaderLg]}>
-            <View style={s.alArzBrand}>
-              <TouchableOpacity style={[s.alArzLogoMark, isLargeScreen && s.alArzLogoMarkLg]} onPress={() => router.push('/admin-login')}>
-                <Text style={[s.alArzLogoTree, isLargeScreen && s.alArzLogoTreeLg]}>✦</Text>
-                <Text style={[s.alArzLogoCoin, isLargeScreen && s.alArzLogoCoinLg]}>€</Text>
-              </TouchableOpacity>
-              <View>
+            <View style={s.alArzHeaderTop}>
+              <View style={s.alArzBrand}>
+                <TouchableOpacity style={[s.alArzLogoMark, isLargeScreen && s.alArzLogoMarkLg]} onPress={() => router.push('/admin-login')}>
+                  <Text style={[s.alArzLogoTree, isLargeScreen && s.alArzLogoTreeLg]}>✦</Text>
+                  <Text style={[s.alArzLogoCoin, isLargeScreen && s.alArzLogoCoinLg]}>€</Text>
+                </TouchableOpacity>
                 <Text style={[s.alArzCompanyName, isLargeScreen && s.alArzCompanyNameLg]}>{companyName}</Text>
-                <Text style={[s.alArzCompanySub, isLargeScreen && s.alArzCompanySubLg]}>AL-ARZ FINANCIAL SERVICES</Text>
+              </View>
+              <View style={s.alArzContact}>
+                <View style={s.alArzContactRow}>
+                  <Text style={[s.alArzContactText, isLargeScreen && s.alArzContactTextLg]}>☎ {companyPhone}</Text>
+                  {companyInfo?.phone2 ? <Text style={[s.alArzContactText, isLargeScreen && s.alArzContactTextLg]}>◉ {companyInfo.phone2}</Text> : null}
+                </View>
+                <View style={s.alArzLanguageRow}>
+                  {(['ar', 'he', 'en'] as const).map(l => (
+                    <TouchableOpacity key={l} onPress={() => setLanguage(l)} style={[s.alArzLangBtn, language === l && s.alArzLangBtnActive]}>
+                      <Text style={[s.alArzLangBtnText, language === l && s.alArzLangBtnTextActive]}>{l === 'ar' ? 'ع' : l === 'he' ? 'ע' : 'EN'}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
               </View>
             </View>
-            <View style={s.alArzContact}>
-              <Text style={[s.alArzContactTitle, isLargeScreen && s.alArzContactTitleLg]}>
-                {language === 'ar' ? 'اتصل بنا:' : language === 'he' ? 'צור קשר:' : 'Contact us:'}
-              </Text>
-              <View style={s.alArzContactRow}>
-                <Text style={[s.alArzContactText, isLargeScreen && s.alArzContactTextLg]}>☎ {companyPhone}</Text>
-                {companyInfo?.phone2 ? <Text style={[s.alArzContactText, isLargeScreen && s.alArzContactTextLg]}>◉ {companyInfo.phone2}</Text> : null}
+            <View style={[s.alArzWHBar, isLargeScreen && s.alArzWHBarLg]}>
+              <View style={s.alArzWHDaysItem}>
+                <Text style={[s.alArzWHBarIcon, isLargeScreen && s.alArzWHBarIconLg]}>📅</Text>
+                <Text style={[s.alArzWHBarText, isLargeScreen && s.alArzWHBarTextLg]}>{getWorkingDaysText()}</Text>
+                {getRestDaysText() ? (
+                  <Text style={[s.alArzWHBarText, isLargeScreen && s.alArzWHBarTextLg, s.alArzWHBarRest]}>  🏖️ {getRestDaysText()}</Text>
+                ) : null}
               </View>
-              <View style={s.alArzLanguageRow}>
-                {(['ar', 'he', 'en'] as const).map(l => (
-                  <TouchableOpacity key={l} onPress={() => setLanguage(l)} style={[s.alArzLangBtn, language === l && s.alArzLangBtnActive]}>
-                    <Text style={[s.alArzLangBtnText, language === l && s.alArzLangBtnTextActive]}>{l === 'ar' ? 'ع' : l === 'he' ? 'ע' : 'EN'}</Text>
-                  </TouchableOpacity>
-                ))}
+              <View style={[s.alArzWHBarSep, isLargeScreen && s.alArzWHBarSepLg]} />
+              <View style={s.alArzWHTimesItem}>
+                <Text style={[s.alArzWHBarIcon, isLargeScreen && s.alArzWHBarIconLg]}>🌅</Text>
+                <Text style={[s.alArzWHBarText, isLargeScreen && s.alArzWHBarTextLg]}>{wh.morning}</Text>
+                <View style={[s.alArzWHBarSep, isLargeScreen && s.alArzWHBarSepLg]} />
+                <Text style={[s.alArzWHBarIcon, isLargeScreen && s.alArzWHBarIconLg]}>🌆</Text>
+                <Text style={[s.alArzWHBarText, isLargeScreen && s.alArzWHBarTextLg]}>{wh.evening}</Text>
               </View>
             </View>
           </View>
@@ -690,42 +703,6 @@ export default function PricesScreen() {
                 <Text style={[s.tableCell, s.tableBuyCell, isLargeScreen && s.tableCellLg]}>{currency.buy_rate?.toFixed(2) ?? '—'}</Text>
               </TouchableOpacity>
             ))}
-          </View>
-        )}
-
-        {/* ════════════════════════════════
-            TEMPLATE 2 — WORKING HOURS
-        ════════════════════════════════ */}
-        {templateId === 2 && (
-          <View style={s.alArzWHSection}>
-            <View style={[s.alArzWHCard, isLargeScreen && s.alArzWHCardLg]}>
-              <Text style={[s.alArzWHTitle, isLargeScreen && s.alArzWHTitleLg]}>
-                {language === 'ar' ? 'ساعات العمل' : language === 'he' ? 'שעות פעילות' : 'Working Hours'}
-              </Text>
-              <View style={[s.alArzWHRow, isLargeScreen && s.alArzWHRowLg]}>
-                <Text style={[s.alArzWHLabel, isLargeScreen && s.alArzWHLabelLg]}>📅 {getWorkingDaysText()}</Text>
-                {getRestDaysText() ? (
-                  <Text style={[s.alArzWHLabel, isLargeScreen && s.alArzWHLabelLg]}>🏖️ {getRestDaysText()}</Text>
-                ) : null}
-              </View>
-              <View style={[s.alArzWHTimeRow, isLargeScreen && s.alArzWHTimeRowLg]}>
-                <View style={s.alArzWHTimeItem}>
-                  <Text style={[s.alArzWHTimeIcon, isLargeScreen && s.alArzWHTimeIconLg]}>🌅</Text>
-                  <Text style={[s.alArzWHTimeLabel, isLargeScreen && s.alArzWHTimeLabelLg]}>
-                    {language === 'ar' ? 'صباحاً' : language === 'he' ? 'בוקר' : 'Morning'}
-                  </Text>
-                  <Text style={[s.alArzWHTimeVal, isLargeScreen && s.alArzWHTimeValLg]}>{wh.morning}</Text>
-                </View>
-                <View style={[s.alArzWHSep, isLargeScreen && s.alArzWHSepLg]} />
-                <View style={s.alArzWHTimeItem}>
-                  <Text style={[s.alArzWHTimeIcon, isLargeScreen && s.alArzWHTimeIconLg]}>🌆</Text>
-                  <Text style={[s.alArzWHTimeLabel, isLargeScreen && s.alArzWHTimeLabelLg]}>
-                    {language === 'ar' ? 'مساءً' : language === 'he' ? 'ערב' : 'Evening'}
-                  </Text>
-                  <Text style={[s.alArzWHTimeVal, isLargeScreen && s.alArzWHTimeValLg]}>{wh.evening}</Text>
-                </View>
-              </View>
-            </View>
           </View>
         )}
 
@@ -1150,6 +1127,7 @@ function makeStyles(t: PriceTemplate) {
       gap: 8,
     },
     alArzHeaderLg: { paddingHorizontal: 40, paddingVertical: 28 },
+    alArzHeaderTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' },
     alArzBrand: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
     alArzLogoMark: {
       width: 46, height: 46, borderRadius: 23,
@@ -1164,11 +1142,7 @@ function makeStyles(t: PriceTemplate) {
     alArzLogoCoinLg: { fontSize: 32 },
     alArzCompanyName: { color: '#FFFFFF', fontSize: 18, fontWeight: '900' },
     alArzCompanyNameLg: { fontSize: 32 },
-    alArzCompanySub: { color: '#AFC2D8', fontSize: 9, fontWeight: '600', letterSpacing: 0.5, marginTop: 2 },
-    alArzCompanySubLg: { fontSize: 14, marginTop: 4 },
     alArzContact: { alignItems: 'flex-end', gap: 4 },
-    alArzContactTitle: { color: '#AFC2D8', fontSize: 10, fontWeight: '700' },
-    alArzContactTitleLg: { fontSize: 16 },
     alArzContactRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' },
     alArzContactText: { color: '#FFFFFF', fontSize: 11, fontWeight: '600' },
     alArzContactTextLg: { fontSize: 18 },
@@ -1178,36 +1152,23 @@ function makeStyles(t: PriceTemplate) {
     alArzLangBtnText: { color: '#FFFFFF', fontSize: 11, fontWeight: '700' },
     alArzLangBtnTextActive: { color: t.accent, fontWeight: '900' },
 
-    /* Template 2 working hours */
-    alArzWHSection: { paddingHorizontal: 12, paddingTop: 16, paddingBottom: 8 },
-    alArzWHCard: {
-      backgroundColor: t.cardBg,
-      borderRadius: 12,
-      borderWidth: 1,
-      borderColor: t.cardBorder,
-      paddingVertical: 16,
-      paddingHorizontal: 16,
-      alignItems: 'center',
-      ...SHADOW,
+    /* Template 2 working hours bar (inside header) */
+    alArzWHBar: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+      marginTop: 12, paddingTop: 10, paddingBottom: 2,
+      borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.25)',
+      gap: 8, flexWrap: 'wrap',
     },
-    alArzWHCardLg: { paddingVertical: 28, paddingHorizontal: 32, maxWidth: 700, alignSelf: 'center', width: '100%' },
-    alArzWHTitle: { fontSize: 16, fontWeight: '800', color: t.dark, marginBottom: 12 },
-    alArzWHTitleLg: { fontSize: 28, marginBottom: 20 },
-    alArzWHRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center', marginBottom: 12 },
-    alArzWHRowLg: { gap: 24, marginBottom: 20 },
-    alArzWHLabel: { fontSize: 12, color: t.gray, fontWeight: '600' },
-    alArzWHLabelLg: { fontSize: 20 },
-    alArzWHTimeRow: { flexDirection: 'row', alignItems: 'center', width: '100%' },
-    alArzWHTimeRowLg: {},
-    alArzWHTimeItem: { flex: 1, alignItems: 'center', gap: 4 },
-    alArzWHTimeIcon: { fontSize: 20 },
-    alArzWHTimeIconLg: { fontSize: 36 },
-    alArzWHTimeLabel: { fontSize: 11, color: t.accent, fontWeight: '700' },
-    alArzWHTimeLabelLg: { fontSize: 18 },
-    alArzWHTimeVal: { fontSize: 14, color: t.dark, fontWeight: '800' },
-    alArzWHTimeValLg: { fontSize: 24 },
-    alArzWHSep: { width: 1, height: 44, backgroundColor: t.cardBorder, marginHorizontal: 8 },
-    alArzWHSepLg: { height: 72 },
+    alArzWHBarLg: { marginTop: 20, paddingTop: 16, gap: 16 },
+    alArzWHDaysItem: { flexDirection: 'row', alignItems: 'center', gap: 4, flexWrap: 'wrap' },
+    alArzWHTimesItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    alArzWHBarIcon: { fontSize: 14 },
+    alArzWHBarIconLg: { fontSize: 22 },
+    alArzWHBarText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
+    alArzWHBarTextLg: { fontSize: 20 },
+    alArzWHBarRest: { color: '#AFC2D8' },
+    alArzWHBarSep: { width: 1, height: 16, backgroundColor: 'rgba(255,255,255,0.3)', marginHorizontal: 4 },
+    alArzWHBarSepLg: { height: 24, marginHorizontal: 8 },
 
     tableCard: {
       backgroundColor: t.cardBg,
