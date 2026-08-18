@@ -1241,8 +1241,10 @@ function makeStyles(t: PriceTemplate) {
       gap: 6,
       paddingHorizontal: 8,
       backgroundColor: '#D9E2EC',
+      overflow: 'hidden',
     },
     tableCurrencyCellLg: { gap: 14, paddingHorizontal: 16 },
+    tableCurrencyInfo: { flex: 1, flexDirection: 'column', flexShrink: 1, overflow: 'hidden' },
     tableFlagWrap: {
       width: 32,
       height: 32,
@@ -1271,9 +1273,9 @@ function makeStyles(t: PriceTemplate) {
     },
     tableCurrencyNameLg: { fontSize: 16, marginTop: 2 },
     tableCurrencyNameEn: { fontSize: 13, color: '#9AABBE', marginTop: 1 },
-    tableCurrentCell: { color: t.dark },
-    tableBuyCell: { color: t.red },
-    tableSellCell: { color: t.green },
+    tableCurrentCell: { color: t.dark, backgroundColor: '#E8F5F4' },
+    tableBuyCell: { color: t.red, backgroundColor: '#FBF5E3' },
+    tableSellCell: { color: t.green, backgroundColor: '#F5E9F2' },
     tableChangeCell: { color: t.green, fontSize: 13 },
     tableMuted: { color: t.gray },
 
