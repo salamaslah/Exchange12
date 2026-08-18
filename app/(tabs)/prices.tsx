@@ -84,7 +84,7 @@ const FLAG_CC: { [k: string]: string } = {
 };
 
 const getFlagUrl = (code: string) =>
-  FLAG_CC[code] ? `https://flagcdn.com/w80/${FLAG_CC[code]}.png` : '';
+  FLAG_CC[code] ? `https://flagcdn.com/w160/${FLAG_CC[code]}.png` : '';
 
 // ─────────────────────────────────────────────
 export default function PricesScreen() {
@@ -643,7 +643,7 @@ export default function PricesScreen() {
                 <View style={[s.flagRing, currency.is_active && s.flagRingActive, isLargeScreen && s.flagRingLg]}>
                   {getFlagUrl(currency.code) ? (
                     <Image source={{ uri: getFlagUrl(currency.code) }}
-                      style={s.flagImg} resizeMode="cover" />
+                      style={s.flagImg} resizeMode="contain" />
                   ) : (
                     <Text style={[s.flagEmoji, isLargeScreen && s.flagEmojiLg]}>{FLAG_EMOJI[currency.code] || '💱'}</Text>
                   )}
@@ -1067,10 +1067,11 @@ function makeStyles(t: PriceTemplate) {
       overflow: 'hidden',
       borderWidth: 2, borderColor: t.flagRingColor,
       marginBottom: 7,
+      alignItems: 'center', justifyContent: 'center',
       shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 4, elevation: 3,
     },
     flagRingActive: { borderColor: t.accent + '80' },
-    flagImg: { width: '100%', height: '100%' },
+    flagImg: { width: '100%', height: '100%', borderRadius: 24 },
     flagEmoji: { fontSize: 30, lineHeight: 52, textAlign: 'center' },
     cardCode: { color: cardText, fontSize: 16, fontWeight: '800', letterSpacing: 0.3 },
     cardName: { color: cardSubText, fontSize: 10, textAlign: 'center', marginTop: 2 },
