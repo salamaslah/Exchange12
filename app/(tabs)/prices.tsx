@@ -611,9 +611,58 @@ export default function PricesScreen() {
         )}
 
         {/* ════════════════════════════════
+            TEMPLATE 2 — AL-ARZ PRICE TABLE
+        ════════════════════════════════ */}
+        {templateId === 2 && (
+          <View style={s.tableCard}>
+            <Text style={s.tableTitle}>
+              {language === 'ar' ? 'أسعار العملات مباشرة' : language === 'he' ? 'שערי מטבע ישירים' : 'Live Currency Rates'}
+            </Text>
+            <Text style={s.tableUpdated}>
+              {language === 'ar' ? `آخر تحديث: ${timeStr} - ${dateStr}` : `${dateStr} - ${timeStr}`}
+            </Text>
+            <View style={s.tableHeader}>
+              <Text style={[s.tableHeaderCell, s.tableCurrencyHeader]}>{language === 'ar' ? 'العملة' : 'Currency'}</Text>
+              <Text style={[s.tableHeaderCell, s.tableCurrentHeader]}>{language === 'ar' ? 'السعر الحالي' : 'Current'}</Text>
+              <Text style={[s.tableHeaderCell, s.tableBuyHeader]}>{language === 'ar' ? 'شراء' : 'Buy'}</Text>
+              <Text style={[s.tableHeaderCell, s.tableSellHeader]}>{language === 'ar' ? 'بيع' : 'Sell'}</Text>
+              <Text style={[s.tableHeaderCell, s.tableChangeHeader]}>{language === 'ar' ? 'التغير اليومي' : 'Daily Change'}</Text>
+            </View>
+            {[...allCurrencies.filter(c => c.is_active), ...allCurrencies.filter(c => !c.is_active)].map(currency => (
+              <TouchableOpacity
+                key={`table-${currency.id}`}
+                style={s.tableRow}
+                activeOpacity={currency.is_active ? 0.75 : 1}
+                onPress={() => currency.is_active && handleCurrencyNameClick(currency.code)}
+              >
+                <View style={[s.tableCell, s.tableCurrencyCell]}>
+                  <View style={s.tableFlagWrap}>
+                    {getFlagUrl(currency.code) ? (
+                      <Image source={{ uri: getFlagUrl(currency.code) }} style={s.tableFlag} resizeMode="contain" />
+                    ) : (
+                      <Text style={s.tableFlagEmoji}>{FLAG_EMOJI[currency.code] || '💱'}</Text>
+                    )}
+                  </View>
+                  <Text style={s.tableCurrencyCode}>{currency.code}</Text>
+                  <Text style={s.tableCurrencyName} numberOfLines={1}>
+                    {language === 'ar' ? currency.name_ar : language === 'he' ? (currency.name_he || currency.name_ar) : currency.name_en}
+                  </Text>
+                </View>
+                <Text style={[s.tableCell, s.tableCurrentCell]}>{currency.current_rate?.toFixed(2) ?? '—'}</Text>
+                <Text style={[s.tableCell, s.tableBuyCell]}>{currency.buy_rate?.toFixed(2) ?? '—'}</Text>
+                <Text style={[s.tableCell, s.tableSellCell]}>{currency.sell_rate?.toFixed(2) ?? '—'}</Text>
+                <Text style={[s.tableCell, s.tableChangeCell, !currency.is_active && s.tableMuted]}>
+                  {currency.is_active ? '▲ 0.0%' : '—'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {/* ════════════════════════════════
             CURRENCY GRID
         ════════════════════════════════ */}
-        <View style={s.grid}>
+        <View style={[s.grid, templateId === 2 && { display: 'none' }]}>
           {[...allCurrencies.filter(c => c.is_active), ...allCurrencies.filter(c => !c.is_active)].map(currency => (
             <TouchableOpacity
               key={currency.id}
@@ -1019,6 +1068,101 @@ function makeStyles(t: PriceTemplate) {
     hintBarActive: { borderColor: t.accent, backgroundColor: t.accent + '15' },
     hintText: { color: t.accent2, fontSize: 11, fontWeight: '500', textAlign: 'center' },
     hintTextBig: { color: t.accent2, fontSize: 13, fontWeight: '700', textAlign: 'center' },
+
+    /* ── TEMPLATE 2: AL-ARZ TABLE ── */
+    tableCard: {
+      backgroundColor: t.cardBg,
+      marginHorizontal: 12,
+      marginTop: 12,
+      borderRadius: 12,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: t.cardBorder,
+      ...SHADOW,
+    },
+    tableTitle: {
+      fontSize: 22,
+      fontWeight: '800',
+      color: t.dark,
+      textAlign: 'center',
+      paddingTop: 16,
+      paddingHorizontal: 16,
+    },
+    tableUpdated: {
+      fontSize: 12,
+      color: t.gray,
+      textAlign: 'center',
+      paddingBottom: 12,
+      paddingHorizontal: 16,
+    },
+    tableHeader: {
+      flexDirection: 'row',
+      backgroundColor: t.accent,
+      paddingVertical: 10,
+      paddingHorizontal: 8,
+    },
+    tableHeaderCell: {
+      color: '#FFFFFF',
+      fontSize: 13,
+      fontWeight: '700',
+      textAlign: 'center',
+      flex: 1,
+    },
+    tableCurrencyHeader: { flex: 1.6, textAlign: 'left', paddingLeft: 12 },
+    tableCurrentHeader: { flex: 1 },
+    tableBuyHeader: { flex: 1 },
+    tableSellHeader: { flex: 1 },
+    tableChangeHeader: { flex: 1.1 },
+    tableRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 12,
+      paddingHorizontal: 8,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: t.cardBorder,
+    },
+    tableCell: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: t.cardText,
+      textAlign: 'center',
+      flex: 1,
+    },
+    tableCurrencyCell: {
+      flex: 1.6,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingLeft: 4,
+    },
+    tableFlagWrap: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: t.cardBorder,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    tableFlag: { width: 28, height: 28, borderRadius: 14 },
+    tableFlagEmoji: { fontSize: 18 },
+    tableCurrencyCode: {
+      fontSize: 15,
+      fontWeight: '800',
+      color: t.dark,
+    },
+    tableCurrencyName: {
+      fontSize: 11,
+      color: t.gray,
+      flex: 1,
+      marginLeft: 4,
+    },
+    tableCurrentCell: { color: t.dark },
+    tableBuyCell: { color: t.red },
+    tableSellCell: { color: t.green },
+    tableChangeCell: { color: t.green, fontSize: 13 },
+    tableMuted: { color: t.gray },
 
     /* ── CURRENCY GRID ── */
     grid: {
