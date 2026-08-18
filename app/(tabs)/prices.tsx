@@ -484,6 +484,36 @@ export default function PricesScreen() {
         {/* ════════════════════════════════
             HEADER
         ════════════════════════════════ */}
+        {templateId === 2 ? (
+          <View style={s.alArzHeader}>
+            <View style={s.alArzBrand}>
+              <TouchableOpacity style={s.alArzLogoMark} onPress={() => router.push('/admin-login')}>
+                <Text style={s.alArzLogoTree}>✦</Text>
+                <Text style={s.alArzLogoCoin}>€</Text>
+              </TouchableOpacity>
+              <View>
+                <Text style={s.alArzCompanyName}>{companyName}</Text>
+                <Text style={s.alArzCompanySub}>AL-ARZ FINANCIAL SERVICES</Text>
+              </View>
+            </View>
+            <View style={s.alArzContact}>
+              <Text style={s.alArzContactTitle}>
+                {language === 'ar' ? 'اتصل بنا:' : language === 'he' ? 'צור קשר:' : 'Contact us:'}
+              </Text>
+              <View style={s.alArzContactRow}>
+                <Text style={s.alArzContactText}>☎ {companyPhone}</Text>
+                {companyInfo?.phone2 ? <Text style={s.alArzContactText}>◉ {companyInfo.phone2}</Text> : null}
+              </View>
+              <View style={s.alArzLanguageRow}>
+                {(['ar', 'he', 'en'] as const).map(l => (
+                  <TouchableOpacity key={l} onPress={() => setLanguage(l)} style={[s.langBtn, language === l && s.langBtnActive]}>
+                    <Text style={[s.langBtnText, language === l && s.langBtnTextActive]}>{l === 'ar' ? 'ع' : l === 'he' ? 'ע' : 'EN'}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </View>
+        ) : (
         <View style={[s.header, isLargeScreen && s.headerLarge]}>
           {/* Left: Clock + Date */}
           <View style={[s.headerLeft, isLargeScreen && s.headerLeftLarge]}>
@@ -546,11 +576,12 @@ export default function PricesScreen() {
             </View>
           </View>
         </View>
+        )}
 
         {/* ════════════════════════════════
             RATES TITLE — small screens only
         ════════════════════════════════ */}
-        {!isLargeScreen && (
+        {!isLargeScreen && templateId !== 2 && (
           <View style={s.ratesTitleBar}>
             <View style={s.goldHLine} />
             <TouchableOpacity style={s.ratesTitleContent} onPress={() => openCalculator()}>
@@ -566,7 +597,7 @@ export default function PricesScreen() {
         {/* ════════════════════════════════
             INFO BAR (above grid)
         ════════════════════════════════ */}
-        <View style={s.infoBar}>
+        <View style={[s.infoBar, templateId === 2 && { display: 'none' }]}>
           <View style={s.infoBarInner}>
             {lastUpdateTime ? (
               <>
@@ -596,7 +627,7 @@ export default function PricesScreen() {
         </View>
 
         {/* Selection hint */}
-        {selectedFirstCurrency ? (
+        {templateId !== 2 && selectedFirstCurrency ? (
           <Animated.View style={[s.hintBar, s.hintBarActive, { transform: [{ scale: pulseAnim }] }]}>
             <Text style={s.hintTextBig}>
               {language === 'ar' ? '✓ اختر عملة ثانية للمقارنة' : language === 'he' ? '✓ בחר מטבע שני' : '✓ Select 2nd currency'}
@@ -621,17 +652,16 @@ export default function PricesScreen() {
             <Text style={s.tableUpdated}>
               {language === 'ar' ? `آخر تحديث: ${timeStr} - ${dateStr}` : `${dateStr} - ${timeStr}`}
             </Text>
-            <View style={s.tableHeader}>
-              <Text style={[s.tableHeaderCell, s.tableCurrencyHeader]}>{language === 'ar' ? 'العملة' : 'Currency'}</Text>
-              <Text style={[s.tableHeaderCell, s.tableCurrentHeader]}>{language === 'ar' ? 'السعر الحالي' : 'Current'}</Text>
-              <Text style={[s.tableHeaderCell, s.tableBuyHeader]}>{language === 'ar' ? 'شراء' : 'Buy'}</Text>
-              <Text style={[s.tableHeaderCell, s.tableSellHeader]}>{language === 'ar' ? 'بيع' : 'Sell'}</Text>
-              <Text style={[s.tableHeaderCell, s.tableChangeHeader]}>{language === 'ar' ? 'التغير اليومي' : 'Daily Change'}</Text>
+            <View style={[s.tableHeader, { flexDirection: language === 'en' ? 'row' : 'row-reverse' }]}>
+              <Text style={[s.tableHeaderCell, s.tableCurrencyHeader]}>{language === 'ar' ? 'العملة' : language === 'he' ? 'מטבע' : 'Currency'}</Text>
+              <Text style={[s.tableHeaderCell, s.tableCurrentHeader]}>{language === 'ar' ? 'السعر الحالي' : language === 'he' ? 'שער נוכחי' : 'Current Rate'}</Text>
+              <Text style={[s.tableHeaderCell, s.tableSellHeader]}>{language === 'ar' ? 'سعر البيع' : language === 'he' ? 'שער מכירה' : 'Sell Rate'}</Text>
+              <Text style={[s.tableHeaderCell, s.tableBuyHeader]}>{language === 'ar' ? 'سعر الشراء' : language === 'he' ? 'שער קנייה' : 'Buy Rate'}</Text>
             </View>
             {[...allCurrencies.filter(c => c.is_active), ...allCurrencies.filter(c => !c.is_active)].map(currency => (
               <TouchableOpacity
                 key={`table-${currency.id}`}
-                style={s.tableRow}
+                style={[s.tableRow, { flexDirection: language === 'en' ? 'row' : 'row-reverse' }]}
                 activeOpacity={currency.is_active ? 0.75 : 1}
                 onPress={() => currency.is_active && handleCurrencyNameClick(currency.code)}
               >
@@ -649,11 +679,8 @@ export default function PricesScreen() {
                   </Text>
                 </View>
                 <Text style={[s.tableCell, s.tableCurrentCell]}>{currency.current_rate?.toFixed(2) ?? '—'}</Text>
-                <Text style={[s.tableCell, s.tableBuyCell]}>{currency.buy_rate?.toFixed(2) ?? '—'}</Text>
                 <Text style={[s.tableCell, s.tableSellCell]}>{currency.sell_rate?.toFixed(2) ?? '—'}</Text>
-                <Text style={[s.tableCell, s.tableChangeCell, !currency.is_active && s.tableMuted]}>
-                  {currency.is_active ? '▲ 0.0%' : '—'}
-                </Text>
+                <Text style={[s.tableCell, s.tableBuyCell]}>{currency.buy_rate?.toFixed(2) ?? '—'}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -1070,6 +1097,31 @@ function makeStyles(t: PriceTemplate) {
     hintTextBig: { color: t.accent2, fontSize: 13, fontWeight: '700', textAlign: 'center' },
 
     /* ── TEMPLATE 2: AL-ARZ TABLE ── */
+    alArzHeader: {
+      backgroundColor: t.accent,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 14,
+      paddingVertical: 14,
+      gap: 8,
+    },
+    alArzBrand: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+    alArzLogoMark: {
+      width: 46, height: 46, borderRadius: 23,
+      backgroundColor: '#FFFFFF',
+      alignItems: 'center', justifyContent: 'center',
+      flexDirection: 'row',
+    },
+    alArzLogoTree: { fontSize: 18, color: t.accent, fontWeight: '900', position: 'absolute', top: 2 },
+    alArzLogoCoin: { fontSize: 20, color: '#C9A84C', fontWeight: '900' },
+    alArzCompanyName: { color: '#FFFFFF', fontSize: 18, fontWeight: '900' },
+    alArzCompanySub: { color: '#AFC2D8', fontSize: 9, fontWeight: '600', letterSpacing: 0.5, marginTop: 2 },
+    alArzContact: { alignItems: 'flex-end', gap: 4 },
+    alArzContactTitle: { color: '#AFC2D8', fontSize: 10, fontWeight: '700' },
+    alArzContactRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' },
+    alArzContactText: { color: '#FFFFFF', fontSize: 11, fontWeight: '600' },
+    alArzLanguageRow: { flexDirection: 'row', gap: 4, marginTop: 4 },
     tableCard: {
       backgroundColor: t.cardBg,
       marginHorizontal: 12,
@@ -1098,42 +1150,45 @@ function makeStyles(t: PriceTemplate) {
     tableHeader: {
       flexDirection: 'row',
       backgroundColor: t.accent,
-      paddingVertical: 10,
-      paddingHorizontal: 8,
+      paddingHorizontal: 0,
     },
     tableHeaderCell: {
-      color: '#FFFFFF',
-      fontSize: 13,
-      fontWeight: '700',
+      color: t.dark,
+      fontSize: 12,
+      fontWeight: '800',
       textAlign: 'center',
       flex: 1,
+      paddingVertical: 11,
+      paddingHorizontal: 4,
     },
-    tableCurrencyHeader: { flex: 1.6, textAlign: 'left', paddingLeft: 12 },
-    tableCurrentHeader: { flex: 1 },
-    tableBuyHeader: { flex: 1 },
-    tableSellHeader: { flex: 1 },
-    tableChangeHeader: { flex: 1.1 },
+    tableCurrencyHeader: { flex: 1.7, backgroundColor: '#AFC2D8' },
+    tableCurrentHeader: { flex: 1, backgroundColor: '#9ED9D8' },
+    tableSellHeader: { flex: 1.15, backgroundColor: '#E5C5DF' },
+    tableBuyHeader: { flex: 1.15, backgroundColor: '#F0DFAE' },
     tableRow: {
       flexDirection: 'row',
-      alignItems: 'center',
-      paddingVertical: 12,
-      paddingHorizontal: 8,
+      alignItems: 'stretch',
+      minHeight: 58,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: t.cardBorder,
     },
     tableCell: {
-      fontSize: 15,
+      fontSize: 14,
       fontWeight: '700',
       color: t.cardText,
       textAlign: 'center',
       flex: 1,
+      paddingVertical: 16,
+      paddingHorizontal: 4,
+      textAlignVertical: 'center',
     },
     tableCurrencyCell: {
-      flex: 1.6,
+      flex: 1.7,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
-      paddingLeft: 4,
+      gap: 6,
+      paddingHorizontal: 8,
+      backgroundColor: '#D9E2EC',
     },
     tableFlagWrap: {
       width: 32,
