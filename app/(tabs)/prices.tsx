@@ -334,7 +334,14 @@ export default function PricesScreen() {
   const handleCurrencyNameClick = (code: string) => {
     if (!selectedFirstCurrency) { setSelectedFirstCurrency(code); return; }
     if (selectedFirstCurrency === code) { setSelectedFirstCurrency(null); return; }
-    openCalcWith(selectedFirstCurrency, code); setSelectedFirstCurrency(null);
+    if (templateId === 3) {
+      setFromCurrency(selectedFirstCurrency);
+      setToCurrency(code);
+      setFromAmount(''); setToAmount(''); setCalculationDetails('');
+    } else {
+      openCalcWith(selectedFirstCurrency, code);
+    }
+    setSelectedFirstCurrency(null);
   };
 
   const openCalcWith = async (a: string, b: string) => {
@@ -351,6 +358,13 @@ export default function PricesScreen() {
     router.push('/calculator');
   };
 
+  // Inline calculator for template 3 — sets currencies without navigating away
+  const inlineCalcSet = (code: string, type: 'buy'|'sell') => {
+    if (type === 'sell') { setFromCurrency(code); setToCurrency('ILS'); }
+    else                 { setFromCurrency('ILS'); setToCurrency(code); }
+    setFromAmount(''); setToAmount(''); setCalculationDetails('');
+  };
+
   const closeCalculator = () => { setShowCalculator(false); setFromAmount(''); setToAmount(''); setCalculationDetails(''); clearInactivityTimer(); };
 
   const handleProceed = async () => {
@@ -359,7 +373,9 @@ export default function PricesScreen() {
       await AsyncStorage.setItem('fromCalculator', 'true');
       await AsyncStorage.setItem('calculatorData', JSON.stringify({ fromCurrency, toCurrency, fromAmount, toAmount, calculationDetails, timestamp: new Date().toISOString(), isFromCalculator: true }));
       await AsyncStorage.setItem('calculatorTransactionReady', 'true');
-      closeCalculator(); router.push('/(tabs)/customer-info');
+      setShowCalculator(false);
+      setFromAmount(''); setToAmount(''); setCalculationDetails('');
+      router.push('/(tabs)/customer-info');
     } catch { Alert.alert('خطأ', 'حدث خطأ في حفظ البيانات'); }
   };
 
@@ -610,7 +626,7 @@ export default function PricesScreen() {
         {/* ════════════════════════════════
             INFO BAR (above grid)
         ════════════════════════════════ */}
-        <View style={[s.infoBar, templateId === 2 && { display: 'none' }]}>
+        <View style={[s.infoBar, (templateId === 2 || templateId === 3) && { display: 'none' }]}>
           <View style={s.infoBarInner}>
             {lastUpdateTime ? (
               <>
@@ -640,14 +656,14 @@ export default function PricesScreen() {
         </View>
 
         {/* Selection hint */}
-        {templateId !== 2 && selectedFirstCurrency ? (
+        {templateId !== 2 && templateId !== 3 && selectedFirstCurrency ? (
           <Animated.View style={[s.hintBar, s.hintBarActive, { transform: [{ scale: pulseAnim }] }]}>
             <Text style={s.hintTextBig}>
               {language === 'ar' ? '✓ اختر عملة ثانية للمقارنة' : language === 'he' ? '✓ בחר מטבע שני' : '✓ Select 2nd currency'}
             </Text>
           </Animated.View>
         ) : (
-          <View style={s.hintBar}>
+          <View style={[s.hintBar, templateId === 3 && { display: 'none' }]}>
             <Text style={s.hintTextBig}>
               {language === 'ar' ? '👆 اضغط على أي سعر لفتح الحاسبة' : language === 'he' ? '👆 לחץ על שער לחשב' : '👆 Tap any rate to open calculator'}
             </Text>
@@ -707,9 +723,137 @@ export default function PricesScreen() {
         )}
 
         {/* ════════════════════════════════
-            CURRENCY GRID
+            TEMPLATE 3 — GRID + INLINE CALCULATOR
         ════════════════════════════════ */}
-        <View style={[s.grid, templateId === 2 && { display: 'none' }]}>
+        {templateId === 3 && (
+          <View style={[s.tpl3Wrap, isLargeScreen && s.tpl3WrapLg]}>
+            <View style={[s.grid, { flex: 1 }]}>
+              {[...allCurrencies.filter(c => c.is_active), ...allCurrencies.filter(c => !c.is_active)].map(currency => (
+                <TouchableOpacity
+                  key={`t3-${currency.id}`}
+                  activeOpacity={currency.is_active ? 0.75 : 1}
+                  onPress={() => currency.is_active && handleCurrencyNameClick(currency.code)}
+                  style={[
+                    s.card,
+                    { width: isLargeScreen ? (screenData.width * 0.58 - 48) / 3 : (screenData.width - 32) / 2 },
+                    selectedFirstCurrency === currency.code && s.cardSelected,
+                    !currency.is_active && s.cardInactive,
+                  ]}
+                >
+                  {!currency.is_active && (
+                    <View style={s.unavailBadge}>
+                      <Text style={[s.unavailText, isLargeScreen && { fontSize: 20, paddingHorizontal: 14, paddingVertical: 5 }]}>
+                        {language === 'ar' ? 'غير متوفر' : language === 'he' ? 'לא זמין' : 'Unavailable'}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={[s.cardFlagArea, isLargeScreen && s.cardFlagAreaLg]}>
+                    {selectedFirstCurrency === currency.code && (
+                      <View style={s.checkBadge}><Text style={s.checkText}>✓</Text></View>
+                    )}
+                    <View style={[s.flagRing, currency.is_active && s.flagRingActive, isLargeScreen && s.flagRingLg]}>
+                      {getFlagUrl(currency.code) ? (
+                        <Image source={{ uri: getFlagUrl(currency.code) }} style={s.flagImg} resizeMode="contain" />
+                      ) : (
+                        <Text style={[s.flagEmoji, isLargeScreen && s.flagEmojiLg]}>{FLAG_EMOJI[currency.code] || '💱'}</Text>
+                      )}
+                    </View>
+                    <Text style={[s.cardCode, isLargeScreen && s.cardCodeLg]}>{currency.code}</Text>
+                    <Text style={[s.cardName, isLargeScreen && s.cardNameLg]}>
+                      {language === 'ar' ? currency.name_ar : language === 'he' ? (currency.name_he || currency.name_ar) : currency.name_en}
+                    </Text>
+                  </View>
+                  <View style={s.cardGoldLine} />
+                  <View style={[s.cardRatesRow, isLargeScreen && s.cardRatesRowLg]}>
+                    <TouchableOpacity style={[s.rateHalf, currency.is_active && s.rateHalfActive, isLargeScreen && s.rateHalfLg]}
+                      onPress={(e) => { e.stopPropagation?.(); currency.is_active && inlineCalcSet(currency.code, 'buy'); }}
+                      disabled={!currency.is_active} activeOpacity={0.65}>
+                      <Text style={[s.rateLbl, s.rateLblBuy, isLargeScreen && s.rateLblLg]}>
+                        {language === 'ar' ? 'شراء' : language === 'he' ? 'קנייה' : 'Buy'}
+                      </Text>
+                      <Text style={[s.buyVal, isLargeScreen && s.buyValLg]}>{currency.buy_rate?.toFixed(2) ?? '—'}</Text>
+                    </TouchableOpacity>
+                    <View style={[s.rateVLine, isLargeScreen && s.rateVLineLg]} />
+                    <View style={[s.rateHalf, isLargeScreen && s.rateHalfLg, { gap: 2 }]}>
+                      <Text style={[s.currentLbl, isLargeScreen && s.currentLblLg]}>
+                        {language === 'ar' ? 'الحالي' : language === 'he' ? 'נוכחי' : 'Rate'}
+                      </Text>
+                      <Text style={[s.currentVal, isLargeScreen && s.currentValLg]}>{currency.current_rate?.toFixed(2) ?? '—'}</Text>
+                    </View>
+                    <View style={[s.rateVLine, isLargeScreen && s.rateVLineLg]} />
+                    <TouchableOpacity style={[s.rateHalf, currency.is_active && s.rateHalfActive, isLargeScreen && s.rateHalfLg]}
+                      onPress={(e) => { e.stopPropagation?.(); currency.is_active && inlineCalcSet(currency.code, 'sell'); }}
+                      disabled={!currency.is_active} activeOpacity={0.65}>
+                      <Text style={[s.rateLbl, s.rateLblSell, isLargeScreen && s.rateLblLg]}>
+                        {language === 'ar' ? 'بيع' : language === 'he' ? 'מכירה' : 'Sell'}
+                      </Text>
+                      <Text style={[s.sellVal, isLargeScreen && s.sellValLg]}>{currency.sell_rate?.toFixed(2) ?? '—'}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Inline calculator panel */}
+            <View style={[s.tpl3Calc, isLargeScreen && s.tpl3CalcLg]}>
+              <Text style={[s.tpl3CalcTitle, isLargeScreen && s.tpl3CalcTitleLg]}>
+                {language === 'ar' ? 'آلة حاسبة' : language === 'he' ? 'מחשבון' : 'Calculator'}
+              </Text>
+              <View style={s.calcCurrRow}>
+                <TouchableOpacity style={s.calcCurrBtn} onPress={() => cycleCurrency(fromCurrency, true)}>
+                  <Text style={s.calcCurrCode}>{fromCurrency}</Text>
+                  <Text style={s.calcCurrName}>
+                    {fromCurrency === 'ILS' ? (language === 'ar' ? 'شيقل' : 'Shekel')
+                      : (language === 'ar' ? allCurrencies.find(c=>c.code===fromCurrency)?.name_ar
+                        : language === 'he' ? allCurrencies.find(c=>c.code===fromCurrency)?.name_he
+                        : allCurrencies.find(c=>c.code===fromCurrency)?.name_en) || fromCurrency}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={s.calcSwapBtn} onPress={swapCurrencies}>
+                  <Text style={s.calcSwapTxt}>⇅</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={s.calcCurrBtn} onPress={() => cycleCurrency(toCurrency, false)}>
+                  <Text style={s.calcCurrCode}>{toCurrency}</Text>
+                  <Text style={s.calcCurrName}>
+                    {toCurrency === 'ILS' ? (language === 'ar' ? 'شيقل' : 'Shekel')
+                      : (language === 'ar' ? allCurrencies.find(c=>c.code===toCurrency)?.name_ar
+                        : language === 'he' ? allCurrencies.find(c=>c.code===toCurrency)?.name_he
+                        : allCurrencies.find(c=>c.code===toCurrency)?.name_en) || toCurrency}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              <View style={s.calcAmtRow}>
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                  <Text style={s.calcAmtLbl}>{fromCurrency}</Text>
+                  <TextInput style={s.tpl3CalcInput} value={fromAmount} onChangeText={handleFromChange}
+                    placeholder="0.00" keyboardType="decimal-pad" />
+                </View>
+                <View style={{ flex: 1, alignItems: 'center' }}>
+                  <Text style={s.calcAmtLbl}>{toCurrency}</Text>
+                  <TextInput style={s.tpl3CalcInput} value={toAmount} onChangeText={handleToChange}
+                    placeholder="0.00" keyboardType="decimal-pad" />
+                </View>
+              </View>
+              {calculationDetails ? (
+                <View style={s.tpl3CalcDetails}>
+                  <Text style={s.tpl3CalcDetailsTxt}>{calculationDetails}</Text>
+                </View>
+              ) : null}
+              {fromAmount && toAmount ? (
+                <TouchableOpacity style={s.proceedBtn} onPress={handleProceed}>
+                  <Text style={s.proceedTxt}>
+                    {language === 'ar' ? 'المتابعة للمعاملة' : language === 'he' ? 'המשך לעסקה' : 'Proceed'}
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          </View>
+        )}
+
+        {/* ════════════════════════════════
+            CURRENCY GRID (templates 1, 4, 5)
+        ════════════════════════════════ */}
+        <View style={[s.grid, (templateId === 2 || templateId === 3) && { display: 'none' }]}>
           {[...allCurrencies.filter(c => c.is_active), ...allCurrencies.filter(c => !c.is_active)].map(currency => (
             <TouchableOpacity
               key={currency.id}
@@ -799,7 +943,7 @@ export default function PricesScreen() {
         {/* ════════════════════════════════
             SERVICES
         ════════════════════════════════ */}
-        <View style={s.section}>
+        {templateId !== 3 && <View style={s.section}>
           <View style={s.sectionTitle}>
             <View style={s.goldHLine} />
             <Text style={s.sectionTitleText}>
@@ -824,12 +968,12 @@ export default function PricesScreen() {
               </TouchableOpacity>
             ))}
           </View>
-        </View>
+        </View>}
 
         {/* ════════════════════════════════
             WORKING HOURS — small screens only
         ════════════════════════════════ */}
-        {!isLargeScreen && (
+        {!isLargeScreen && templateId !== 3 && (
         <View style={s.section}>
           <View style={s.sectionTitle}>
             <View style={s.goldHLine} />
@@ -1169,6 +1313,35 @@ function makeStyles(t: PriceTemplate) {
     alArzWHBarRest: { color: '#AFC2D8' },
     alArzWHBarSep: { width: 1, height: 16, backgroundColor: 'rgba(255,255,255,0.3)', marginHorizontal: 4 },
     alArzWHBarSepLg: { height: 24, marginHorizontal: 8 },
+
+    /* ── TEMPLATE 3: GRID + INLINE CALCULATOR ── */
+    tpl3Wrap: { paddingHorizontal: 8, paddingBottom: 8 },
+    tpl3WrapLg: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingHorizontal: 16 },
+    tpl3Calc: {
+      marginTop: 12,
+      marginHorizontal: 4,
+      backgroundColor: 'rgba(15, 47, 80, 0.85)',
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: 'rgba(127, 196, 255, 0.3)',
+      paddingVertical: 16,
+      paddingHorizontal: 14,
+      ...SHADOW,
+    },
+    tpl3CalcLg: { flex: 0.38, maxWidth: 380, marginTop: 0, position: 'sticky', top: 12 },
+    tpl3CalcTitle: { color: '#7FC4FF', fontSize: 16, fontWeight: '800', textAlign: 'center', marginBottom: 12 },
+    tpl3CalcTitleLg: { fontSize: 22, marginBottom: 16 },
+    tpl3CalcInput: {
+      borderWidth: 2, borderColor: 'rgba(127, 196, 255, 0.3)', borderRadius: 10,
+      padding: 10, fontSize: 20, fontWeight: '700', color: '#FFFFFF',
+      textAlign: 'center', width: '100%',
+      backgroundColor: 'rgba(10, 37, 64, 0.6)',
+    },
+    tpl3CalcDetails: {
+      marginTop: 10,
+      backgroundColor: 'rgba(10, 37, 64, 0.5)', borderRadius: 8, padding: 10,
+    },
+    tpl3CalcDetailsTxt: { color: '#A5C8E8', fontSize: 11, textAlign: 'center' },
 
     tableCard: {
       backgroundColor: t.cardBg,
