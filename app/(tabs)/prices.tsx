@@ -55,6 +55,7 @@ interface Advertisement {
   description: string;
   image_url: string | number | any;
   is_active: boolean;
+  username?: string;
 }
 
 const DAYS_OF_WEEK = [
@@ -245,8 +246,9 @@ export default function PricesScreen() {
       setAllCurrencies(data.sort((a: any, b: any) => (a.sort_num ?? 999) - (b.sort_num ?? 999)));
       const { data: activeAds } = await supabase
         .from('advertisements')
-        .select('id, position, title, description, image_url, is_active')
+        .select('id, position, title, description, image_url, is_active, username')
         .eq('is_active', true)
+        .eq('username', shopUsername)
         .order('created_at', { ascending: true });
       setAdvertisements((activeAds ?? []) as Advertisement[]);
       const co = await companySettingsService.get(shopUsername);

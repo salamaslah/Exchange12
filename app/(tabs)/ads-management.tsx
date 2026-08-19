@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Modal, Image, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/lib/supabase';
 
 interface Advertisement {
@@ -10,6 +11,7 @@ interface Advertisement {
   description: string;
   image_url: string;
   is_active: boolean;
+  username?: string;
 }
 
 export default function AdsManagementScreen() {
@@ -31,9 +33,11 @@ export default function AdsManagementScreen() {
   const loadAdvertisements = async () => {
     try {
       setLoading(true);
+      const shopUsername = await AsyncStorage.getItem('shopUsername') || '';
       const { data, error } = await supabase
         .from('advertisements')
         .select('*')
+        .eq('username', shopUsername)
         .order('position');
 
       if (error) throw error;
