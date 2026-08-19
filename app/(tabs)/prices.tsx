@@ -94,6 +94,7 @@ export default function PricesScreen() {
   const [companyInfo, setCompanyInfo]       = useState<CompanyInfo | null>(null);
   const [workingHours, setWorkingHours]     = useState<WorkingHours[]>([]);
   const [advertisements, setAdvertisements] = useState<Advertisement[]>([]);
+  const [adOffset, setAdOffset] = useState(0);
   const [showCalculator, setShowCalculator] = useState(false);
   const [fromCurrency, setFromCurrency]     = useState('ILS');
   const [toCurrency, setToCurrency]         = useState('USD');
@@ -141,6 +142,13 @@ export default function PricesScreen() {
     anim.start();
     return () => anim.stop();
   }, [pulseAnim]);
+
+  // Rotate ads in empty grid slots every 5 seconds
+  useEffect(() => {
+    if (templateId !== 3 || !advertisements.length) return;
+    const t = setInterval(() => setAdOffset(o => o + 1), 5000);
+    return () => clearInterval(t);
+  }, [templateId, advertisements.length]);
 
   useFocusEffect(React.useCallback(() => {
     isScreenFocused.current = true;
@@ -805,15 +813,16 @@ export default function PricesScreen() {
                   </View>
                 </TouchableOpacity>
               ))}
-              {advertisements.slice(0, template3AdCount).map(ad => (
-                <View key={`t3-ad-${ad.id}`} style={[s.tpl3AdCard, { width: isLargeScreen ? (screenData.width * 0.58 - 48) / 3 : (screenData.width - 40) / 2 }]}>
-                  {ad.image_url ? (
-                    <Image source={{ uri: String(ad.image_url) }} style={s.tpl3AdImage} resizeMode="cover" />
-                  ) : null}
-                  <Text style={s.tpl3AdTitle} numberOfLines={2}>{ad.title}</Text>
-                  <Text style={s.tpl3AdDescription} numberOfLines={3}>{ad.description}</Text>
-                </View>
-              ))}
+              {advertisements.length > 0 && Array.from({ length: template3AdCount }).map((_, i) => {
+                const ad = advertisements[(i + adOffset) % advertisements.length];
+                return (
+                  <View key={`t3-ad-${i}-${ad.id}`} style={[s.tpl3AdCard, { width: isLargeScreen ? (screenData.width * 0.58 - 48) / 3 : (screenData.width - 40) / 2 }]}>
+                    {ad.image_url ? (
+                      <Image source={{ uri: String(ad.image_url) }} style={s.tpl3AdImage} resizeMode="cover" />
+                    ) : null}
+                  </View>
+                );
+              })}
             </View>
 
             {/* Inline calculator panel */}
@@ -1371,11 +1380,8 @@ function makeStyles(t: PriceTemplate) {
       borderColor: '#D8B65A',
       overflow: 'hidden',
       minHeight: 190,
-      paddingBottom: 10,
     },
-    tpl3AdImage: { width: '100%', height: 78, backgroundColor: '#0B2D40' },
-    tpl3AdTitle: { color: '#D8B65A', fontSize: 13, fontWeight: '800', textAlign: 'center', paddingHorizontal: 7, paddingTop: 8 },
-    tpl3AdDescription: { color: '#C5E1E3', fontSize: 10, lineHeight: 15, textAlign: 'center', paddingHorizontal: 7, paddingTop: 5 }, 
+    tpl3AdImage: { width: '100%', height: '100%', backgroundColor: '#0B2D40' }, 
 
     tableCard: {
       backgroundColor: t.cardBg,
