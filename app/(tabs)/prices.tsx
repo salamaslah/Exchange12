@@ -93,7 +93,7 @@ export default function PricesScreen() {
   const [language, setLanguage]             = useState<'ar'|'he'|'en'>('ar');
   const [companyInfo, setCompanyInfo]       = useState<CompanyInfo | null>(null);
   const [workingHours, setWorkingHours]     = useState<WorkingHours[]>([]);
-  const [advertisements]                    = useState<Advertisement[]>([]);
+  const [advertisements, setAdvertisements] = useState<Advertisement[]>([]);
   const [showCalculator, setShowCalculator] = useState(false);
   const [fromCurrency, setFromCurrency]     = useState('ILS');
   const [toCurrency, setToCurrency]         = useState('USD');
@@ -235,6 +235,12 @@ export default function PricesScreen() {
 
       const data = await currencyService.getAll(shopUsername, shopId);
       setAllCurrencies(data.sort((a: any, b: any) => (a.sort_num ?? 999) - (b.sort_num ?? 999)));
+      const { data: activeAds } = await supabase
+        .from('advertisements')
+        .select('id, position, title, description, image_url, is_active')
+        .eq('is_active', true)
+        .order('created_at', { ascending: true });
+      setAdvertisements((activeAds ?? []) as Advertisement[]);
       const co = await companySettingsService.get(shopUsername);
       if (co) {
         setCompanyInfo(co);
@@ -448,6 +454,13 @@ export default function PricesScreen() {
   // ── Render helpers ─────────────────────────────────────
   const isLargeScreen = screenData.width >= 768;
   const wh = getWorkingHoursText();
+  const template3Currencies = [
+    ...allCurrencies.filter(c => c.is_active),
+    ...allCurrencies.filter(c => !c.is_active),
+  ];
+  const template3AdCount = template3Currencies.length % 3 === 0
+    ? 0
+    : 3 - (template3Currencies.length % 3);
 
   const timeStr = currentTime.toLocaleTimeString(
     language === 'ar' ? 'ar-SA' : language === 'he' ? 'he-IL' : 'en-US',
@@ -728,14 +741,14 @@ export default function PricesScreen() {
         {templateId === 3 && (
           <View style={[s.tpl3Wrap, isLargeScreen && s.tpl3WrapLg]}>
             <View style={[s.grid, { flex: 1 }]}>
-              {[...allCurrencies.filter(c => c.is_active), ...allCurrencies.filter(c => !c.is_active)].map(currency => (
+              {template3Currencies.map(currency => (
                 <TouchableOpacity
                   key={`t3-${currency.id}`}
                   activeOpacity={currency.is_active ? 0.75 : 1}
                   onPress={() => currency.is_active && handleCurrencyNameClick(currency.code)}
                   style={[
                     s.card,
-                    { width: isLargeScreen ? (screenData.width * 0.58 - 48) / 3 : (screenData.width - 32) / 2 },
+                    { width: isLargeScreen ? (screenData.width * 0.58 - 48) / 3 : (screenData.width - 40) / 2 },
                     selectedFirstCurrency === currency.code && s.cardSelected,
                     !currency.is_active && s.cardInactive,
                   ]}
@@ -791,6 +804,15 @@ export default function PricesScreen() {
                     </TouchableOpacity>
                   </View>
                 </TouchableOpacity>
+              ))}
+              {advertisements.slice(0, template3AdCount).map(ad => (
+                <View key={`t3-ad-${ad.id}`} style={[s.tpl3AdCard, { width: isLargeScreen ? (screenData.width * 0.58 - 48) / 3 : (screenData.width - 40) / 2 }]}>
+                  {ad.image_url ? (
+                    <Image source={{ uri: String(ad.image_url) }} style={s.tpl3AdImage} resizeMode="cover" />
+                  ) : null}
+                  <Text style={s.tpl3AdTitle} numberOfLines={2}>{ad.title}</Text>
+                  <Text style={s.tpl3AdDescription} numberOfLines={3}>{ad.description}</Text>
+                </View>
               ))}
             </View>
 
@@ -1316,7 +1338,7 @@ function makeStyles(t: PriceTemplate) {
 
     /* ── TEMPLATE 3: GRID + INLINE CALCULATOR ── */
     tpl3Wrap: { paddingHorizontal: 8, paddingBottom: 8 },
-    tpl3WrapLg: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingHorizontal: 16 },
+    tpl3WrapLg: { flexDirection: 'row-reverse', alignItems: 'flex-start', gap: 12, paddingHorizontal: 16 },
     tpl3Calc: {
       marginTop: 12,
       marginHorizontal: 4,
@@ -1342,6 +1364,18 @@ function makeStyles(t: PriceTemplate) {
       backgroundColor: 'rgba(10, 37, 64, 0.5)', borderRadius: 8, padding: 10,
     },
     tpl3CalcDetailsTxt: { color: '#A5C8E8', fontSize: 11, textAlign: 'center' },
+    tpl3AdCard: {
+      backgroundColor: '#123D4D',
+      borderRadius: 12,
+      borderWidth: 1.5,
+      borderColor: '#D8B65A',
+      overflow: 'hidden',
+      minHeight: 190,
+      paddingBottom: 10,
+    },
+    tpl3AdImage: { width: '100%', height: 78, backgroundColor: '#0B2D40' },
+    tpl3AdTitle: { color: '#D8B65A', fontSize: 13, fontWeight: '800', textAlign: 'center', paddingHorizontal: 7, paddingTop: 8 },
+    tpl3AdDescription: { color: '#C5E1E3', fontSize: 10, lineHeight: 15, textAlign: 'center', paddingHorizontal: 7, paddingTop: 5 }, 
 
     tableCard: {
       backgroundColor: t.cardBg,
