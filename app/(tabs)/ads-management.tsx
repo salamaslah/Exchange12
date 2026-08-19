@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Modal, Image, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Alert, Modal, Image, SafeAreaView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '@/lib/supabase';
 
 interface Advertisement {
@@ -17,6 +18,7 @@ interface Advertisement {
 export default function AdsManagementScreen() {
   const [advertisements, setAdvertisements] = useState<Advertisement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingAd, setEditingAd] = useState<Advertisement | null>(null);
   const [formData, setFormData] = useState({
@@ -38,7 +40,7 @@ export default function AdsManagementScreen() {
         .from('advertisements')
         .select('*')
         .eq('username', shopUsername)
-        .order('position');
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 
@@ -48,6 +50,75 @@ export default function AdsManagementScreen() {
       Alert.alert('خطأ', 'حدث خطأ في تحميل الإعلانات');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const convertImageToBase64 = async (imageUri: string): Promise<string | null> => {
+    try {
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = reader.result as string;
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error('Error converting image:', error);
+      return null;
+    }
+  };
+
+  const pickAndCreateAd = async () => {
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert('خطأ', 'يجب السماح بالوصول للصور');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (result.canceled || !result.assets[0]) return;
+
+      setUploading(true);
+      const imageUri = result.assets[0].uri;
+      const base64 = await convertImageToBase64(imageUri);
+
+      if (!base64) {
+        Alert.alert('خطأ', 'فشل في معالجة الصورة');
+        return;
+      }
+
+      const shopUsername = await AsyncStorage.getItem('shopUsername') || '';
+      const { error } = await supabase
+        .from('advertisements')
+        .insert({
+          title: '',
+          description: '',
+          image_url: base64,
+          is_active: true,
+          position: 'bottom',
+          username: shopUsername,
+        });
+
+      if (error) throw error;
+
+      await loadAdvertisements();
+      Alert.alert('تم', 'تم إضافة الإعلان بنجاح');
+    } catch (error) {
+      console.log('Error creating advertisement:', error);
+      Alert.alert('خطأ', 'حدث خطأ في إضافة الإعلان');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -72,8 +143,8 @@ export default function AdsManagementScreen() {
   };
 
   const saveAdvertisement = async () => {
-    if (!formData.title.trim() || !formData.description.trim() || !formData.image_url.trim()) {
-      Alert.alert('خطأ', 'يرجى إكمال جميع الحقول');
+    if (!formData.image_url.trim()) {
+      Alert.alert('خطأ', 'يرجى إضافة صورة');
       return;
     }
 
@@ -151,26 +222,6 @@ export default function AdsManagementScreen() {
     );
   };
 
-  const getPositionName = (position: string) => {
-    const positions = {
-      'top': 'أعلى',
-      'bottom': 'أسفل',
-      'left': 'يسار',
-      'right': 'يمين'
-    };
-    return positions[position as keyof typeof positions] || position;
-  };
-
-  const getPositionColor = (position: string) => {
-    const colors = {
-      'top': '#FEF3C7',
-      'bottom': '#FEE2E2',
-      'left': '#DBEAFE',
-      'right': '#D1FAE5'
-    };
-    return colors[position as keyof typeof colors] || '#F3F4F6';
-  };
-
   const handleLogout = async () => {
     router.replace('/(tabs)/accounting');
   };
@@ -185,137 +236,149 @@ export default function AdsManagementScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-    <ScrollView
-      style={styles.scrollContainer}
-      showsVerticalScrollIndicator={false}
-      showsHorizontalScrollIndicator={false}
-    >
-      <View style={styles.header}>
-        <Text style={styles.title}>إدارة الإعلانات</Text>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutButtonText}>خروج</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.content}>
-        <Text style={styles.sectionTitle}>الإعلانات الحالية ({advertisements.length})</Text>
-        
-        {advertisements.map((ad) => (
-          <View key={ad.id} style={[styles.adCard, { backgroundColor: getPositionColor(ad.position) }]}>
-            <View style={styles.adHeader}>
-              <View style={styles.adInfo}>
-                <Text style={styles.adPosition}>{getPositionName(ad.position)}</Text>
-                <Text style={styles.adTitle}>{ad.title}</Text>
-              </View>
-              <View style={styles.adActions}>
-                <TouchableOpacity
-                  style={[
-                    styles.statusButton,
-                    ad.is_active ? styles.activeButton : styles.inactiveButton
-                  ]}
-                  onPress={() => toggleAdStatus(ad.id)}
-                >
-                  <Text style={styles.statusButtonText}>
-                    {ad.is_active ? 'مفعل' : 'معطل'}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.editButton}
-                  onPress={() => openEditModal(ad)}
-                >
-                  <Text style={styles.editButtonText}>تعديل</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={() => deleteAdvertisement(ad.id)}
-                >
-                  <Text style={styles.deleteButtonText}>حذف</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-            
-            <View style={styles.adContent}>
-              <Image 
-                source={{ uri: ad.image_url }} 
-                style={styles.adImage}
-                resizeMode="cover"
-              />
-              <View style={styles.adTextContent}>
-                <Text style={styles.adDescription}>{ad.description}</Text>
-                <Text style={styles.adUrl} numberOfLines={1}>{ad.image_url}</Text>
-              </View>
-            </View>
-          </View>
-        ))}
-      </View>
-
-      {/* Edit Advertisement Modal */}
-      <Modal
-        visible={showEditModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={closeEditModal}
+      <ScrollView
+        style={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        showsHorizontalScrollIndicator={false}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                تعديل إعلان {editingAd ? getPositionName(editingAd.position) : ''}
-              </Text>
-              <TouchableOpacity style={styles.closeButton} onPress={closeEditModal}>
-                <Text style={styles.closeButtonText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.modalContent}>
-              <Text style={styles.inputLabel}>عنوان الإعلان:</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.title}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, title: text }))}
-                placeholder="أدخل عنوان الإعلان"
-                textAlign="right"
-              />
-
-              <Text style={styles.inputLabel}>وصف الإعلان:</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                value={formData.description}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, description: text }))}
-                placeholder="أدخل وصف الإعلان"
-                textAlign="right"
-                multiline={true}
-                numberOfLines={3}
-              />
-
-              <Text style={styles.inputLabel}>رابط الصورة:</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.image_url}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, image_url: text }))}
-                placeholder="https://example.com/image.jpg"
-                textAlign="left"
-              />
-
-              {formData.image_url ? (
-                <View style={styles.imagePreview}>
-                  <Text style={styles.previewLabel}>معاينة الصورة:</Text>
-                  <Image 
-                    source={{ uri: formData.image_url }} 
-                    style={styles.previewImage}
-                    resizeMode="cover"
-                  />
-                </View>
-              ) : null}
-
-              <TouchableOpacity style={styles.saveButton} onPress={saveAdvertisement}>
-                <Text style={styles.saveButtonText}>حفظ التغييرات</Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
+        <View style={styles.header}>
+          <Text style={styles.title}>إدارة الإعلانات</Text>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutButtonText}>خروج</Text>
+          </TouchableOpacity>
         </View>
-      </Modal>
-    </ScrollView>
+
+        <TouchableOpacity
+          style={styles.addAdButton}
+          onPress={pickAndCreateAd}
+          disabled={uploading}
+        >
+          {uploading ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <>
+              <Text style={styles.addAdIcon}>+</Text>
+              <Text style={styles.addAdText}>إضافة إعلان جديد</Text>
+            </>
+          )}
+        </TouchableOpacity>
+
+        <View style={styles.content}>
+          <Text style={styles.sectionTitle}>الإعلانات الحالية ({advertisements.length})</Text>
+
+          {advertisements.length === 0 && (
+            <Text style={styles.emptyText}>لا توجد إعلانات. اضغط "إضافة إعلان جديد" لإضافة صورة.</Text>
+          )}
+
+          {advertisements.map((ad) => (
+            <View key={ad.id} style={styles.adCard}>
+              <View style={styles.adHeader}>
+                <View style={styles.adInfo}>
+                  <Text style={styles.adTitle}>{ad.title || 'إعلان'}</Text>
+                </View>
+                <View style={styles.adActions}>
+                  <TouchableOpacity
+                    style={[
+                      styles.statusButton,
+                      ad.is_active ? styles.activeButton : styles.inactiveButton
+                    ]}
+                    onPress={() => toggleAdStatus(ad.id)}
+                  >
+                    <Text style={styles.statusButtonText}>
+                      {ad.is_active ? 'مفعل' : 'معطل'}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.editButton}
+                    onPress={() => openEditModal(ad)}
+                  >
+                    <Text style={styles.editButtonText}>تعديل</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => deleteAdvertisement(ad.id)}
+                  >
+                    <Text style={styles.deleteButtonText}>حذف</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={styles.adContent}>
+                <Image
+                  source={{ uri: ad.image_url }}
+                  style={styles.adImage}
+                  resizeMode="cover"
+                />
+              </View>
+            </View>
+          ))}
+        </View>
+
+        {/* Edit Advertisement Modal */}
+        <Modal
+          visible={showEditModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={closeEditModal}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>تعديل إعلان</Text>
+                <TouchableOpacity style={styles.closeButton} onPress={closeEditModal}>
+                  <Text style={styles.closeButtonText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={styles.modalContent}>
+                <Text style={styles.inputLabel}>عنوان الإعلان (اختياري):</Text>
+                <TextInput
+                  style={styles.input}
+                  value={formData.title}
+                  onChangeText={(text) => setFormData(prev => ({ ...prev, title: text }))}
+                  placeholder="أدخل عنوان الإعلان"
+                  textAlign="right"
+                />
+
+                <Text style={styles.inputLabel}>وصف الإعلان (اختياري):</Text>
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  value={formData.description}
+                  onChangeText={(text) => setFormData(prev => ({ ...prev, description: text }))}
+                  placeholder="أدخل وصف الإعلان"
+                  textAlign="right"
+                  multiline={true}
+                  numberOfLines={3}
+                />
+
+                <Text style={styles.inputLabel}>رابط الصورة:</Text>
+                <TextInput
+                  style={styles.input}
+                  value={formData.image_url}
+                  onChangeText={(text) => setFormData(prev => ({ ...prev, image_url: text }))}
+                  placeholder="https://example.com/image.jpg"
+                  textAlign="left"
+                />
+
+                {formData.image_url ? (
+                  <View style={styles.imagePreview}>
+                    <Text style={styles.previewLabel}>معاينة الصورة:</Text>
+                    <Image
+                      source={{ uri: formData.image_url }}
+                      style={styles.previewImage}
+                      resizeMode="cover"
+                    />
+                  </View>
+                ) : null}
+
+                <TouchableOpacity style={styles.saveButton} onPress={saveAdvertisement}>
+                  <Text style={styles.saveButtonText}>حفظ التغييرات</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -337,7 +400,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 20,
     marginTop: 40,
   },
   title: {
@@ -360,6 +423,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6B7280',
   },
+  addAdButton: {
+    backgroundColor: '#065F46',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 10,
+    marginBottom: 20,
+    gap: 8,
+  },
+  addAdIcon: {
+    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
+  addAdText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
   content: {
     marginBottom: 20,
   },
@@ -370,7 +453,14 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
   },
+  emptyText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    paddingVertical: 30,
+  },
   adCard: {
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 15,
     marginBottom: 15,
@@ -391,11 +481,6 @@ const styles = StyleSheet.create({
   },
   adInfo: {
     flex: 1,
-  },
-  adPosition: {
-    fontSize: 12,
-    color: '#6B7280',
-    fontWeight: '600',
   },
   adTitle: {
     fontSize: 16,
@@ -424,7 +509,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   editButton: {
-    backgroundColor: '#7C3AED',
+    backgroundColor: '#2563EB',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
@@ -446,27 +531,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   adContent: {
-    flexDirection: 'row',
-    gap: 12,
+    borderRadius: 8,
+    overflow: 'hidden',
   },
   adImage: {
-    width: 80,
-    height: 60,
+    width: '100%',
+    height: 160,
     borderRadius: 8,
-  },
-  adTextContent: {
-    flex: 1,
-  },
-  adDescription: {
-    fontSize: 14,
-    color: '#374151',
-    lineHeight: 18,
-    marginBottom: 4,
-  },
-  adUrl: {
-    fontSize: 10,
-    color: '#9CA3AF',
-    fontStyle: 'italic',
   },
   // Modal Styles
   modalOverlay: {
