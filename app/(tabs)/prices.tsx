@@ -307,21 +307,21 @@ export default function PricesScreen() {
       result = val; details = 'نفس العملة';
     } else if (side === 'right') {
       if (toCurrency === 'ILS') {
-        result = val / fromD!.sell_rate; details = `${val} شيقل ÷ ${fromD!.sell_rate} = ${result.toFixed(2)} ${fromCurrency}`;
+        result = val / fromD!.buy_rate; details = `${val} شيقل ÷ ${fromD!.buy_rate} = ${result.toFixed(2)} ${fromCurrency}`;
       } else if (fromCurrency === 'ILS') {
-        result = val * toD!.buy_rate; details = `${val} ${toCurrency} × ${toD!.buy_rate} = ${result.toFixed(2)} شيقل`;
+        result = val * toD!.sell_rate; details = `${val} ${toCurrency} × ${toD!.sell_rate} = ${result.toFixed(2)} شيقل`;
       } else {
-        const s = val * toD!.buy_rate; result = s / fromD!.sell_rate;
-        details = `${val} ${toCurrency} × ${toD!.buy_rate} = ${s.toFixed(2)} ÷ ${fromD!.sell_rate} = ${result.toFixed(2)} ${fromCurrency}`;
+        const s = val * toD!.sell_rate; result = s / fromD!.buy_rate;
+        details = `${val} ${toCurrency} × ${toD!.sell_rate} = ${s.toFixed(2)} ÷ ${fromD!.buy_rate} = ${result.toFixed(2)} ${fromCurrency}`;
       }
     } else {
       if (toCurrency === 'ILS') {
-        result = val * fromD!.sell_rate; details = `${val} ${fromCurrency} × ${fromD!.sell_rate} = ${result.toFixed(2)} شيقل`;
+        result = val * fromD!.buy_rate; details = `${val} ${fromCurrency} × ${fromD!.buy_rate} = ${result.toFixed(2)} شيقل`;
       } else if (fromCurrency === 'ILS') {
-        result = val / toD!.buy_rate; details = `${val} شيقل ÷ ${toD!.buy_rate} = ${result.toFixed(2)} ${toCurrency}`;
+        result = val / toD!.sell_rate; details = `${val} شيقل ÷ ${toD!.sell_rate} = ${result.toFixed(2)} ${toCurrency}`;
       } else {
-        const s = val * fromD!.sell_rate; result = s / toD!.buy_rate;
-        details = `${val} ${fromCurrency} × ${fromD!.sell_rate} = ${s.toFixed(2)} ÷ ${toD!.buy_rate} = ${result.toFixed(2)} ${toCurrency}`;
+        const s = val * fromD!.buy_rate; result = s / toD!.sell_rate;
+        details = `${val} ${fromCurrency} × ${fromD!.buy_rate} = ${s.toFixed(2)} ÷ ${toD!.sell_rate} = ${result.toFixed(2)} ${toCurrency}`;
       }
     }
     if (side === 'left') setToAmount(result.toFixed(2)); else setFromAmount(result.toFixed(2));

@@ -109,27 +109,27 @@ export default function CalculatorScreen() {
 
       if (side === 'right') {
         if (targetCurrency === 'ILS') {
-          result = inputAmount / sourceCurrencyData!.sell_rate;
-          details = `${inputAmount.toFixed(2)} شيقل ÷ ${sourceCurrencyData!.sell_rate.toFixed(2)} (سعر البيع) = ${result.toFixed(2)} ${sourceCurrency}`;
+          result = inputAmount / sourceCurrencyData!.buy_rate;
+          details = `${inputAmount.toFixed(2)} شيقل ÷ ${sourceCurrencyData!.buy_rate.toFixed(2)} (سعر الشراء) = ${result.toFixed(2)} ${sourceCurrency}`;
         } else if (sourceCurrency === 'ILS') {
-          result = inputAmount * targetCurrencyData!.buy_rate;
-          details = `${inputAmount.toFixed(2)} ${targetCurrency} × ${targetCurrencyData!.buy_rate.toFixed(2)} (سعر الشراء) = ${result.toFixed(2)} شيقل`;
+          result = inputAmount * targetCurrencyData!.sell_rate;
+          details = `${inputAmount.toFixed(2)} ${targetCurrency} × ${targetCurrencyData!.sell_rate.toFixed(2)} (سعر البيع) = ${result.toFixed(2)} شيقل`;
         } else {
-          const shekelAmount = inputAmount * targetCurrencyData!.buy_rate;
-          result = shekelAmount / sourceCurrencyData!.sell_rate;
-          details = `${inputAmount.toFixed(2)} ${targetCurrency} × ${targetCurrencyData!.buy_rate.toFixed(2)} = ${shekelAmount.toFixed(2)} شيقل ÷ ${sourceCurrencyData!.sell_rate.toFixed(2)} = ${result.toFixed(2)} ${sourceCurrency}`;
+          const shekelAmount = inputAmount * targetCurrencyData!.sell_rate;
+          result = shekelAmount / sourceCurrencyData!.buy_rate;
+          details = `${inputAmount.toFixed(2)} ${targetCurrency} × ${targetCurrencyData!.sell_rate.toFixed(2)} = ${shekelAmount.toFixed(2)} شيقل ÷ ${sourceCurrencyData!.buy_rate.toFixed(2)} = ${result.toFixed(2)} ${sourceCurrency}`;
         }
       } else {
         if (targetCurrency === 'ILS') {
-          result = inputAmount * sourceCurrencyData!.sell_rate;
-          details = `${inputAmount.toFixed(2)} ${sourceCurrency} × ${sourceCurrencyData!.sell_rate.toFixed(2)} (سعر البيع) = ${result.toFixed(2)} شيقل`;
+          result = inputAmount * sourceCurrencyData!.buy_rate;
+          details = `${inputAmount.toFixed(2)} ${sourceCurrency} × ${sourceCurrencyData!.buy_rate.toFixed(2)} (سعر الشراء) = ${result.toFixed(2)} شيقل`;
         } else if (sourceCurrency === 'ILS') {
-          result = inputAmount / targetCurrencyData!.buy_rate;
-          details = `${inputAmount.toFixed(2)} شيقل ÷ ${targetCurrencyData!.buy_rate.toFixed(2)} (سعر الشراء) = ${result.toFixed(2)} ${targetCurrency}`;
+          result = inputAmount / targetCurrencyData!.sell_rate;
+          details = `${inputAmount.toFixed(2)} شيقل ÷ ${targetCurrencyData!.sell_rate.toFixed(2)} (سعر البيع) = ${result.toFixed(2)} ${targetCurrency}`;
         } else {
-          const shekelAmount = inputAmount * sourceCurrencyData!.sell_rate;
-          result = shekelAmount / targetCurrencyData!.buy_rate;
-          details = `${inputAmount.toFixed(2)} ${sourceCurrency} × ${sourceCurrencyData!.sell_rate.toFixed(2)} = ${shekelAmount.toFixed(2)} شيقل ÷ ${targetCurrencyData!.buy_rate.toFixed(2)} = ${result.toFixed(2)} ${targetCurrency}`;
+          const shekelAmount = inputAmount * sourceCurrencyData!.buy_rate;
+          result = shekelAmount / targetCurrencyData!.sell_rate;
+          details = `${inputAmount.toFixed(2)} ${sourceCurrency} × ${sourceCurrencyData!.buy_rate.toFixed(2)} = ${shekelAmount.toFixed(2)} شيقل ÷ ${targetCurrencyData!.sell_rate.toFixed(2)} = ${result.toFixed(2)} ${targetCurrency}`;
         }
       }
     }
