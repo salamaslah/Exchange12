@@ -782,7 +782,7 @@ export default function PricesScreen() {
                   onPress={() => currency.is_active && handleCurrencyNameClick(currency.code)}
                   style={[
                     s.card,
-                    { width: isLargeScreen ? (screenData.width * 0.58 - 56) / 2 : (screenData.width - 40) / 2 },
+                    { width: isLargeScreen ? (screenData.width * 0.58 - 64) / 3 : (screenData.width - 40) / 2 },
                     selectedFirstCurrency === currency.code && s.cardSelected,
                     !currency.is_active && s.cardInactive,
                   ]}
@@ -1506,7 +1506,7 @@ function makeStyles(t: PriceTemplate) {
       borderWidth: 1.5,
       borderColor: '#D8B65A',
       overflow: 'hidden',
-      minHeight: 140,
+      height: 160,
       ...SHADOW,
     },
     tpl3AdPlaceholder: {
