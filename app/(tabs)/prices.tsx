@@ -905,9 +905,10 @@ export default function PricesScreen() {
               ) : null}
 
               {/* Ads below calculator on large screens */}
-              {isLargeScreen && advertisements.length > 0 && (
-                <View style={s.tpl3AdsColumn}>
-                  {advertisements.map((ad) => (
+              {isLargeScreen && advertisements.length > 0 && (() => {
+                const ad = advertisements[adOffset % advertisements.length];
+                return (
+                  <View style={s.tpl3AdsColumn}>
                     <View key={`t3-ad-lg-${ad.id}`} style={s.tpl3AdCardLg}>
                       {ad.image_url ? (
                         <Image source={{ uri: String(ad.image_url) }} style={s.tpl3AdImage} resizeMode="cover" />
@@ -918,9 +919,9 @@ export default function PricesScreen() {
                         </View>
                       )}
                     </View>
-                  ))}
-                </View>
-              )}
+                  </View>
+                );
+              })()}
             </View>
           </View>
         )}
@@ -1497,8 +1498,8 @@ function makeStyles(t: PriceTemplate) {
     },
     tpl3AdImage: { width: '100%', height: '100%', backgroundColor: '#0B2D40' }, 
     tpl3AdsColumn: {
+      width: '100%',
       marginTop: 12,
-      gap: 10,
     },
     tpl3AdCardLg: {
       backgroundColor: '#123D4D',
@@ -1506,7 +1507,7 @@ function makeStyles(t: PriceTemplate) {
       borderWidth: 1.5,
       borderColor: '#D8B65A',
       overflow: 'hidden',
-      height: 220,
+      height: 260,
       ...SHADOW,
     },
     tpl3AdPlaceholder: {
