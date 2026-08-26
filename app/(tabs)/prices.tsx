@@ -844,7 +844,7 @@ export default function PricesScreen() {
                 return (
                   <View key={`t3-ad-${i}-${ad.id}`} style={[s.tpl3AdCard, { width: (screenData.width - 40) / 2 }]}>
                     {ad.image_url ? (
-                      <Image source={{ uri: String(ad.image_url) }} style={s.tpl3AdImage} resizeMode="cover" />
+                      <Image source={{ uri: String(ad.image_url) }} style={s.tpl3AdImage} resizeMode="contain" />
                     ) : null}
                   </View>
                 );
@@ -852,9 +852,9 @@ export default function PricesScreen() {
               {!isLargeScreen && advertisements.length > 0 && (() => {
                 const ad = advertisements[adOffset % advertisements.length];
                 return (
-                  <View key={`t3-ad-sm-${ad.id}`} style={[s.tpl3AdCardLg, { width: screenData.width - 40 }]}>
+                  <View key={`t3-ad-sm-${ad.id}`} style={[s.tpl3AdCardLg, { width: screenData.width - 40, height: 280 }]}>
                     {ad.image_url ? (
-                      <Image source={{ uri: String(ad.image_url) }} style={s.tpl3AdImage} resizeMode="cover" />
+                      <Image source={{ uri: String(ad.image_url) }} style={s.tpl3AdImage} resizeMode="contain" />
                     ) : (
                       <View style={s.tpl3AdPlaceholder}>
                         <Text style={s.tpl3AdTitle}>{ad.title}</Text>
@@ -926,7 +926,7 @@ export default function PricesScreen() {
                   <View style={s.tpl3AdsColumn}>
                     <View key={`t3-ad-lg-${ad.id}`} style={s.tpl3AdCardLg}>
                       {ad.image_url ? (
-                        <Image source={{ uri: String(ad.image_url) }} style={s.tpl3AdImage} resizeMode="cover" />
+                        <Image source={{ uri: String(ad.image_url) }} style={s.tpl3AdImage} resizeMode="contain" />
                       ) : (
                         <View style={s.tpl3AdPlaceholder}>
                           <Text style={s.tpl3AdTitle}>{ad.title}</Text>
@@ -1511,7 +1511,7 @@ function makeStyles(t: PriceTemplate) {
       overflow: 'hidden',
       minHeight: 190,
     },
-    tpl3AdImage: { width: '100%', height: '100%', backgroundColor: '#0B2D40' }, 
+    tpl3AdImage: { flex: 1, width: '100%', height: '100%', backgroundColor: '#0B2D40' },
     tpl3AdsColumn: {
       flex: 1,
       marginTop: 12,
