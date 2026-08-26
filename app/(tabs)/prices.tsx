@@ -782,7 +782,7 @@ export default function PricesScreen() {
                   onPress={() => currency.is_active && handleCurrencyNameClick(currency.code)}
                   style={[
                     s.card,
-                    { width: isLargeScreen ? (screenData.width * 0.58 - 48) / 3 : (screenData.width - 40) / 2 },
+                    { width: isLargeScreen ? (screenData.width * 0.58 - 56) / 2 : (screenData.width - 40) / 2 },
                     selectedFirstCurrency === currency.code && s.cardSelected,
                     !currency.is_active && s.cardInactive,
                   ]}
@@ -839,10 +839,10 @@ export default function PricesScreen() {
                   </View>
                 </TouchableOpacity>
               ))}
-              {advertisements.length > 0 && Array.from({ length: template3AdCount }).map((_, i) => {
+              {!isLargeScreen && advertisements.length > 0 && Array.from({ length: template3AdCount }).map((_, i) => {
                 const ad = advertisements[(i + adOffset) % advertisements.length];
                 return (
-                  <View key={`t3-ad-${i}-${ad.id}`} style={[s.tpl3AdCard, { width: isLargeScreen ? (screenData.width * 0.58 - 48) / 3 : (screenData.width - 40) / 2 }]}>
+                  <View key={`t3-ad-${i}-${ad.id}`} style={[s.tpl3AdCard, { width: (screenData.width - 40) / 2 }]}>
                     {ad.image_url ? (
                       <Image source={{ uri: String(ad.image_url) }} style={s.tpl3AdImage} resizeMode="cover" />
                     ) : null}
@@ -851,7 +851,7 @@ export default function PricesScreen() {
               })}
             </View>
 
-            {/* Inline calculator panel */}
+            {/* Calculator + ads column */}
             <View style={[s.tpl3Calc, isLargeScreen && s.tpl3CalcLg]}>
               <Text style={[s.tpl3CalcTitle, isLargeScreen && s.tpl3CalcTitleLg]}>
                 {language === 'ar' ? 'آلة حاسبة' : language === 'he' ? 'מחשבון' : 'Calculator'}
@@ -903,6 +903,24 @@ export default function PricesScreen() {
                   </Text>
                 </TouchableOpacity>
               ) : null}
+
+              {/* Ads below calculator on large screens */}
+              {isLargeScreen && advertisements.length > 0 && (
+                <View style={s.tpl3AdsColumn}>
+                  {advertisements.map((ad) => (
+                    <View key={`t3-ad-lg-${ad.id}`} style={s.tpl3AdCardLg}>
+                      {ad.image_url ? (
+                        <Image source={{ uri: String(ad.image_url) }} style={s.tpl3AdImage} resizeMode="cover" />
+                      ) : (
+                        <View style={s.tpl3AdPlaceholder}>
+                          <Text style={s.tpl3AdTitle}>{ad.title}</Text>
+                          <Text style={s.tpl3AdDesc}>{ad.description}</Text>
+                        </View>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
           </View>
         )}
@@ -1455,7 +1473,7 @@ function makeStyles(t: PriceTemplate) {
       paddingHorizontal: 14,
       ...SHADOW,
     },
-    tpl3CalcLg: { flex: 0.38, maxWidth: 380, marginTop: 0, position: 'sticky', top: 12 },
+    tpl3CalcLg: { flex: 0.38, maxWidth: 380, marginTop: 0 },
     tpl3CalcTitle: { color: '#7FC4FF', fontSize: 16, fontWeight: '800', textAlign: 'center', marginBottom: 12 },
     tpl3CalcTitleLg: { fontSize: 22, marginBottom: 16 },
     tpl3CalcInput: {
@@ -1478,6 +1496,27 @@ function makeStyles(t: PriceTemplate) {
       minHeight: 190,
     },
     tpl3AdImage: { width: '100%', height: '100%', backgroundColor: '#0B2D40' }, 
+    tpl3AdsColumn: {
+      marginTop: 12,
+      gap: 10,
+    },
+    tpl3AdCardLg: {
+      backgroundColor: '#123D4D',
+      borderRadius: 12,
+      borderWidth: 1.5,
+      borderColor: '#D8B65A',
+      overflow: 'hidden',
+      minHeight: 140,
+      ...SHADOW,
+    },
+    tpl3AdPlaceholder: {
+      padding: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+      flex: 1,
+    },
+    tpl3AdTitle: { color: '#D8B65A', fontSize: 16, fontWeight: '800', textAlign: 'center', marginBottom: 6 },
+    tpl3AdDesc: { color: '#A5C8E8', fontSize: 12, textAlign: 'center' },
 
     tableCard: {
       backgroundColor: t.cardBg,
