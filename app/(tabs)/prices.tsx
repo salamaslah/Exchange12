@@ -839,13 +839,18 @@ export default function PricesScreen() {
                   </View>
                 </TouchableOpacity>
               ))}
-              {!isLargeScreen && advertisements.length > 0 && Array.from({ length: template3AdCount }).map((_, i) => {
+              {!isLargeScreen && advertisements.length > 0 && Array.from({ length: Math.max(template3AdCount, 2) }).map((_, i) => {
                 const ad = advertisements[(i + adOffset) % advertisements.length];
                 return (
                   <View key={`t3-ad-${i}-${ad.id}`} style={[s.tpl3AdCard, { width: (screenData.width - 40) / 2 }]}>
                     {ad.image_url ? (
                       <Image source={{ uri: String(ad.image_url) }} style={s.tpl3AdImage} resizeMode="cover" />
-                    ) : null}
+                    ) : (
+                      <View style={s.tpl3AdPlaceholder}>
+                        <Text style={s.tpl3AdTitle}>{ad.title}</Text>
+                        <Text style={s.tpl3AdDesc}>{ad.description}</Text>
+                      </View>
+                    )}
                   </View>
                 );
               })}
@@ -903,26 +908,25 @@ export default function PricesScreen() {
                   </Text>
                 </TouchableOpacity>
               ) : null}
-
-              {/* Ads below calculator on large screens */}
-              {isLargeScreen && advertisements.length > 0 && (() => {
-                const ad = advertisements[adOffset % advertisements.length];
-                return (
-                  <View style={s.tpl3AdsColumn}>
-                    <View key={`t3-ad-lg-${ad.id}`} style={s.tpl3AdCardLg}>
-                      {ad.image_url ? (
-                        <Image source={{ uri: String(ad.image_url) }} style={s.tpl3AdImage} resizeMode="cover" />
-                      ) : (
-                        <View style={s.tpl3AdPlaceholder}>
-                          <Text style={s.tpl3AdTitle}>{ad.title}</Text>
-                          <Text style={s.tpl3AdDesc}>{ad.description}</Text>
-                        </View>
-                      )}
-                    </View>
-                  </View>
-                );
-              })()}
             </View>
+
+            {/* Ads column on large screens */}
+            {isLargeScreen && advertisements.length > 0 && (
+              <View style={s.tpl3AdsColumn}>
+                {advertisements.map((ad, i) => (
+                  <View key={`t3-ad-lg-${ad.id}-${i}`} style={s.tpl3AdCardLg}>
+                    {ad.image_url ? (
+                      <Image source={{ uri: String(ad.image_url) }} style={s.tpl3AdImage} resizeMode="cover" />
+                    ) : (
+                      <View style={s.tpl3AdPlaceholder}>
+                        <Text style={s.tpl3AdTitle}>{ad.title}</Text>
+                        <Text style={s.tpl3AdDesc}>{ad.description}</Text>
+                      </View>
+                    )}
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         )}
 
