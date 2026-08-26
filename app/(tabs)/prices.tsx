@@ -782,7 +782,7 @@ export default function PricesScreen() {
                   onPress={() => currency.is_active && handleCurrencyNameClick(currency.code)}
                   style={[
                     s.card,
-                    { width: isLargeScreen ? (screenData.width * 0.58 - 64) / 3 : (screenData.width - 40) / 2 },
+                    { width: isLargeScreen ? (screenData.width * 0.7 - 72) / 3 : (screenData.width - 40) / 2 },
                     selectedFirstCurrency === currency.code && s.cardSelected,
                     !currency.is_active && s.cardInactive,
                   ]}
@@ -1461,7 +1461,7 @@ function makeStyles(t: PriceTemplate) {
 
     /* ── TEMPLATE 3: GRID + INLINE CALCULATOR ── */
     tpl3Wrap: { paddingHorizontal: 8, paddingBottom: 8 },
-    tpl3WrapLg: { flexDirection: 'row-reverse', alignItems: 'flex-start', gap: 12, paddingHorizontal: 16 },
+    tpl3WrapLg: { flexDirection: 'row-reverse', alignItems: 'flex-start', gap: 16, paddingHorizontal: 8 },
     tpl3Calc: {
       marginTop: 12,
       marginHorizontal: 4,
@@ -1473,7 +1473,7 @@ function makeStyles(t: PriceTemplate) {
       paddingHorizontal: 14,
       ...SHADOW,
     },
-    tpl3CalcLg: { flex: 0.38, maxWidth: 380, marginTop: 0 },
+    tpl3CalcLg: { flex: 0.3, maxWidth: 320, marginTop: 0 },
     tpl3CalcTitle: { color: '#7FC4FF', fontSize: 16, fontWeight: '800', textAlign: 'center', marginBottom: 12 },
     tpl3CalcTitleLg: { fontSize: 22, marginBottom: 16 },
     tpl3CalcInput: {
@@ -1506,7 +1506,7 @@ function makeStyles(t: PriceTemplate) {
       borderWidth: 1.5,
       borderColor: '#D8B65A',
       overflow: 'hidden',
-      height: 160,
+      height: 220,
       ...SHADOW,
     },
     tpl3AdPlaceholder: {
