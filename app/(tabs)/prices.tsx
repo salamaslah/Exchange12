@@ -1507,7 +1507,7 @@ function makeStyles(t: PriceTemplate) {
       borderWidth: 1.5,
       borderColor: '#D8B65A',
       overflow: 'hidden',
-      height: 260,
+      height: 520,
       ...SHADOW,
     },
     tpl3AdPlaceholder: {

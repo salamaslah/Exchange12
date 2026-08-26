@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, SafeAreaView, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { exchangeShopService } from '@/lib/supabase';
+import { exchangeShopService, companySettingsService } from '@/lib/supabase';
 
 export default function LoginScreen() {
   const [username, setUsername] = useState('');
@@ -51,6 +51,30 @@ export default function LoginScreen() {
     }
   };
 
+  const handleCustomerView = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const shop = await companySettingsService.getByUsername('alaa');
+      if (!shop) {
+        setError('لا يمكن العثور على أسعار الصرف حالياً');
+        setLoading(false);
+        return;
+      }
+      await AsyncStorage.setItem('shopUsername', 'alaa');
+      await AsyncStorage.setItem('shopId', shop.id);
+      await AsyncStorage.setItem('shopNameAr', shop.shop_name_ar || '');
+      await AsyncStorage.setItem('shopNameHe', shop.shop_name_he || '');
+      await AsyncStorage.setItem('shopNameEn', shop.shop_name_en || '');
+      await AsyncStorage.setItem('isCustomerView', 'true');
+      router.replace('/(tabs)/prices');
+    } catch {
+      setError('حدث خطأ، يرجى المحاولة لاحقاً');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -59,6 +83,16 @@ export default function LoginScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.loginContainer}>
+          <TouchableOpacity
+            style={styles.customerButton}
+            onPress={handleCustomerView}
+            disabled={loading}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.customerButtonText}>هل أنت زبون؟</Text>
+            <Text style={styles.customerButtonSubtext}>اضغط هنا لمشاهدة أسعار الصرف اليوم</Text>
+          </TouchableOpacity>
+
           <View style={styles.logoContainer}>
             <Text style={styles.logoText}>💱</Text>
           </View>
@@ -232,5 +266,31 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  customerButton: {
+    width: '100%',
+    backgroundColor: '#C9A84C',
+    borderRadius: 16,
+    paddingVertical: 22,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    marginBottom: 28,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  customerButtonText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#0B3B24',
+    marginBottom: 6,
+  },
+  customerButtonSubtext: {
+    fontSize: 16,
+    color: '#0B3B24',
+    opacity: 0.85,
+    fontWeight: '600',
   },
 });
