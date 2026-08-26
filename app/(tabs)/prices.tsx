@@ -110,6 +110,7 @@ export default function PricesScreen() {
   const [currentTime, setCurrentTime]       = useState(new Date());
   const [shopName, setShopName]             = useState<{ar: string; he: string; en: string} | null>(null);
   const [templateId, setTemplateId]         = useState<number>(1);
+  const [isCustomerView, setIsCustomerView] = useState(false);
   const tpl: PriceTemplate = getTemplate(templateId);
 
   const router          = useRouter();
@@ -238,6 +239,8 @@ export default function PricesScreen() {
       if (shopAr || shopHe || shopEn) {
         setShopName({ ar: shopAr, he: shopHe, en: shopEn });
       }
+      const customerView = await AsyncStorage.getItem('isCustomerView');
+      setIsCustomerView(customerView === 'true');
       const cachedTpl = await AsyncStorage.getItem('templateId');
       if (cachedTpl) setTemplateId(parseInt(cachedTpl, 10) || 1);
 
@@ -436,6 +439,21 @@ export default function PricesScreen() {
     try {
       const url = `whatsapp://send?phone=${phone}&text=${encodeURIComponent(msg)}`;
       if (await Linking.canOpenURL(url)) await Linking.openURL(url);
+      else await Linking.openURL(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`);
+    } catch {}
+  };
+
+  const openWhatsAppContact = async () => {
+    const phone = '972526000841';
+    const msg = language === 'ar'
+      ? 'مرحباً، أهلاً وسهلاً بكم في نعامنة للصرافة\nيرجى اختيار الخدمة المطلوبة:\n1. شراء عملة أجنبية\n2. بيع عملة أجنبية\n3. تحويل أموال للخارج\n4. دفع فواتير\n5. كرت الدفع المسبق (כרטיס נטען)\n6. أخرى'
+      : language === 'he'
+      ? 'שלום וברוכים הבאים לנעאמנה להמרות\nאנא בחרו את השירות המבוקש:\n1. קניית מטבע חוץ\n2. מכירת מטבע חוץ\n3. העברת כסף לחו"ל\n4. תשלום חשבונות\n5. כרטיס נטען\n6. אחר'
+      : 'Hello and welcome to Naamneh Exchange\nPlease select the service you need:\n1. Buy foreign currency\n2. Sell foreign currency\n3. International money transfer\n4. Bill payments\n5. Prepaid card (Kart Neta)\n6. Other';
+    try {
+      const url = `whatsapp://send?phone=${phone}&text=${encodeURIComponent(msg)}`;
+      if (await Linking.canOpenURL(url)) await Linking.openURL(url);
+      else await Linking.openURL(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`);
     } catch {}
   };
 
@@ -652,6 +670,26 @@ export default function PricesScreen() {
             </View>
           </View>
         </View>
+        )}
+
+        {/* ════════════════════════════════
+            WHATSAPP CONTACT BUTTON — customers only
+        ════════════════════════════════ */}
+        {isCustomerView && (
+          <View style={{ paddingHorizontal: 12, marginTop: 10 }}>
+            <TouchableOpacity style={s.whatsappContactBtn} onPress={openWhatsAppContact} activeOpacity={0.85}>
+              <Text style={s.whatsappContactIcon}>💬</Text>
+              <View style={{ flex: 1, alignItems: 'center' }}>
+                <Text style={s.whatsappContactText}>
+                  {language === 'ar' ? 'تواصل معنا عبر واتساب' : language === 'he' ? 'צרו קשר בוואטסאפ' : 'Contact us via WhatsApp'}
+                </Text>
+                <Text style={s.whatsappContactSubtext}>
+                  {language === 'ar' ? 'للاستفسار عن معاملة' : language === 'he' ? 'לפרטים על עסקה' : 'For transaction inquiries'}
+                </Text>
+              </View>
+              <Text style={s.whatsappContactArrow}>←</Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         {/* ════════════════════════════════
@@ -1903,6 +1941,22 @@ function makeStyles(t: PriceTemplate) {
       marginHorizontal: 12, marginTop: 18, gap: 10,
     },
     footerSlogan: { color: t.accent, fontSize: 14, fontWeight: '800' },
+
+    /* WhatsApp contact button */
+    whatsappContactBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#25D366',
+      borderRadius: 14,
+      paddingVertical: 14,
+      paddingHorizontal: 18,
+      gap: 12,
+      ...SHADOW,
+    },
+    whatsappContactIcon: { fontSize: 28 },
+    whatsappContactText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800', textAlign: 'center' },
+    whatsappContactSubtext: { color: '#E8F5E9', fontSize: 11, fontWeight: '600', textAlign: 'center', marginTop: 2 },
+    whatsappContactArrow: { color: '#FFFFFF', fontSize: 22, fontWeight: '700' },
 
     /* Customer button */
     custBtn: {
