@@ -111,6 +111,10 @@ export default function PricesScreen() {
   const [shopName, setShopName]             = useState<{ar: string; he: string; en: string} | null>(null);
   const [templateId, setTemplateId]         = useState<number>(1);
   const [isCustomerView, setIsCustomerView] = useState(false);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
+  const [whatsappResult, setWhatsappResult] = useState<{success: boolean; message: string} | null>(null);
   const tpl: PriceTemplate = getTemplate(templateId);
 
   const router          = useRouter();
@@ -443,18 +447,64 @@ export default function PricesScreen() {
     } catch {}
   };
 
-  const openWhatsAppContact = async () => {
-    const phone = '972526000841';
-    const msg = language === 'ar'
-      ? 'مرحباً، أهلاً وسهلاً بكم في نعامنة للصرافة\nيرجى اختيار الخدمة المطلوبة:\n1. شراء عملة أجنبية\n2. بيع عملة أجنبية\n3. تحويل أموال للخارج\n4. دفع فواتير\n5. كرت الدفع المسبق (כרטיס נטען)\n6. أخرى'
-      : language === 'he'
-      ? 'שלום וברוכים הבאים לנעאמנה להמרות\nאנא בחרו את השירות המבוקש:\n1. קניית מטבע חוץ\n2. מכירת מטבע חוץ\n3. העברת כסף לחו"ל\n4. תשלום חשבונות\n5. כרטיס נטען\n6. אחר'
-      : 'Hello and welcome to Naamneh Exchange\nPlease select the service you need:\n1. Buy foreign currency\n2. Sell foreign currency\n3. International money transfer\n4. Bill payments\n5. Prepaid card (Kart Neta)\n6. Other';
+  const openWhatsAppContact = () => {
+    setWhatsappResult(null);
+    setCustomerPhone('');
+    setShowWhatsAppModal(true);
+  };
+
+  const sendWelcomeMessage = async () => {
+    if (!customerPhone.trim()) return;
+    setSendingWhatsApp(true);
+    setWhatsappResult(null);
     try {
-      const url = `whatsapp://send?phone=${phone}&text=${encodeURIComponent(msg)}`;
-      if (await Linking.canOpenURL(url)) await Linking.openURL(url);
-      else await Linking.openURL(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`);
-    } catch {}
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+      const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+      const shopUsername = await AsyncStorage.getItem('shopUsername') || undefined;
+      const response = await fetch(`${supabaseUrl}/functions/v1/send-whatsapp-welcome`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${anonKey}`,
+        },
+        body: JSON.stringify({
+          phone_number: customerPhone.trim(),
+          language,
+          shop_username: shopUsername,
+        }),
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setWhatsappResult({
+          success: true,
+          message: language === 'ar'
+            ? 'تم إرسال رسالة الترحيب بنجاح! تحقق من واتساب.'
+            : language === 'he'
+            ? 'הודעת הברכה נשלחה בהצלחה! בדוק את וואטסאפ.'
+            : 'Welcome message sent successfully! Check your WhatsApp.',
+        });
+      } else {
+        setWhatsappResult({
+          success: false,
+          message: language === 'ar'
+            ? 'تعذر إرسال الرسالة. يرجى المحاولة لاحقاً.'
+            : language === 'he'
+            ? 'לא ניתן לשלוח את ההודעה. נסה שוב מאוחר יותר.'
+            : 'Could not send the message. Please try again later.',
+        });
+      }
+    } catch {
+      setWhatsappResult({
+        success: false,
+        message: language === 'ar'
+          ? 'حدث خطأ في الاتصال. يرجى المحاولة لاحقاً.'
+          : language === 'he'
+          ? 'שגיאת חיבור. נסה שוב מאוחר יותר.'
+          : 'Connection error. Please try again later.',
+      });
+    } finally {
+      setSendingWhatsApp(false);
+    }
   };
 
   const sendWhatsAppMessage = async (name: string) => {
@@ -681,10 +731,10 @@ export default function PricesScreen() {
               <Text style={s.whatsappContactIcon}>💬</Text>
               <View style={{ flex: 1, alignItems: 'center' }}>
                 <Text style={s.whatsappContactText}>
-                  {language === 'ar' ? 'تواصل معنا عبر واتساب' : language === 'he' ? 'צרו קשר בוואטסאפ' : 'Contact us via WhatsApp'}
+                  {language === 'ar' ? 'استقبل رسالة الترحيب والخدمات' : language === 'he' ? 'קבל הודעת ברכה ושירותים' : 'Get welcome message & services'}
                 </Text>
                 <Text style={s.whatsappContactSubtext}>
-                  {language === 'ar' ? 'للاستفسار عن معاملة' : language === 'he' ? 'לפרטים על עסקה' : 'For transaction inquiries'}
+                  {language === 'ar' ? 'أدخل رقم هاتفك لتصلك رسالة واتساب' : language === 'he' ? 'הזן מספר טלפון לקבלת הודעה' : 'Enter your phone to receive a WhatsApp message'}
                 </Text>
               </View>
               <Text style={s.whatsappContactArrow}>←</Text>
@@ -1305,6 +1355,67 @@ export default function PricesScreen() {
                 </TouchableOpacity>
               ) : null}
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+      {/* ════════════════════════════════
+          WHATSAPP WELCOME MODAL — customers only
+      ════════════════════════════════ */}
+      <Modal visible={showWhatsAppModal} transparent animationType="slide" onRequestClose={() => setShowWhatsAppModal(false)}>
+        <View style={s.waModalBg}>
+          <View style={s.waModal}>
+            <View style={s.waModalHead}>
+              <Text style={s.waModalTitle}>
+                {language === 'ar' ? 'رسالة ترحيب عبر واتساب' : language === 'he' ? 'הודעת ברכה בוואטסאפ' : 'WhatsApp Welcome Message'}
+              </Text>
+              <TouchableOpacity style={s.waModalCloseBtn} onPress={() => setShowWhatsAppModal(false)}>
+                <Text style={s.waModalCloseX}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={s.waModalBody}>
+              <Text style={s.waModalDesc}>
+                {language === 'ar'
+                  ? 'أدخل رقم هاتفك وسنرسل لك رسالة ترحيب تحتوي على قائمة خدماتنا عبر واتساب.'
+                  : language === 'he'
+                  ? 'הזן את מספר הטלפון שלך ונשלח לך הודעת ברכה עם רשימת השירותים שלנו בוואטסאפ.'
+                  : 'Enter your phone number and we will send you a welcome message with our list of services via WhatsApp.'}
+              </Text>
+              <View style={s.waPhoneInputWrap}>
+                <Text style={s.waPhonePrefix}>🇮🇱 +972</Text>
+                <TextInput
+                  style={s.waPhoneInput}
+                  value={customerPhone}
+                  onChangeText={setCustomerPhone}
+                  placeholder={language === 'ar' ? '5XXXXXXXX' : language === 'he' ? '5XXXXXXXX' : '5XXXXXXXX'}
+                  keyboardType="phone-pad"
+                  textAlign="center"
+                  editable={!sendingWhatsApp}
+                />
+              </View>
+              {whatsappResult ? (
+                <View style={[s.waResultBox, whatsappResult.success ? s.waResultSuccess : s.waResultError]}>
+                  <Text style={s.waResultText}>
+                    {whatsappResult.success ? '✓' : '✕'} {whatsappResult.message}
+                  </Text>
+                </View>
+              ) : null}
+              <TouchableOpacity
+                style={[s.waSendBtn, (!customerPhone.trim() || sendingWhatsApp) && s.waSendBtnDisabled]}
+                onPress={sendWelcomeMessage}
+                disabled={!customerPhone.trim() || sendingWhatsApp}
+                activeOpacity={0.85}
+              >
+                {sendingWhatsApp ? (
+                  <Text style={s.waSendBtnText}>
+                    {language === 'ar' ? 'جاري الإرسال...' : language === 'he' ? 'שולח...' : 'Sending...'}
+                  </Text>
+                ) : (
+                  <Text style={s.waSendBtnText}>
+                    {language === 'ar' ? 'إرسال رسالة الترحيب' : language === 'he' ? 'שלח הודעת ברכה' : 'Send Welcome Message'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -1957,6 +2068,42 @@ function makeStyles(t: PriceTemplate) {
     whatsappContactText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800', textAlign: 'center' },
     whatsappContactSubtext: { color: '#E8F5E9', fontSize: 11, fontWeight: '600', textAlign: 'center', marginTop: 2 },
     whatsappContactArrow: { color: '#FFFFFF', fontSize: 22, fontWeight: '700' },
+
+    /* WhatsApp welcome modal */
+    waModalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'center', alignItems: 'center' },
+    waModal: {
+      backgroundColor: t.cardBg, borderRadius: 20, width: '88%', maxWidth: 420,
+      paddingTop: 18, paddingBottom: 24, ...SHADOW,
+    },
+    waModalHead: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: t.cardBorder,
+    },
+    waModalTitle: { color: cardText, fontSize: 17, fontWeight: '800' },
+    waModalCloseBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: isDarkCard ? 'rgba(255,255,255,0.08)' : '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
+    waModalCloseX: { color: cardText, fontSize: 15, fontWeight: '700' },
+    waModalBody: { paddingHorizontal: 20, paddingTop: 18 },
+    waModalDesc: { color: cardSubText, fontSize: 13, lineHeight: 20, textAlign: 'center', marginBottom: 18 },
+    waPhoneInputWrap: {
+      flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16,
+      backgroundColor: isDarkCard ? 'rgba(255,255,255,0.05)' : '#F3F4F6',
+      borderRadius: 12, paddingVertical: 4, paddingHorizontal: 12,
+      borderWidth: 2, borderColor: '#25D366',
+    },
+    waPhonePrefix: { color: cardText, fontSize: 16, fontWeight: '700' },
+    waPhoneInput: {
+      flex: 1, fontSize: 18, fontWeight: '700', color: cardText,
+      paddingVertical: 12, textAlign: 'center',
+    },
+    waResultBox: { borderRadius: 10, padding: 12, marginBottom: 14 },
+    waResultSuccess: { backgroundColor: 'rgba(37, 211, 102, 0.15)' },
+    waResultError: { backgroundColor: 'rgba(208, 48, 47, 0.15)' },
+    waResultText: { fontSize: 13, fontWeight: '600', textAlign: 'center', lineHeight: 19 },
+    waSendBtn: {
+      backgroundColor: '#25D366', borderRadius: 14, paddingVertical: 16, alignItems: 'center',
+    },
+    waSendBtnDisabled: { opacity: 0.5 },
+    waSendBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
 
     /* Customer button */
     custBtn: {
