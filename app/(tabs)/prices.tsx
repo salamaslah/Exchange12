@@ -155,7 +155,7 @@ export default function PricesScreen() {
 
   useEffect(() => {
     if (templateId !== 4 || allCurrencies.length < 2) return;
-    const pairTimer = setInterval(() => setWheelPairOffset(o => o + 2), 4500);
+    const pairTimer = setInterval(() => setWheelPairOffset(o => o + 2), 5000);
     const spin = Animated.loop(Animated.timing(wheelRotation, {
       toValue: 1,
       duration: 18000,
@@ -919,6 +919,8 @@ export default function PricesScreen() {
             </View>
             <View style={[s.wheel, isLargeScreen && s.wheelLg]}>
               <View style={s.wheelOuterRing} />
+              <View style={s.wheelGearTeeth} />
+              <View style={s.wheelInnerRing} />
               <Animated.View style={[s.wheelOrbit, { transform: [{ rotate: wheelSpin }] }]}>
                 {wheelSlots.map((currency, index) => {
                   const angle = (index / Math.max(wheelSlots.length, 1)) * Math.PI * 2;
@@ -1678,7 +1680,7 @@ function makeStyles(t: PriceTemplate) {
     rateVLineLg: { height: 72 },
     cardRatesRowLg: { paddingVertical: 18, paddingHorizontal: 10 },
 
-    /* ── TEMPLATE 4: ROTATING WHEEL ── */
+    /* ── TEMPLATE 4: ROTATING WHEEL (MACHINE) ── */
     wheelStage: {
       alignItems: 'center',
       paddingVertical: 20,
@@ -1686,7 +1688,7 @@ function makeStyles(t: PriceTemplate) {
     },
     wheelStageLg: { paddingVertical: 40 },
     wheelHeader: { alignItems: 'center', marginBottom: 16, gap: 4 },
-    wheelTitle: { color: t.accent2, fontSize: 22, fontWeight: '900', textAlign: 'center' },
+    wheelTitle: { color: t.accent2, fontSize: 22, fontWeight: '900', textAlign: 'center', letterSpacing: 1 },
     wheelTitleLg: { fontSize: 38 },
     wheelSubtitle: { color: t.accent, fontSize: 11, fontWeight: '500', textAlign: 'center' },
 
@@ -1702,9 +1704,28 @@ function makeStyles(t: PriceTemplate) {
       width: '100%',
       height: '100%',
       borderRadius: 160,
+      borderWidth: 6,
+      borderColor: t.accent + '30',
+      backgroundColor: t.dark,
+      ...SHADOW,
+    },
+    wheelGearTeeth: {
+      position: 'absolute',
+      width: '94%',
+      height: '94%',
+      borderRadius: 150,
+      borderWidth: 3,
+      borderColor: t.accent + '50',
+      borderStyle: 'dashed',
+    },
+    wheelInnerRing: {
+      position: 'absolute',
+      width: '78%',
+      height: '78%',
+      borderRadius: 125,
       borderWidth: 2,
-      borderColor: t.accent + '40',
-      backgroundColor: t.bg2 + '80',
+      borderColor: t.accent + '25',
+      backgroundColor: t.bg2,
     },
     wheelOrbit: {
       position: 'absolute',
@@ -1719,10 +1740,10 @@ function makeStyles(t: PriceTemplate) {
       height: 56,
       marginLeft: -28,
       marginTop: -28,
-      borderRadius: 28,
+      borderRadius: 10,
       backgroundColor: t.cardBg,
-      borderWidth: 1.5,
-      borderColor: t.accent + '60',
+      borderWidth: 2,
+      borderColor: t.accent + '70',
       alignItems: 'center',
       justifyContent: 'center',
       ...SHADOW,
@@ -1737,8 +1758,8 @@ function makeStyles(t: PriceTemplate) {
       borderRadius: 120,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: t.cardBg,
-      borderWidth: 2,
+      backgroundColor: t.bg2,
+      borderWidth: 4,
       borderColor: t.accent,
       ...SHADOW,
       gap: 8,
@@ -1749,7 +1770,7 @@ function makeStyles(t: PriceTemplate) {
       width: '88%',
       height: '88%',
       borderRadius: 120,
-      backgroundColor: t.accent + '12',
+      backgroundColor: t.accent + '10',
     },
     wheelCenterCurrency: {
       width: '82%',
