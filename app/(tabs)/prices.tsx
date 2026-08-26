@@ -96,6 +96,7 @@ export default function PricesScreen() {
   const [workingHours, setWorkingHours]     = useState<WorkingHours[]>([]);
   const [advertisements, setAdvertisements] = useState<Advertisement[]>([]);
   const [adOffset, setAdOffset] = useState(0);
+  const [wheelPairOffset, setWheelPairOffset] = useState(0);
   const [showCalculator, setShowCalculator] = useState(false);
   const [fromCurrency, setFromCurrency]     = useState('ILS');
   const [toCurrency, setToCurrency]         = useState('USD');
@@ -115,6 +116,7 @@ export default function PricesScreen() {
   const isScreenFocused = useRef<boolean>(false);
   const appState        = useRef(AppState.currentState);
   const pulseAnim       = useRef(new Animated.Value(1)).current;
+  const wheelRotation   = useRef(new Animated.Value(0)).current;
 
   useAutoUpdateRates();
 
@@ -150,6 +152,22 @@ export default function PricesScreen() {
     const t = setInterval(() => setAdOffset(o => o + 1), 5000);
     return () => clearInterval(t);
   }, [templateId, advertisements.length]);
+
+  useEffect(() => {
+    if (templateId !== 4 || allCurrencies.length < 2) return;
+    const pairTimer = setInterval(() => setWheelPairOffset(o => o + 2), 4500);
+    const spin = Animated.loop(Animated.timing(wheelRotation, {
+      toValue: 1,
+      duration: 18000,
+      useNativeDriver: true,
+    }));
+    spin.start();
+    return () => {
+      clearInterval(pairTimer);
+      spin.stop();
+      wheelRotation.setValue(0);
+    };
+  }, [templateId, allCurrencies.length, wheelRotation]);
 
   useFocusEffect(React.useCallback(() => {
     isScreenFocused.current = true;
@@ -471,6 +489,12 @@ export default function PricesScreen() {
   const template3AdCount = template3Currencies.length % 3 === 0
     ? 0
     : 3 - (template3Currencies.length % 3);
+  const wheelCurrencies = allCurrencies.filter(currency => currency.is_active);
+  const wheelPair = wheelCurrencies.length > 0
+    ? [0, 1].map(index => wheelCurrencies[(wheelPairOffset + index) % wheelCurrencies.length])
+    : [];
+  const wheelSlots = wheelCurrencies.slice(0, 8);
+  const wheelSpin = wheelRotation.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
 
   const timeStr = currentTime.toLocaleTimeString(
     language === 'ar' ? 'ar-SA' : language === 'he' ? 'he-IL' : 'en-US',
@@ -883,10 +907,78 @@ export default function PricesScreen() {
           </View>
         )}
 
+        {templateId === 4 && (
+          <View style={[s.wheelStage, isLargeScreen && s.wheelStageLg]}>
+            <View style={s.wheelHeader}>
+              <Text style={[s.wheelTitle, isLargeScreen && s.wheelTitleLg]}>
+                {language === 'ar' ? 'أسعار العملات' : language === 'he' ? 'שערי מטבעות' : 'Currency Rates'}
+              </Text>
+              <Text style={s.wheelSubtitle}>
+                {language === 'ar' ? 'تتغير العملات تلقائياً' : language === 'he' ? 'המטבעות מתחלפים אוטומטית' : 'Currencies rotate automatically'}
+              </Text>
+            </View>
+            <View style={[s.wheel, isLargeScreen && s.wheelLg]}>
+              <View style={s.wheelOuterRing} />
+              <Animated.View style={[s.wheelOrbit, { transform: [{ rotate: wheelSpin }] }]}>
+                {wheelSlots.map((currency, index) => {
+                  const angle = (index / Math.max(wheelSlots.length, 1)) * Math.PI * 2;
+                  const radius = isLargeScreen ? 220 : 142;
+                  const left = Math.cos(angle) * radius;
+                  const top = Math.sin(angle) * radius;
+                  return (
+                    <TouchableOpacity
+                      key={`wheel-${currency.id}`}
+                      style={[s.wheelSlot, { transform: [{ translateX: left }, { translateY: top }, { rotate: `${-angle}rad` }] }]}
+                      onPress={() => handleCurrencyNameClick(currency.code)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={s.wheelSlotFlag}>{FLAG_EMOJI[currency.code] || '¤'}</Text>
+                      <Text style={s.wheelSlotCode}>{currency.code}</Text>
+                      <Text style={s.wheelSlotRate}>{currency.current_rate?.toFixed(2) ?? '—'}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </Animated.View>
+              <View style={[s.wheelCenter, isLargeScreen && s.wheelCenterLg]}>
+                <View style={s.wheelCenterGlow} />
+                {wheelPair.map((currency) => (
+                  <TouchableOpacity
+                    key={`wheel-center-${currency.id}`}
+                    style={s.wheelCenterCurrency}
+                    onPress={() => handleCurrencyNameClick(currency.code)}
+                    activeOpacity={0.85}
+                  >
+                    <View style={s.wheelCenterNameRow}>
+                      <Text style={s.wheelCenterFlag}>{FLAG_EMOJI[currency.code] || '¤'}</Text>
+                      <Text style={s.wheelCenterCode}>{currency.code}</Text>
+                    </View>
+                    <View style={s.wheelCenterRates}>
+                      <View style={s.wheelCenterRateBlock}>
+                        <Text style={s.wheelCenterBuyLabel}>{language === 'ar' ? 'شراء' : language === 'he' ? 'קנייה' : 'Buy'}</Text>
+                        <Text style={s.wheelCenterBuy}>{currency.buy_rate?.toFixed(2) ?? '—'}</Text>
+                      </View>
+                      <View style={s.wheelCenterRateDivider} />
+                      <View style={s.wheelCenterRateBlock}>
+                        <Text style={s.wheelCenterCurrentLabel}>{language === 'ar' ? 'الحالي' : language === 'he' ? 'נוכחי' : 'Rate'}</Text>
+                        <Text style={s.wheelCenterCurrent}>{currency.current_rate?.toFixed(2) ?? '—'}</Text>
+                      </View>
+                      <View style={s.wheelCenterRateDivider} />
+                      <View style={s.wheelCenterRateBlock}>
+                        <Text style={s.wheelCenterSellLabel}>{language === 'ar' ? 'بيع' : language === 'he' ? 'מכירה' : 'Sell'}</Text>
+                        <Text style={s.wheelCenterSell}>{currency.sell_rate?.toFixed(2) ?? '—'}</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </View>
+        )}
+
         {/* ════════════════════════════════
-            CURRENCY GRID (templates 1, 4, 5)
+            CURRENCY GRID (templates 1 and 5)
         ════════════════════════════════ */}
-        <View style={[s.grid, (templateId === 2 || templateId === 3) && { display: 'none' }]}>
+        <View style={[s.grid, (templateId === 2 || templateId === 3 || templateId === 4) && { display: 'none' }]}>
           {[...allCurrencies.filter(c => c.is_active), ...allCurrencies.filter(c => !c.is_active)].map(currency => (
             <TouchableOpacity
               key={currency.id}
@@ -1585,6 +1677,99 @@ function makeStyles(t: PriceTemplate) {
     rateHalfLg: { paddingVertical: 10 },
     rateVLineLg: { height: 72 },
     cardRatesRowLg: { paddingVertical: 18, paddingHorizontal: 10 },
+
+    /* ── TEMPLATE 4: ROTATING WHEEL ── */
+    wheelStage: {
+      alignItems: 'center',
+      paddingVertical: 20,
+      paddingHorizontal: 12,
+    },
+    wheelStageLg: { paddingVertical: 40 },
+    wheelHeader: { alignItems: 'center', marginBottom: 16, gap: 4 },
+    wheelTitle: { color: t.accent2, fontSize: 22, fontWeight: '900', textAlign: 'center' },
+    wheelTitleLg: { fontSize: 38 },
+    wheelSubtitle: { color: t.accent, fontSize: 11, fontWeight: '500', textAlign: 'center' },
+
+    wheel: {
+      width: 320,
+      height: 320,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    wheelLg: { width: 520, height: 520 },
+    wheelOuterRing: {
+      position: 'absolute',
+      width: '100%',
+      height: '100%',
+      borderRadius: 160,
+      borderWidth: 2,
+      borderColor: t.accent + '40',
+      backgroundColor: t.bg2 + '80',
+    },
+    wheelOrbit: {
+      position: 'absolute',
+      width: '100%',
+      height: '100%',
+    },
+    wheelSlot: {
+      position: 'absolute',
+      left: '50%',
+      top: '50%',
+      width: 56,
+      height: 56,
+      marginLeft: -28,
+      marginTop: -28,
+      borderRadius: 28,
+      backgroundColor: t.cardBg,
+      borderWidth: 1.5,
+      borderColor: t.accent + '60',
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...SHADOW,
+    },
+    wheelSlotFlag: { fontSize: 18 },
+    wheelSlotCode: { color: t.cardText, fontSize: 10, fontWeight: '800', marginTop: 1 },
+    wheelSlotRate: { color: t.cardSubText, fontSize: 8, fontWeight: '600' },
+
+    wheelCenter: {
+      width: 240,
+      height: 240,
+      borderRadius: 120,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: t.cardBg,
+      borderWidth: 2,
+      borderColor: t.accent,
+      ...SHADOW,
+      gap: 8,
+    },
+    wheelCenterLg: { width: 380, height: 380, borderRadius: 190, gap: 14 },
+    wheelCenterGlow: {
+      position: 'absolute',
+      width: '88%',
+      height: '88%',
+      borderRadius: 120,
+      backgroundColor: t.accent + '12',
+    },
+    wheelCenterCurrency: {
+      width: '82%',
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      alignItems: 'center',
+      gap: 6,
+    },
+    wheelCenterNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    wheelCenterFlag: { fontSize: 20 },
+    wheelCenterCode: { color: t.cardText, fontSize: 16, fontWeight: '900' },
+    wheelCenterRates: { flexDirection: 'row', alignItems: 'center', width: '100%' },
+    wheelCenterRateBlock: { flex: 1, alignItems: 'center', gap: 2 },
+    wheelCenterRateDivider: { width: 1, height: 36, backgroundColor: t.cardBorder },
+    wheelCenterBuyLabel: { color: t.red, fontSize: 9, fontWeight: '700' },
+    wheelCenterBuy: { color: t.red, fontSize: 15, fontWeight: '800' },
+    wheelCenterCurrentLabel: { color: t.cardSubText, fontSize: 9, fontWeight: '600' },
+    wheelCenterCurrent: { color: t.cardText, fontSize: 14, fontWeight: '700' },
+    wheelCenterSellLabel: { color: t.green, fontSize: 9, fontWeight: '700' },
+    wheelCenterSell: { color: t.green, fontSize: 15, fontWeight: '800' },
 
     /* ── INFO BAR ── */
     infoBar: {
