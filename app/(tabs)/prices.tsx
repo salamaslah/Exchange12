@@ -1474,7 +1474,7 @@ function makeStyles(t: PriceTemplate) {
       paddingHorizontal: 14,
       ...SHADOW,
     },
-    tpl3CalcLg: { flex: 0.3, maxWidth: 320, marginTop: 0 },
+    tpl3CalcLg: { flex: 0.38, maxWidth: 420, marginTop: 0 },
     tpl3CalcTitle: { color: '#7FC4FF', fontSize: 16, fontWeight: '800', textAlign: 'center', marginBottom: 12 },
     tpl3CalcTitleLg: { fontSize: 22, marginBottom: 16 },
     tpl3CalcInput: {
@@ -1498,7 +1498,7 @@ function makeStyles(t: PriceTemplate) {
     },
     tpl3AdImage: { width: '100%', height: '100%', backgroundColor: '#0B2D40' }, 
     tpl3AdsColumn: {
-      width: '100%',
+      flex: 1,
       marginTop: 12,
     },
     tpl3AdCardLg: {
