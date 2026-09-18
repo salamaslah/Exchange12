@@ -725,22 +725,7 @@ export default function PricesScreen() {
         {/* ════════════════════════════════
             WHATSAPP CONTACT BUTTON — customers only
         ════════════════════════════════ */}
-        {isCustomerView && (
-          <View style={{ paddingHorizontal: 12, marginTop: 10 }}>
-            <TouchableOpacity style={s.whatsappContactBtn} onPress={openWhatsAppContact} activeOpacity={0.85}>
-              <Text style={s.whatsappContactIcon}>💬</Text>
-              <View style={{ flex: 1, alignItems: 'center' }}>
-                <Text style={s.whatsappContactText}>
-                  {language === 'ar' ? 'استقبل رسالة الترحيب والخدمات' : language === 'he' ? 'קבל הודעת ברכה ושירותים' : 'Get welcome message & services'}
-                </Text>
-                <Text style={s.whatsappContactSubtext}>
-                  {language === 'ar' ? 'أدخل رقم هاتفك لتصلك رسالة واتساب' : language === 'he' ? 'הזן מספר טלפון לקבלת הודעה' : 'Enter your phone to receive a WhatsApp message'}
-                </Text>
-              </View>
-              <Text style={s.whatsappContactArrow}>←</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        {/* WhatsApp button temporarily disabled */}
 
         {/* ════════════════════════════════
             RATES TITLE — small screens only
